@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum ContentType {
+  HIRAGANA
+  KATAKANA
+  KANJI
+  VOCABULARY
+  PHRASE
+}
+
+enum SRSLevel {
+  NEW
+  LEARNING
+  FAMILIAR
+  STRONG
+  MASTERED
+}
+
+enum LearningStage {
+  HIRAGANA
+  KATAKANA
+  CORE_VOCAB
+  ESSENTIAL_KANJI
+  DAILY_CONVERSATION
+  ADVANCED_SURVIVAL
+}
+
+enum ExerciseType {
+  CHARACTER_RECOGNITION
+  CHARACTER_TO_SOUND
+  SOUND_TO_CHARACTER
+  ENGLISH_TO_JAPANESE
+  JAPANESE_TO_ENGLISH
+  LISTENING
+  FILL_IN_BLANK
+  MULTIPLE_CHOICE
+  SCENARIO
+}
+
+model UserProfile {
+  id               String        @id
+  email            String        @unique
+  displayName      String?
+  avatarUrl        String?
+  currentStage     LearningStage @default(HIRAGANA)
+  nativeLevel      String?
+  studyGoalMinutes Int           @default(20)
+  currentStreak    Int           @default(0)
+  longestStreak    Int           @default(0)
+  lastStudiedAt    DateTime?
+  xp               Int           @default(0)
+  level            Int           @default(1)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  reviews      Review[]
+  lessons      Lesson[]
+  achievements UserAchievement[]
+  statistics   UserStatistics?
+  progress     UserProgress[]
+
+  @@map("user_profiles")
+}
+
+model JapaneseCharacter {
+  id           String      @id @default(cuid())
+  character    String      @unique
+  romaji       String
+  type         ContentType
+  audioUrl     String?
+  strokeOrder  Json?
+  mnemonicHint String?
+  displayOrder Int
+  createdAt    DateTime    @default(now())
+
+  reviews Review[]
+
+  @@map("japanese_characters")
+}
+
+model Vocabulary {
+  id                 String   @id @default(cuid())
+  japanese           String
+  kana               String
+  romaji             String
+  english            String
+  category           String
+  jlptLevel          String?
+  audioUrl           String?
+  exampleSentenceJa  String?
+  exampleSentenceEn  String?
+  frequency          Int      @default(0)
+  tags               String[]
+  createdAt          DateTime @default(now())
+
+  reviews Review[]
+
+  @@map("vocabulary")
+}
+
+model Kanji {
+  id           String   @id @default(cuid())
+  character    String   @unique
+  onyomi       String[]
+  kunyomi      String[]
+  meanings     String[]
+  strokeCount  Int
+  jlptLevel    String?
+  frequency    Int      @default(0)
+  radicals     String[]
+  mnemonicHint String?
+  exampleWords Json?
+  audioUrl     String?
+  createdAt    DateTime @default(now())
+
+  reviews Review[]
+
+  @@map("kanji")
+}
+
+model Phrase {
+  id        String   @id @default(cuid())
+  japanese  String
+  kana      String
+  romaji    String
+  english   String
+  scenario  String
+  audioUrl  String?
+  difficulty Int     @default(1)
+  tags      String[]
+  createdAt DateTime @default(now())
+
+  reviews Review[]
+
+  @@map("phrases")
+}
+
+model Review {
+  id                   String      @id @default(cuid())
+  userId               String
+  contentType          ContentType
+  contentId            String
+  srsLevel             SRSLevel    @default(NEW)
+  easeFactor           Float       @default(2.5)
+  interval             Int         @default(0)
+  nextReviewAt         DateTime    @default(now())
+  lastReviewedAt       DateTime?
+  totalAttempts        Int         @default(0)
+  consecutiveSuccesses Int         @default(0)
+  correctCount         Int         @default(0)
+  incorrectCount       Int         @default(0)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  user      UserProfile        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  character JapaneseCharacter? @relation(fields: [contentId], references: [id])
+  vocabulary Vocabulary?       @relation(fields: [contentId], references: [id])
+  kanji     Kanji?             @relation(fields: [contentId], references: [id])
+  phrase    Phrase?            @relation(fields: [contentId], references: [id])
+
+  @@unique([userId, contentType, contentId])
+  @@index([userId, nextReviewAt])
+  @@index([userId, contentType])
+  @@map("reviews")
+}
+
+model Lesson {
+  id              String     @id @default(cuid())
+  userId          String
+  generatedAt     DateTime   @default(now())
+  completedAt     DateTime?
+  xpEarned        Int        @default(0)
+  accuracy        Float?
+  durationSeconds Int?
+  items           LessonItem[]
+
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("lessons")
+}
+
+model LessonItem {
+  id           String       @id @default(cuid())
+  lessonId     String
+  contentType  ContentType
+  contentId    String
+  exerciseType ExerciseType
+  displayOrder Int
+  correct      Boolean?
+  answeredAt   DateTime?
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("lesson_items")
+}
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  description String
+  xpReward    Int      @default(0)
+  iconName    String
+  createdAt   DateTime @default(now())
+
+  userAchievements UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+
+  user        UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id])
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+model UserProgress {
+  id            String        @id @default(cuid())
+  userId        String
+  stage         LearningStage
+  totalItems    Int           @default(0)
+  masteredItems Int           @default(0)
+  updatedAt     DateTime      @updatedAt
+
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, stage])
+  @@map("user_progress")
+}
+
+model UserStatistics {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  totalStudyTime   Int      @default(0)
+  totalReviews     Int      @default(0)
+  correctReviews   Int      @default(0)
+  lessonsCompleted Int      @default(0)
+  updatedAt        DateTime @updatedAt
+
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_statistics")
+}
