@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function SignupPage() {
@@ -12,12 +13,13 @@ export default function SignupPage() {
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -27,6 +29,9 @@ export default function SignupPage() {
     });
     if (error) {
       setError(error.message);
+    } else if (data.session) {
+      router.push("/onboarding");
+      router.refresh();
     } else {
       setSuccess(true);
     }
