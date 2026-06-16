@@ -81,8 +81,6 @@ model JapaneseCharacter {
   displayOrder Int
   createdAt    DateTime    @default(now())
 
-  reviews Review[]
-
   @@map("japanese_characters")
 }
 
@@ -100,8 +98,6 @@ model Vocabulary {
   frequency          Int      @default(0)
   tags               String[]
   createdAt          DateTime @default(now())
-
-  reviews Review[]
 
   @@map("vocabulary")
 }
@@ -121,8 +117,6 @@ model Kanji {
   audioUrl     String?
   createdAt    DateTime @default(now())
 
-  reviews Review[]
-
   @@map("kanji")
 }
 
@@ -137,8 +131,6 @@ model Phrase {
   difficulty Int     @default(1)
   tags      String[]
   createdAt DateTime @default(now())
-
-  reviews Review[]
 
   @@map("phrases")
 }
@@ -160,11 +152,7 @@ model Review {
   createdAt            DateTime    @default(now())
   updatedAt            DateTime    @updatedAt
 
-  user      UserProfile        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  character JapaneseCharacter? @relation(fields: [contentId], references: [id])
-  vocabulary Vocabulary?       @relation(fields: [contentId], references: [id])
-  kanji     Kanji?             @relation(fields: [contentId], references: [id])
-  phrase    Phrase?            @relation(fields: [contentId], references: [id])
+  user UserProfile @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, contentType, contentId])
   @@index([userId, nextReviewAt])
