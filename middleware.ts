@@ -6,14 +6,12 @@ const authPaths = ["/login", "/signup"];
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL
-    ?.replace("https://", "")
-    .replace(".supabase.co", "");
-  const cookieName = `sb-${projectRef}-auth-token`;
-  const hasSession =
-    request.cookies.has(cookieName) ||
-    request.cookies.has("sb-access-token") ||
-    request.cookies.has(`${cookieName}.0`);
+  const allCookies = request.cookies.getAll();
+  const hasSession = allCookies.some(
+    (c) =>
+      c.name.startsWith("sb-") &&
+      (c.name.endsWith("-auth-token") || c.name.endsWith("-auth-token.0"))
+  );
 
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
   const isAuth = authPaths.includes(pathname);
