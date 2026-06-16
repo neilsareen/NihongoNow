@@ -251,16 +251,16 @@ export default function LessonPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 gap-8">
+    <div className="min-h-screen bg-gray-950 flex flex-col items-center px-4 pt-12 pb-8 gap-4">
       <div className="w-full max-w-sm">
-        <div className="flex justify-between items-center mb-4 text-sm text-gray-500">
+        <div className="flex justify-between items-center mb-3 text-sm text-gray-500">
           <span>{currentIndex + 1} / {lesson.items.length}</span>
           <span className="capitalize text-purple-400">{currentItem?.contentType.toLowerCase()}</span>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-1 mb-8">
+        <div className="w-full bg-gray-800 rounded-full h-1">
           <div
             className="bg-purple-500 h-1 rounded-full transition-all"
-            style={{ width: `${((currentIndex) / lesson.items.length) * 100}%` }}
+            style={{ width: `${(currentIndex / lesson.items.length) * 100}%` }}
           />
         </div>
       </div>
@@ -269,19 +269,23 @@ export default function LessonPage() {
         <CardFront item={currentItem!} />
       </div>
 
-      {!revealed ? (
-        <button
-          onClick={() => setRevealed(true)}
-          className="w-full max-w-sm py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-semibold text-lg transition-colors"
-        >
-          Tap to reveal
-        </button>
-      ) : (
-        <>
-          <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
-            <CardBack item={currentItem!} />
-          </div>
-          <div className="flex gap-4 w-full max-w-sm">
+      <div className="w-full max-w-sm bg-gray-900 border border-gray-800 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
+        {revealed
+          ? <CardBack item={currentItem!} />
+          : <span className="text-gray-700 text-sm select-none">─ ─ ─</span>
+        }
+      </div>
+
+      <div className="flex gap-4 w-full max-w-sm">
+        {!revealed ? (
+          <button
+            onClick={() => setRevealed(true)}
+            className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-semibold text-lg transition-colors"
+          >
+            Tap to reveal
+          </button>
+        ) : (
+          <>
             <button
               onClick={() => handleAnswer(false)}
               className="flex-1 py-4 bg-red-900/60 hover:bg-red-800/80 border border-red-700/50 text-red-300 rounded-2xl font-semibold text-lg transition-colors"
@@ -294,9 +298,9 @@ export default function LessonPage() {
             >
               Got it ✓
             </button>
-          </div>
-        </>
-      )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
