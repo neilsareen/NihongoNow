@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 async function getDashboardData(userId: string) {
-  const [profile, stats, progress, reviewsDue] = await Promise.all([
+  const [profile, stats, progress, reviewsDue, inProgressLesson] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
@@ -15,8 +15,15 @@ async function getDashboardData(userId: string) {
         srsLevel: { not: "MASTERED" },
       },
     }),
+    prisma.lesson.findFirst({
+      where: { userId, completedAt: null },
+      orderBy: { generatedAt: "desc" },
+      include: {
+        items: { select: { answeredAt: true }, orderBy: { displayOrder: "asc" } },
+      },
+    }),
   ]);
-  return { profile, stats, progress, reviewsDue };
+  return { profile, stats, progress, reviewsDue, inProgressLesson };
 }
 
 function getGreeting() {
@@ -34,7 +41,7 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (authError || !user) redirect("/api/auth/signout");
 
-  const { profile, stats, progress, reviewsDue } = await getDashboardData(
+  const { profile, stats, progress, reviewsDue, inProgressLesson } = await getDashboardData(
     user.id
   );
 
@@ -46,6 +53,10 @@ export default async function DashboardPage() {
       : 0;
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
+
+  const answeredCount = inProgressLesson?.items.filter((i) => i.answeredAt !== null).length ?? 0;
+  const unansweredCount = inProgressLesson?.items.filter((i) => i.answeredAt === null).length ?? 0;
+  const showContinue = answeredCount > 0 && unansweredCount > 0;
 
   const progressItems = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ" },
@@ -76,20 +87,42 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <Link
-        href="/lesson"
-        className="block bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400 rounded-2xl p-6 transition-all hover:scale-[1.01] active:scale-[0.99]"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="text-xl font-bold">Start Today&apos;s Lesson</div>
-            <div className="text-purple-200 text-sm mt-1">
-              {reviewsDue} reviews + new content · ~{profile.studyGoalMinutes} min
+      <div className="bg-gray-900 border border-white/10 rounded-2xl px-5 py-3 flex items-center justify-between text-sm">
+        <span className="text-gray-400">Daily goal</span>
+        <span className="text-gray-300">0 min studied / {profile.studyGoalMinutes} min goal</span>
+      </div>
+
+      {showContinue && inProgressLesson ? (
+        <Link
+          href={`/lesson/${inProgressLesson.id}`}
+          className="block bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400 rounded-2xl p-6 transition-all hover:scale-[1.01] active:scale-[0.99]"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xl font-bold">Continue Lesson</div>
+              <div className="text-purple-200 text-sm mt-1">
+                {answeredCount} done · {unansweredCount} remaining
+              </div>
             </div>
+            <div className="text-4xl opacity-80">▶</div>
           </div>
-          <div className="text-4xl opacity-80">▶</div>
-        </div>
-      </Link>
+        </Link>
+      ) : (
+        <Link
+          href="/lesson"
+          className="block bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400 rounded-2xl p-6 transition-all hover:scale-[1.01] active:scale-[0.99]"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xl font-bold">Start Today&apos;s Lesson</div>
+              <div className="text-purple-200 text-sm mt-1">
+                {reviewsDue} reviews + new content · ~{profile.studyGoalMinutes} min
+              </div>
+            </div>
+            <div className="text-4xl opacity-80">▶</div>
+          </div>
+        </Link>
+      )}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[

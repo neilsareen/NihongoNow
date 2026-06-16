@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { calculateNextReview, isMastered, type SRSQuality } from "@/lib/srs";
-import { ContentType } from "@prisma/client";
+import { ContentType, LearningStage } from "@prisma/client";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -90,6 +90,31 @@ export async function POST(request: Request) {
       totalReviews: { increment: 1 },
       correctReviews: { increment: correct ? 1 : 0 },
     },
+  });
+
+  const contentTypeToStage: Record<ContentType, LearningStage> = {
+    HIRAGANA: LearningStage.HIRAGANA,
+    KATAKANA: LearningStage.KATAKANA,
+    VOCABULARY: LearningStage.CORE_VOCAB,
+    KANJI: LearningStage.ESSENTIAL_KANJI,
+    PHRASE: LearningStage.DAILY_CONVERSATION,
+  };
+
+  const stage = contentTypeToStage[contentType];
+
+  const [totalItems, masteredItems] = await Promise.all([
+    prisma.review.count({
+      where: { userId: user.id, contentType },
+    }),
+    prisma.review.count({
+      where: { userId: user.id, contentType, srsLevel: "MASTERED" },
+    }),
+  ]);
+
+  await prisma.userProgress.upsert({
+    where: { userId_stage: { userId: user.id, stage } },
+    create: { userId: user.id, stage, totalItems, masteredItems },
+    update: { totalItems, masteredItems },
   });
 
   return NextResponse.json({ review, mastered });

@@ -62,3 +62,34 @@ export async function GET(
 
   return NextResponse.json({ ...lesson, items: enrichedItems });
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const body = await request.json().catch(() => ({}));
+  const { completedAt, xpEarned, accuracy } = body as {
+    completedAt?: string;
+    xpEarned?: number;
+    accuracy?: number;
+  };
+
+  const updated = await prisma.lesson.update({
+    where: { id, userId: user.id },
+    data: {
+      ...(completedAt !== undefined && { completedAt: new Date(completedAt) }),
+      ...(xpEarned !== undefined && { xpEarned }),
+      ...(accuracy !== undefined && { accuracy }),
+    },
+  });
+
+  return NextResponse.json(updated);
+}
