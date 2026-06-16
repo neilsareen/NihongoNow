@@ -30,8 +30,9 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  if (authError || !user) redirect("/api/auth/signout");
 
   const { profile, stats, progress, reviewsDue } = await getDashboardData(
     user.id
