@@ -1,31 +1,28 @@
-import { type NextRequest, NextResponse } from "next/server";
-
-const protectedPaths = ["/dashboard", "/lesson", "/analytics", "/settings"];
-const authPaths = ["/login", "/signup"];
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const allCookies = request.cookies.getAll();
-  const hasSession = allCookies.some(
-    (c) =>
-      c.name.startsWith("sb-") &&
-      (c.name.endsWith("-auth-token") || c.name.endsWith("-auth-token.0"))
+  const cookies = request.cookies.getAll();
+  const hasSession = cookies.some(
+    (c) => c.name.startsWith("sb-") && c.name.includes("auth-token")
   );
 
-  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
-  const isAuth = authPaths.includes(pathname);
+  const isProtected =
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/lesson") ||
+    pathname.startsWith("/analytics") ||
+    pathname.startsWith("/settings");
 
-  if (!hasSession && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    return NextResponse.redirect(url);
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
+
+  if (isProtected && !hasSession) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (hasSession && isAuth) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+  if (isAuthPage && hasSession) {
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
@@ -33,6 +30,11 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/dashboard/:path*",
+    "/lesson/:path*",
+    "/analytics/:path*",
+    "/settings/:path*",
+    "/login",
+    "/signup",
   ],
 };
