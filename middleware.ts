@@ -1,8 +1,36 @@
-import { type NextRequest } from "next/server";
-import { updateSession } from "@/lib/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
 
-export async function middleware(request: NextRequest) {
-  return await updateSession(request);
+const protectedPaths = ["/dashboard", "/lesson", "/analytics", "/settings"];
+const authPaths = ["/login", "/signup"];
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  const projectRef = process.env.NEXT_PUBLIC_SUPABASE_URL
+    ?.replace("https://", "")
+    .replace(".supabase.co", "");
+  const cookieName = `sb-${projectRef}-auth-token`;
+  const hasSession =
+    request.cookies.has(cookieName) ||
+    request.cookies.has("sb-access-token") ||
+    request.cookies.has(`${cookieName}.0`);
+
+  const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
+  const isAuth = authPaths.includes(pathname);
+
+  if (!hasSession && isProtected) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    return NextResponse.redirect(url);
+  }
+
+  if (hasSession && isAuth) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
 }
 
 export const config = {
