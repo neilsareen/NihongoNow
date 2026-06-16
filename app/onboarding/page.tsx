@@ -41,22 +41,31 @@ export default function OnboardingPage() {
   const [selectedLevel, setSelectedLevel] = useState<string | null>(null);
   const [studyGoal, setStudyGoal] = useState(20);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
   async function handleComplete() {
     if (!selectedLevel) return;
     setLoading(true);
-    const res = await fetch("/api/onboarding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        nativeLevel: selectedLevel,
-        studyGoalMinutes: studyGoal,
-      }),
-    });
-    if (res.ok) {
-      router.push("/dashboard");
-    } else {
+    setError(null);
+    try {
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          nativeLevel: selectedLevel,
+          studyGoalMinutes: studyGoal,
+        }),
+      });
+      if (res.ok) {
+        router.push("/dashboard");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || `Error ${res.status} — please try again`);
+        setLoading(false);
+      }
+    } catch (e) {
+      setError("Network error — please try again");
       setLoading(false);
     }
   }
@@ -119,6 +128,12 @@ export default function OnboardingPage() {
             ))}
           </div>
         </div>
+
+        {error && (
+          <div className="bg-red-500/20 border border-red-500/30 text-red-200 rounded-lg p-3 text-sm">
+            {error}
+          </div>
+        )}
 
         <button
           onClick={handleComplete}
