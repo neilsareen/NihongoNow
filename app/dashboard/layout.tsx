@@ -23,11 +23,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link href="/analytics" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5">
               Progress
             </Link>
-            <Link href="/review/weakest" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5">
-              Review
-            </Link>
-            <Link href="/practice" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5">
-              Practice
+            <Link href="/practice" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5 jp-char">
+              練
             </Link>
             <Link href="/settings" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5">
               Settings

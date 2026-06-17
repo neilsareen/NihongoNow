@@ -73,6 +73,10 @@ const SRS_DISPLAY: Record<string, { label: string; color: string }> = {
   STRONG:   { label: "Strong",   color: "text-green-400" },
   MASTERED: { label: "Mastered", color: "text-purple-400" },
 };
+const SRS_PCT: Record<string, number> = { NEW: 0, LEARNING: 20, FAMILIAR: 45, STRONG: 70, MASTERED: 100 };
+const SRS_BAR: Record<string, string> = {
+  NEW: "bg-gray-600", LEARNING: "bg-blue-500", FAMILIAR: "bg-yellow-500", STRONG: "bg-green-500", MASTERED: "bg-purple-500",
+};
 
 const CATEGORY_LABELS: Record<string, string> = {
   etiquette:      "Etiquette",
@@ -112,10 +116,19 @@ function AudioButton({ text, lang = "ja-JP", size = "sm" }: { text: string; lang
   );
 }
 
-function MasteryBadge({ review }: { review: LessonItem["review"] }) {
+function MasteryBar({ review }: { review: LessonItem["review"] }) {
   const level = review?.srsLevel ?? "NEW";
   const display = SRS_DISPLAY[level] ?? SRS_DISPLAY.NEW;
-  return <span className={`text-xs ${display.color}`}>{display.label}</span>;
+  const pct = SRS_PCT[level] ?? 0;
+  const bar = SRS_BAR[level] ?? "bg-gray-600";
+  return (
+    <div className="flex items-center gap-1.5">
+      <div className="w-14 h-1 bg-gray-800 rounded-full overflow-hidden">
+        <div className={`h-full ${bar} rounded-full transition-all`} style={{ width: `${pct}%` }} />
+      </div>
+      <span className={`text-xs ${display.color}`}>{pct}%</span>
+    </div>
+  );
 }
 
 function isE2J(item: LessonItem) {
@@ -237,36 +250,50 @@ function CardBack({ item }: { item: LessonItem }) {
 
   if (contentType === "KANJI") {
     const exampleWords = content.exampleWords as Record<string, string> | null | undefined;
-    const allReadings = [
-      ...(content.onyomi ?? []).map((r) => r.toLowerCase()),
-      ...(content.kunyomi ?? []).map((r) => r.replace(/[-ー]/g, "").toLowerCase()),
-    ].filter(Boolean).slice(0, 3);
-
     return (
-      <div className="flex flex-col items-center gap-3 text-center max-w-xs">
-        <div className="flex items-center gap-2">
-          <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(" / ")}</p>
+      <div className="flex flex-col items-center gap-3 text-center max-w-xs w-full">
+        <div className="flex items-center gap-2 flex-wrap justify-center">
+          <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(" · ")}</p>
           {japText && <AudioButton text={japText} />}
         </div>
-        {allReadings.length > 0 && (
-          <p className="text-sm text-gray-400">
-            Pronounced: <span className="text-gray-200">{allReadings.join(", ")}</span>
-          </p>
+        {(content.onyomi ?? []).length > 0 && (
+          <div className="space-y-1.5 w-full">
+            <p className="text-xs text-gray-600 uppercase tracking-wide">On'yomi</p>
+            {(content.onyomi ?? []).map((r) => (
+              <div key={r} className="flex items-center gap-2 justify-center">
+                <AudioButton text={r} />
+                <span className="jp-char text-gray-200">{r}</span>
+                <span className="text-gray-500 text-sm">{r.toLowerCase()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {(content.kunyomi ?? []).length > 0 && (
+          <div className="space-y-1.5 w-full">
+            <p className="text-xs text-gray-600 uppercase tracking-wide">Kun'yomi</p>
+            {(content.kunyomi ?? []).map((r) => (
+              <div key={r} className="flex items-center gap-2 justify-center">
+                <AudioButton text={r} />
+                <span className="jp-char text-gray-200">{r}</span>
+              </div>
+            ))}
+          </div>
         )}
         {exampleWords && Object.keys(exampleWords).length > 0 && (
-          <div className="text-sm text-gray-500 space-y-1 mt-1">
-            <p className="text-gray-600 text-xs uppercase tracking-wide">Common words</p>
-            {Object.entries(exampleWords).slice(0, 3).map(([jp, en]) => (
+          <div className="space-y-1.5 w-full mt-1">
+            <p className="text-gray-600 text-xs uppercase tracking-wide">Words</p>
+            {Object.entries(exampleWords).map(([jp, en]) => (
               <div key={jp} className="flex items-center gap-2 justify-center">
+                <AudioButton text={jp} />
                 <span className="jp-char text-gray-300">{jp}</span>
                 <span className="text-gray-500">·</span>
-                <span className="text-gray-400">{en}</span>
+                <span className="text-gray-400 text-sm">{en}</span>
               </div>
             ))}
           </div>
         )}
         {content.mnemonicHint && (
-          <p className="text-xs text-gray-600 max-w-xs italic">{content.mnemonicHint}</p>
+          <p className="text-xs text-gray-600 max-w-xs italic mt-1">{content.mnemonicHint}</p>
         )}
       </div>
     );
@@ -341,6 +368,8 @@ export default function LessonPage() {
   const [finalResults, setFinalResults] = useState<FinalResult | null>(null);
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   const [showDoneDialog, setShowDoneDialog] = useState(false);
+  const [mcChoice, setMcChoice] = useState<string | null>(null);
+  const [mcCorrect, setMcCorrect] = useState<boolean | null>(null);
   const startTime = useRef(Date.now());
 
   useEffect(() => {
@@ -381,6 +410,8 @@ export default function LessonPage() {
 
   function handleAnswer(correct: boolean) {
     if (!currentItem || !lesson) return;
+    setMcChoice(null);
+    setMcCorrect(null);
     submitReview(currentItem, correct ? 5 : 1);
 
     const newCorrectCount = correctCount + (correct ? 1 : 0);
@@ -479,6 +510,20 @@ export default function LessonPage() {
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
 
+  const isListeningMC = currentItem
+    ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
+    : false;
+
+  const mcChoices: string[] = (() => {
+    if (!isListeningMC || !currentItem || !lesson) return [];
+    const correctAnswer = currentItem.content?.english ?? "";
+    const others = lesson.items
+      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
+      .map((i) => i.content!.english as string);
+    const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+    return [...shuffled, correctAnswer].sort(() => Math.random() - 0.5);
+  })();
+
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center px-4 pt-10 pb-8 gap-4">
       {showDoneDialog && (
@@ -510,7 +555,7 @@ export default function LessonPage() {
         <div className="flex justify-between items-center mb-2 text-xs text-gray-600">
           <span>{currentIndex + 1} / {totalUnanswered}</span>
           <div className="flex items-center gap-2">
-            {currentItem && <MasteryBadge review={currentItem.review} />}
+            {currentItem && <MasteryBar review={currentItem.review} />}
             <span className="capitalize">{currentItem?.contentType.toLowerCase()}</span>
           </div>
           <button
@@ -548,38 +593,86 @@ export default function LessonPage() {
             {currentItem && <CardFront item={currentItem} />}
           </div>
 
-          <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
-            {revealed && currentItem
-              ? <CardBack item={currentItem} />
-              : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
-            }
-          </div>
-
-          <div className="flex gap-3 w-full max-w-sm">
-            {!revealed ? (
-              <button
-                onClick={() => setRevealed(true)}
-                className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium text-base transition-colors"
-              >
-                Reveal
-              </button>
-            ) : (
-              <>
+          {isListeningMC ? (
+            <div className="w-full max-w-sm space-y-2">
+              {mcChoices.map((choice) => {
+                const isCorrectAnswer = choice === (currentItem?.content?.english ?? "");
+                const isSelected = mcChoice === choice;
+                let btnClass = "w-full py-3 px-4 rounded-xl text-sm font-medium text-left border transition-colors ";
+                if (!mcChoice) {
+                  btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800";
+                } else if (isSelected && mcCorrect) {
+                  btnClass += "bg-green-900/50 border-green-700 text-green-300";
+                } else if (isSelected && !mcCorrect) {
+                  btnClass += "bg-red-900/50 border-red-700 text-red-300";
+                } else if (!isSelected && mcChoice && isCorrectAnswer) {
+                  btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
+                } else {
+                  btnClass += "bg-gray-900 border-white/5 text-gray-500";
+                }
+                return (
+                  <button
+                    key={choice}
+                    disabled={!!mcChoice}
+                    className={btnClass}
+                    onClick={() => {
+                      if (mcChoice) return;
+                      const correct = isCorrectAnswer;
+                      setMcChoice(choice);
+                      setMcCorrect(correct);
+                      if (correct) {
+                        setTimeout(() => handleAnswer(true), 800);
+                      }
+                    }}
+                  >
+                    {choice}
+                  </button>
+                );
+              })}
+              {mcChoice && !mcCorrect && (
                 <button
                   onClick={() => handleAnswer(false)}
-                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-red-900/50 text-red-400 rounded-xl font-medium text-base transition-colors"
+                  className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-colors mt-1"
                 >
-                  Again ✗
+                  Continue
                 </button>
-                <button
-                  onClick={() => handleAnswer(true)}
-                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-green-900/50 text-green-400 rounded-xl font-medium text-base transition-colors"
-                >
-                  Got it ✓
-                </button>
-              </>
-            )}
-          </div>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
+                {revealed && currentItem
+                  ? <CardBack item={currentItem} />
+                  : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
+                }
+              </div>
+              <div className="flex gap-3 w-full max-w-sm">
+                {!revealed ? (
+                  <button
+                    onClick={() => setRevealed(true)}
+                    className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium text-base transition-colors"
+                  >
+                    Reveal
+                  </button>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => handleAnswer(false)}
+                      className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-red-900/50 text-red-400 rounded-xl font-medium text-base transition-colors"
+                    >
+                      Again ✗
+                    </button>
+                    <button
+                      onClick={() => handleAnswer(true)}
+                      className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-green-900/50 text-green-400 rounded-xl font-medium text-base transition-colors"
+                    >
+                      Got it ✓
+                    </button>
+                  </>
+                )}
+              </div>
+            </>
+          )}
         </>
       )}
     </div>
