@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
-// Override gray with blue-tinted slate palette — research shows blue-gray backgrounds
-// improve focus and memory retention compared to neutral or warm-gray backgrounds.
+// Override gray with blue-navy palette — dark values are visibly blue to improve
+// focus and reduce eye strain compared to pure-black backgrounds.
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -12,7 +12,9 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Blue-tinted grays (slate palette) for all existing gray-* classes
+        // Blue-navy grays: 700–950 are noticeably blue-dark (not pure black).
+        // At these hex values the blue channel is 2–4x the red channel,
+        // giving a visible navy tint even at low lightness.
         gray: {
           50:  "#f8fafc",
           100: "#f1f5f9",
@@ -21,10 +23,10 @@ const config: Config = {
           400: "#94a3b8",
           500: "#64748b",
           600: "#475569",
-          700: "#334155",
-          800: "#1e293b",
-          900: "#0f172a",
-          950: "#020617",
+          700: "#253548",
+          800: "#152233",
+          900: "#0c1929",
+          950: "#060e1c",
         },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
