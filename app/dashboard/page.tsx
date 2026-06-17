@@ -66,6 +66,28 @@ export default async function DashboardPage() {
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬" },
   ];
 
+  // Weighted travel readiness score (hiragana+katakana are gatekeepers, vocab+phrases drive fluency)
+  const masteredByStage = (stage: string, total: number) => {
+    const p = progressMap[stage];
+    return Math.min(1, (p?.masteredItems ?? 0) / total);
+  };
+  const travelScore = Math.round(
+    masteredByStage("HIRAGANA", 71) * 25 +
+    masteredByStage("KATAKANA", 69) * 20 +
+    masteredByStage("CORE_VOCAB", 2000) * 30 +
+    masteredByStage("DAILY_CONVERSATION", 1000) * 20 +
+    masteredByStage("ESSENTIAL_KANJI", 1500) * 5
+  );
+
+  const travelLevel =
+    travelScore >= 90 ? { name: "Near-Native Traveler", icon: "🏯", color: "text-yellow-300", bar: "from-yellow-500 to-yellow-300", description: "Japan is practically your second home. You can handle any situation, read most signs, and connect deeply with locals." } :
+    travelScore >= 70 ? { name: "Seasoned Traveler", icon: "✈️", color: "text-green-300", bar: "from-green-500 to-green-300", description: "You'll move through Japan with ease — trains, restaurants, shops, and conversations hold no mystery." } :
+    travelScore >= 50 ? { name: "Confident Explorer", icon: "🗺️", color: "text-blue-300", bar: "from-blue-500 to-blue-300", description: "You can navigate most everyday situations. Getting around, ordering food, and asking for help are all within reach." } :
+    travelScore >= 30 ? { name: "Tourist Ready", icon: "🎌", color: "text-purple-300", bar: "from-purple-500 to-purple-300", description: "You're prepared for a comfortable trip. You can read menus, ask directions, and handle common tourist situations." } :
+    travelScore >= 15 ? { name: "Survival Traveler", icon: "🧭", color: "text-orange-300", bar: "from-orange-500 to-orange-300", description: "You can decode hiragana and katakana signs and manage basic exchanges. Tourist hotspots will be manageable." } :
+    travelScore >= 5  ? { name: "Phonetic Foundation", icon: "📖", color: "text-red-300", bar: "from-red-500 to-red-300", description: "You know some characters and basics. Japan is exciting but you'll rely on translation apps for most things." } :
+                        { name: "Complete Beginner", icon: "🌱", color: "text-gray-400", bar: "from-gray-600 to-gray-400", description: "Your journey is just starting! Keep at it — even a little Japanese goes a long way when visiting Japan." };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -143,7 +165,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-5">
-        <h2 className="font-semibold">Progress</h2>
+        <h2 className="font-semibold">Mastery Progress</h2>
         {progressItems.map((item) => {
           const p = progressMap[item.stage];
           const mastered = p?.masteredItems ?? 0;
@@ -168,6 +190,23 @@ export default async function DashboardPage() {
             </div>
           );
         })}
+      </div>
+      <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-4">
+        <h2 className="font-semibold">Travel Readiness</h2>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">{travelLevel.icon}</span>
+          <div>
+            <div className={`font-semibold text-base ${travelLevel.color}`}>{travelLevel.name}</div>
+            <div className="text-gray-400 text-xs mt-0.5">{travelScore}% travel-ready</div>
+          </div>
+        </div>
+        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className={`h-full bg-gradient-to-r ${travelLevel.bar} rounded-full transition-all duration-500`}
+            style={{ width: `${travelScore}%` }}
+          />
+        </div>
+        <p className="text-gray-400 text-sm leading-relaxed">{travelLevel.description}</p>
       </div>
     </div>
   );
