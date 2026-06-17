@@ -27,6 +27,15 @@ interface LessonItem {
     exampleSentenceJa?: string;
     exampleSentenceEn?: string;
     scenario?: string;
+    isCulturalTip?: boolean;
+    title?: string;
+    body?: string;
+    category?: string;
+  } | null;
+  review: {
+    srsLevel: string;
+    totalAttempts: number;
+    correctCount: number;
   } | null;
 }
 
@@ -39,6 +48,25 @@ interface FinalResult {
   correct: number;
   total: number;
   accuracy: number;
+}
+
+const SRS_DISPLAY: Record<string, { label: string; color: string }> = {
+  NEW:      { label: "New",      color: "text-gray-500" },
+  LEARNING: { label: "Learning", color: "text-blue-400" },
+  FAMILIAR: { label: "Familiar", color: "text-yellow-400" },
+  STRONG:   { label: "Strong",   color: "text-green-400" },
+  MASTERED: { label: "Mastered", color: "text-purple-400" },
+};
+
+const CATEGORY_LABELS: Record<string, string> = {
+  etiquette:      "Etiquette",
+  communication:  "Communication",
+  "daily-life":   "Daily Life",
+  travel:         "Travel",
+};
+
+function isCulturalTipItem(item: LessonItem): boolean {
+  return !!item.content?.isCulturalTip;
 }
 
 function speak(text: string, lang = "ja-JP") {
@@ -63,6 +91,12 @@ function AudioButton({ text, lang = "ja-JP", size = "sm" }: { text: string; lang
   );
 }
 
+function MasteryBadge({ review }: { review: LessonItem["review"] }) {
+  const level = review?.srsLevel ?? "NEW";
+  const display = SRS_DISPLAY[level] ?? SRS_DISPLAY.NEW;
+  return <span className={`text-xs ${display.color}`}>{display.label}</span>;
+}
+
 function isE2J(item: LessonItem) {
   return item.exerciseType === "ENGLISH_TO_JAPANESE";
 }
@@ -80,7 +114,7 @@ function getJapaneseText(item: LessonItem): string {
   return c.japanese ?? c.kana ?? "";
 }
 
-function CardFront({ item, onListenPlay }: { item: LessonItem; onListenPlay?: () => void }) {
+function CardFront({ item }: { item: LessonItem }) {
   const { content, contentType } = item;
   if (!content) return <p className="text-gray-400">No content</p>;
 
@@ -90,7 +124,7 @@ function CardFront({ item, onListenPlay }: { item: LessonItem; onListenPlay?: ()
       <div className="flex flex-col items-center gap-4">
         <div className="text-gray-400 text-sm">Listen and identify</div>
         <button
-          onClick={() => { speak(text); onListenPlay?.(); }}
+          onClick={() => speak(text)}
           className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 text-3xl flex items-center justify-center transition-colors"
         >
           ▶
@@ -250,6 +284,21 @@ function CardBack({ item }: { item: LessonItem }) {
   );
 }
 
+function CulturalTipCard({ item }: { item: LessonItem }) {
+  const { content } = item;
+  if (!content) return null;
+  const category = CATEGORY_LABELS[content.category ?? ""] ?? "Culture";
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      <p className="text-xs text-amber-600 uppercase tracking-widest font-medium">
+        Japan Tip · {category}
+      </p>
+      <h3 className="text-xl font-semibold text-white">{content.title}</h3>
+      <p className="text-gray-300 text-sm leading-relaxed">{content.body}</p>
+    </div>
+  );
+}
+
 function Spinner() {
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4">
@@ -270,6 +319,7 @@ export default function LessonPage() {
   const [answeredCount, setAnsweredCount] = useState(0);
   const [finalResults, setFinalResults] = useState<FinalResult | null>(null);
   const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [showDoneDialog, setShowDoneDialog] = useState(false);
   const startTime = useRef(Date.now());
 
   useEffect(() => {
@@ -279,7 +329,6 @@ export default function LessonPage() {
   }, []);
 
   useEffect(() => {
-    // Register service worker
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch(() => {});
     }
@@ -301,6 +350,7 @@ export default function LessonPage() {
   const totalUnanswered = unansweredItems.length;
 
   function submitReview(item: LessonItem, quality: 1 | 5) {
+    if (isCulturalTipItem(item)) return;
     fetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -336,6 +386,18 @@ export default function LessonPage() {
         }),
       });
     }
+  }
+
+  function handleEarlyExit() {
+    const durationSeconds = Math.round((Date.now() - startTime.current) / 1000);
+    if (durationSeconds > 10) {
+      fetch(`/api/lesson/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationSeconds }),
+      });
+    }
+    window.location.href = "/dashboard";
   }
 
   if (loading) return <Spinner />;
@@ -394,14 +456,48 @@ export default function LessonPage() {
   }
 
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
+  const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center px-4 pt-10 pb-8 gap-4">
+      {showDoneDialog && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm">
+            <h2 className="text-lg font-semibold text-white mb-2">Stop studying?</h2>
+            <p className="text-gray-400 text-sm mb-6">
+              Your progress has been saved. You can come back and continue any time.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDoneDialog(false)}
+                className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-colors"
+              >
+                Keep going
+              </button>
+              <button
+                onClick={handleEarlyExit}
+                className="flex-1 py-3 bg-white hover:bg-gray-100 text-gray-950 rounded-xl text-sm font-semibold transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="w-full max-w-sm">
         <div className="flex justify-between items-center mb-2 text-xs text-gray-600">
           <span>{currentIndex + 1} / {totalUnanswered}</span>
-          <span className="capitalize">{currentItem?.contentType.toLowerCase()}</span>
-          <a href="/dashboard" className="text-gray-600 hover:text-gray-400 transition-colors">Exit</a>
+          <div className="flex items-center gap-2">
+            {currentItem && <MasteryBadge review={currentItem.review} />}
+            <span className="capitalize">{currentItem?.contentType.toLowerCase()}</span>
+          </div>
+          <button
+            onClick={() => setShowDoneDialog(true)}
+            className="text-gray-600 hover:text-gray-400 transition-colors"
+          >
+            Done
+          </button>
         </div>
         <div className="w-full bg-gray-800 rounded-full h-1">
           <div
@@ -411,45 +507,60 @@ export default function LessonPage() {
         </div>
       </div>
 
-      <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center min-h-56 gap-4">
-        {currentItem && <CardFront item={currentItem} />}
-      </div>
-
-      <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
-        {revealed && currentItem
-          ? <CardBack item={currentItem} />
-          : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
-        }
-      </div>
-
-      <div className="flex gap-3 w-full max-w-sm">
-        {!revealed ? (
-          <button
-            onClick={() => {
-              setRevealed(true);
-              if (currentItem) speak(getJapaneseText(currentItem));
-            }}
-            className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium text-base transition-colors"
-          >
-            Reveal
-          </button>
-        ) : (
-          <>
-            <button
-              onClick={() => handleAnswer(false)}
-              className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-red-900/50 text-red-400 rounded-xl font-medium text-base transition-colors"
-            >
-              Again ✗
-            </button>
+      {isCultural && currentItem ? (
+        <>
+          <div className="w-full max-w-sm bg-gray-900 border border-amber-900/30 rounded-2xl p-8 flex flex-col items-start justify-center gap-4 min-h-56">
+            <CulturalTipCard item={currentItem} />
+          </div>
+          <div className="w-full max-w-sm">
             <button
               onClick={() => handleAnswer(true)}
-              className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-green-900/50 text-green-400 rounded-xl font-medium text-base transition-colors"
+              className="w-full py-4 bg-white hover:bg-gray-100 text-gray-950 rounded-xl font-semibold text-base transition-colors"
             >
-              Got it ✓
+              Got it
             </button>
-          </>
-        )}
-      </div>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center min-h-56 gap-4">
+            {currentItem && <CardFront item={currentItem} />}
+          </div>
+
+          <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
+            {revealed && currentItem
+              ? <CardBack item={currentItem} />
+              : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
+            }
+          </div>
+
+          <div className="flex gap-3 w-full max-w-sm">
+            {!revealed ? (
+              <button
+                onClick={() => setRevealed(true)}
+                className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium text-base transition-colors"
+              >
+                Reveal
+              </button>
+            ) : (
+              <>
+                <button
+                  onClick={() => handleAnswer(false)}
+                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-red-900/50 text-red-400 rounded-xl font-medium text-base transition-colors"
+                >
+                  Again ✗
+                </button>
+                <button
+                  onClick={() => handleAnswer(true)}
+                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-green-900/50 text-green-400 rounded-xl font-medium text-base transition-colors"
+                >
+                  Got it ✓
+                </button>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

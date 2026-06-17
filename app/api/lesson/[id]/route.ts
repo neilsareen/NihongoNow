@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
+import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 
 export async function GET(
   _request: Request,
@@ -23,7 +24,12 @@ export async function GET(
   if (!lesson) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (lesson.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const itemsByType = lesson.items.reduce<Record<string, typeof lesson.items>>(
+  const culturalTipMap = new Map(CULTURAL_TIPS.map((t) => [t.id, t]));
+
+  const realItems = lesson.items.filter((i) => !i.contentId.startsWith("cultural-"));
+  const culturalItems = lesson.items.filter((i) => i.contentId.startsWith("cultural-"));
+
+  const itemsByType = realItems.reduce<Record<string, typeof realItems>>(
     (acc, item) => {
       (acc[item.contentType] ??= []).push(item);
       return acc;
@@ -37,7 +43,9 @@ export async function GET(
   const vocabularyIds = (itemsByType[ContentType.VOCABULARY] ?? []).map((i) => i.contentId);
   const phraseIds = (itemsByType[ContentType.PHRASE] ?? []).map((i) => i.contentId);
 
-  const [hiragana, katakana, kanji, vocabulary, phrases] = await Promise.all([
+  const allRealContentIds = realItems.map((i) => i.contentId);
+
+  const [hiragana, katakana, kanji, vocabulary, phrases, reviews] = await Promise.all([
     hiraganaIds.length
       ? prisma.japaneseCharacter.findMany({ where: { id: { in: hiraganaIds } } })
       : [],
@@ -47,6 +55,18 @@ export async function GET(
     kanjiIds.length ? prisma.kanji.findMany({ where: { id: { in: kanjiIds } } }) : [],
     vocabularyIds.length ? prisma.vocabulary.findMany({ where: { id: { in: vocabularyIds } } }) : [],
     phraseIds.length ? prisma.phrase.findMany({ where: { id: { in: phraseIds } } }) : [],
+    allRealContentIds.length
+      ? prisma.review.findMany({
+          where: { userId: user.id, contentId: { in: allRealContentIds } },
+          select: {
+            contentId: true,
+            contentType: true,
+            srsLevel: true,
+            totalAttempts: true,
+            correctCount: true,
+          },
+        })
+      : [],
   ]);
 
   const contentMap = new Map<string, unknown>();
@@ -55,10 +75,24 @@ export async function GET(
   for (const c of vocabulary) contentMap.set(c.id, c);
   for (const c of phrases) contentMap.set(c.id, c);
 
-  const enrichedItems = lesson.items.map((item) => ({
-    ...item,
-    content: contentMap.get(item.contentId) ?? null,
-  }));
+  for (const item of culturalItems) {
+    const tip = culturalTipMap.get(item.contentId);
+    if (tip) contentMap.set(item.contentId, { isCulturalTip: true, ...tip });
+  }
+
+  const reviewMap = new Map<string, (typeof reviews)[0]>();
+  for (const r of reviews) reviewMap.set(`${r.contentType}:${r.contentId}`, r);
+
+  const enrichedItems = lesson.items.map((item) => {
+    const r = reviewMap.get(`${item.contentType}:${item.contentId}`) ?? null;
+    return {
+      ...item,
+      content: contentMap.get(item.contentId) ?? null,
+      review: r
+        ? { srsLevel: r.srsLevel, totalAttempts: r.totalAttempts, correctCount: r.correctCount }
+        : null,
+    };
+  });
 
   return NextResponse.json({ ...lesson, items: enrichedItems });
 }
