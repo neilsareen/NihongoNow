@@ -50,6 +50,22 @@ interface FinalResult {
   accuracy: number;
 }
 
+// Pick Japanese voices once, with variety across gender/accent
+let _jpVoices: SpeechSynthesisVoice[] = [];
+function loadJpVoices() {
+  if (typeof window === "undefined") return;
+  const all = window.speechSynthesis.getVoices();
+  const ja = all.filter((v) => v.lang.startsWith("ja"));
+  _jpVoices = ja.length > 0 ? ja : [];
+}
+if (typeof window !== "undefined") {
+  window.speechSynthesis.addEventListener("voiceschanged", loadJpVoices);
+  loadJpVoices();
+}
+
+// Index advances per speak() call to cycle through available voices
+let _voiceIdx = 0;
+
 const SRS_DISPLAY: Record<string, { label: string; color: string }> = {
   NEW:      { label: "New",      color: "text-gray-500" },
   LEARNING: { label: "Learning", color: "text-blue-400" },
@@ -74,7 +90,12 @@ function speak(text: string, lang = "ja-JP") {
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;
-  u.rate = 0.9;
+  u.rate = 0.85;
+  if (_jpVoices.length > 0) {
+    // Cycle through available Japanese voices for variety
+    u.voice = _jpVoices[_voiceIdx % _jpVoices.length];
+    _voiceIdx++;
+  }
   window.speechSynthesis.speak(u);
 }
 

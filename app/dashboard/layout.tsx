@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { PWAInstallBanner } from "./pwa-banner";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -25,12 +26,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link href="/review/weakest" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5">
               Review
             </Link>
+            <Link href="/practice" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5">
+              Practice
+            </Link>
             <Link href="/settings" className="text-xs text-gray-400 hover:text-white transition-colors px-2.5 py-1.5 rounded-md hover:bg-white/5">
               Settings
             </Link>
           </div>
         </div>
       </nav>
+      <PWAInstallBanner />
       <main className="max-w-lg mx-auto px-4 pt-6 pb-12 safe-top">{children}</main>
     </div>
   );
