@@ -76,10 +76,11 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { completedAt, xpEarned, accuracy } = body as {
+  const { completedAt, xpEarned, accuracy, durationSeconds } = body as {
     completedAt?: string;
     xpEarned?: number;
     accuracy?: number;
+    durationSeconds?: number;
   };
 
   const updated = await prisma.lesson.update({
@@ -88,8 +89,20 @@ export async function PATCH(
       ...(completedAt !== undefined && { completedAt: new Date(completedAt) }),
       ...(xpEarned !== undefined && { xpEarned }),
       ...(accuracy !== undefined && { accuracy }),
+      ...(durationSeconds !== undefined && { durationSeconds }),
     },
   });
+
+  if (durationSeconds !== undefined && durationSeconds > 0) {
+    await prisma.userStatistics.upsert({
+      where: { userId: user.id },
+      create: { userId: user.id, totalStudyTime: durationSeconds, lessonsCompleted: 1 },
+      update: {
+        totalStudyTime: { increment: durationSeconds },
+        ...(completedAt !== undefined && { lessonsCompleted: { increment: 1 } }),
+      },
+    });
+  }
 
   return NextResponse.json(updated);
 }

@@ -2,81 +2,58 @@ import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center px-4">
-      <div className="max-w-2xl w-full text-center space-y-8">
-        <div className="space-y-2">
-          <div className="text-7xl font-bold text-white jp-char">日本語</div>
-          <h1 className="text-4xl font-bold text-white tracking-tight">
-            Nihongo Now
-          </h1>
-          <p className="text-xl text-purple-200">
-            Practical Japanese for life in Japan
-          </p>
-        </div>
+    <main className="min-h-screen bg-gray-950 text-white flex flex-col">
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center max-w-xl mx-auto w-full">
+        <div className="mb-2 text-5xl jp-char font-bold text-white/90 tracking-tight">日本語</div>
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Nihongo Now</h1>
+        <p className="text-gray-300 text-base sm:text-lg mb-1">
+          Built for adults who want to navigate Japan with confidence — not just survive it.
+        </p>
+        <p className="text-gray-500 text-sm mb-8">
+          No prior knowledge needed. 10–15 minutes a day.
+        </p>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
-          {[
-            {
-              icon: "🎯",
-              title: "Practical Focus",
-              desc: "Learn what you actually need to live in Japan — signs, menus, trains, daily life",
-            },
-            {
-              icon: "🧠",
-              title: "Smart Repetition",
-              desc: "Spaced repetition adapts to you, spending more time on what you find difficult",
-            },
-            {
-              icon: "📱",
-              title: "Works Anywhere",
-              desc: "Mobile-first design, installable as an app, works offline",
-            },
-          ].map((f) => (
-            <div
-              key={f.title}
-              className="bg-white/10 backdrop-blur rounded-xl p-4 text-white"
-            >
-              <div className="text-2xl mb-2">{f.icon}</div>
-              <div className="font-semibold">{f.title}</div>
-              <div className="text-sm text-purple-200 mt-1">{f.desc}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          {[
-            { label: "Hiragana", char: "あ" },
-            { label: "Katakana", char: "ア" },
-            { label: "Kanji", char: "漢" },
-            { label: "Phrases", char: "話" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="bg-white/5 rounded-xl p-3 border border-white/10"
-            >
-              <div className="text-3xl jp-char text-purple-300">{item.char}</div>
-              <div className="text-xs text-gray-400 mt-1">{item.label}</div>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-3 w-full justify-center mb-10">
           <Link
             href="/signup"
-            className="bg-purple-600 hover:bg-purple-500 text-white font-semibold py-3 px-8 rounded-xl transition-colors text-lg"
+            className="bg-white text-gray-950 font-semibold py-3 px-8 rounded-lg hover:bg-gray-100 transition-colors text-base"
           >
             Start Learning Free
           </Link>
           <Link
             href="/login"
-            className="bg-white/10 hover:bg-white/20 text-white font-semibold py-3 px-8 rounded-xl transition-colors text-lg backdrop-blur"
+            className="border border-white/20 text-white font-semibold py-3 px-8 rounded-lg hover:bg-white/5 transition-colors text-base"
           >
             Sign In
           </Link>
         </div>
 
-        <p className="text-purple-300/60 text-sm">
-          Designed for adults planning to live in Japan · No prior knowledge needed
+        <div className="w-full border-t border-white/5 pt-8 space-y-3 text-left">
+          {[
+            {
+              title: "Designed for travelers",
+              desc: "Every lesson is built around what you'll actually encounter — train stations, restaurants, shops, emergencies. You'll learn to read signs, order food, and ask for help.",
+            },
+            {
+              title: "Learns with you",
+              desc: "Spaced repetition shows you what you're forgetting before you forget it. Your session adapts daily based on what needs the most practice.",
+            },
+            {
+              title: "Tracks your readiness",
+              desc: "Your Travel Readiness score shows exactly where you are on the journey from complete beginner to confident Japan traveler.",
+            },
+          ].map((f) => (
+            <div key={f.title} className="py-3 border-b border-white/5 last:border-0">
+              <div className="font-medium text-white text-sm mb-1">{f.title}</div>
+              <div className="text-gray-400 text-sm leading-relaxed">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="py-6 text-center border-t border-white/5">
+        <p className="text-gray-600 text-xs">
+          Focused on travelers & expats · Covers hiragana, katakana, kanji, vocabulary & phrases
         </p>
       </div>
     </main>

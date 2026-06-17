@@ -61,3 +61,7 @@
 .jp-char {
   font-family: "Noto Sans JP", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
 }
+
+.safe-top {
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+}

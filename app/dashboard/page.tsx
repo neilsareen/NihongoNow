@@ -4,26 +4,27 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 
 async function getDashboardData(userId: string) {
-  const [profile, stats, progress, reviewsDue, inProgressLesson] = await Promise.all([
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [profile, stats, progress, reviewsDue, inProgressLesson, todayStudy] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
     prisma.review.count({
-      where: {
-        userId,
-        nextReviewAt: { lte: new Date() },
-        srsLevel: { not: "MASTERED" },
-      },
+      where: { userId, nextReviewAt: { lte: new Date() }, srsLevel: { not: "MASTERED" } },
     }),
     prisma.lesson.findFirst({
       where: { userId, completedAt: null },
       orderBy: { generatedAt: "desc" },
-      include: {
-        items: { select: { answeredAt: true }, orderBy: { displayOrder: "asc" } },
-      },
+      include: { items: { select: { answeredAt: true }, orderBy: { displayOrder: "asc" } } },
+    }),
+    prisma.lesson.aggregate({
+      where: { userId, completedAt: { gte: todayStart }, durationSeconds: { not: null } },
+      _sum: { durationSeconds: true },
     }),
   ]);
-  return { profile, stats, progress, reviewsDue, inProgressLesson };
+  return { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy };
 }
 
 function getGreeting() {
@@ -35,28 +36,24 @@ function getGreeting() {
 
 export default async function DashboardPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) redirect("/api/auth/signout");
 
-  const { profile, stats, progress, reviewsDue, inProgressLesson } = await getDashboardData(
-    user.id
-  );
-
+  const { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy } = await getDashboardData(user.id);
   if (!profile) redirect("/onboarding");
 
-  const accuracy =
-    stats && stats.totalReviews > 0
-      ? Math.round((stats.correctReviews / stats.totalReviews) * 100)
-      : 0;
+  const accuracy = stats && stats.totalReviews > 0
+    ? Math.round((stats.correctReviews / stats.totalReviews) * 100) : 0;
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
 
   const answeredCount = inProgressLesson?.items.filter((i) => i.answeredAt !== null).length ?? 0;
   const unansweredCount = inProgressLesson?.items.filter((i) => i.answeredAt === null).length ?? 0;
   const showContinue = answeredCount > 0 && unansweredCount > 0;
+
+  const todayMinutes = Math.round((todayStudy._sum.durationSeconds ?? 0) / 60);
+  const goalMinutes = profile.studyGoalMinutes;
+  const goalPct = Math.min(100, goalMinutes > 0 ? Math.round((todayMinutes / goalMinutes) * 100) : 0);
 
   const progressItems = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ" },
@@ -66,7 +63,6 @@ export default async function DashboardPage() {
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬" },
   ];
 
-  // Weighted travel readiness score (hiragana+katakana are gatekeepers, vocab+phrases drive fluency)
   const masteredByStage = (stage: string, total: number) => {
     const p = progressMap[stage];
     return Math.min(1, (p?.masteredItems ?? 0) / total);
@@ -89,101 +85,102 @@ export default async function DashboardPage() {
                         { name: "Complete Beginner", icon: "🌱", color: "text-gray-400", bar: "from-gray-600 to-gray-400", description: "Your journey is just starting! Keep at it — even a little Japanese goes a long way when visiting Japan." };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Daily goal — compact strip */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-white rounded-full transition-all duration-500"
+            style={{ width: `${goalPct}%` }}
+          />
+        </div>
+        <span className="text-xs text-gray-500 shrink-0">
+          {todayMinutes} / {goalMinutes} min today
+        </span>
+      </div>
+
+      {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl font-semibold">
             {getGreeting()}, {profile.displayName || "Learner"}
           </h1>
-          <p className="text-gray-400 mt-1 text-sm">
+          <p className="text-gray-500 mt-0.5 text-sm">
             {reviewsDue > 0
-              ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due today`
-              : "You're all caught up on reviews"}
+              ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due`
+              : "All caught up on reviews"}
           </p>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-bold text-orange-400">
-            🔥 {profile.currentStreak}
-          </div>
-          <div className="text-xs text-gray-500">day streak</div>
+          <div className="text-xl font-bold text-orange-400">🔥 {profile.currentStreak}</div>
+          <div className="text-xs text-gray-600">day streak</div>
         </div>
       </div>
 
-      <div className="bg-gray-900 border border-white/10 rounded-2xl px-5 py-3 flex items-center justify-between text-sm">
-        <span className="text-gray-400">Daily goal</span>
-        <span className="text-gray-300">0 min studied / {profile.studyGoalMinutes} min goal</span>
-      </div>
-
+      {/* Lesson CTA */}
       {showContinue && inProgressLesson ? (
         <Link
           href={`/lesson/${inProgressLesson.id}`}
-          className="block bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400 rounded-2xl p-6 transition-all hover:scale-[1.01] active:scale-[0.99]"
+          className="block bg-gray-800 hover:bg-gray-750 border border-white/10 rounded-xl p-5 transition-colors"
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xl font-bold">Continue Lesson</div>
-              <div className="text-purple-200 text-sm mt-1">
-                {answeredCount} done · {unansweredCount} remaining
-              </div>
+              <div className="font-semibold text-white">Continue Lesson</div>
+              <div className="text-gray-400 text-sm mt-0.5">{answeredCount} done · {unansweredCount} remaining</div>
             </div>
-            <div className="text-4xl opacity-80">▶</div>
+            <div className="text-2xl text-gray-400">▶</div>
           </div>
         </Link>
       ) : (
         <Link
           href="/lesson"
-          className="block bg-gradient-to-r from-purple-700 to-purple-500 hover:from-purple-600 hover:to-purple-400 rounded-2xl p-6 transition-all hover:scale-[1.01] active:scale-[0.99]"
+          className="block bg-gray-800 hover:bg-gray-750 border border-white/10 rounded-xl p-5 transition-colors"
         >
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-xl font-bold">Start Today&apos;s Lesson</div>
-              <div className="text-purple-200 text-sm mt-1">
-                {reviewsDue} reviews + new content · ~{profile.studyGoalMinutes} min
-              </div>
+              <div className="font-semibold text-white">Start Today&apos;s Lesson</div>
+              <div className="text-gray-400 text-sm mt-0.5">{reviewsDue} reviews + new content</div>
             </div>
-            <div className="text-4xl opacity-80">▶</div>
+            <div className="text-2xl text-gray-400">▶</div>
           </div>
         </Link>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      {/* Stats row */}
+      <div className="grid grid-cols-4 gap-2">
         {[
           { label: "XP", value: profile.xp.toLocaleString(), icon: "⚡" },
           { label: "Level", value: profile.level, icon: "🎖️" },
           { label: "Accuracy", value: `${accuracy}%`, icon: "🎯" },
           { label: "Due", value: reviewsDue, icon: "📚" },
         ].map((s) => (
-          <div
-            key={s.label}
-            className="bg-gray-900 border border-white/10 rounded-xl p-4"
-          >
-            <div className="text-xl mb-1">{s.icon}</div>
-            <div className="text-2xl font-bold">{s.value}</div>
-            <div className="text-gray-500 text-xs">{s.label}</div>
+          <div key={s.label} className="bg-gray-900 border border-white/10 rounded-xl p-3 text-center">
+            <div className="text-base mb-0.5">{s.icon}</div>
+            <div className="text-lg font-bold">{s.value}</div>
+            <div className="text-gray-600 text-xs">{s.label}</div>
           </div>
         ))}
       </div>
 
-      <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-5">
-        <h2 className="font-semibold">Mastery Progress</h2>
+      {/* Mastery Progress */}
+      <div className="bg-gray-900 border border-white/10 rounded-xl p-5 space-y-4">
+        <h2 className="font-medium text-sm text-gray-400 uppercase tracking-wide">Mastery Progress</h2>
         {progressItems.map((item) => {
           const p = progressMap[item.stage];
           const mastered = p?.masteredItems ?? 0;
           const pct = Math.min(100, Math.round((mastered / item.total) * 100));
           return (
             <div key={item.label}>
-              <div className="flex justify-between text-sm mb-1.5">
+              <div className="flex justify-between text-sm mb-1">
                 <span className="flex items-center gap-2 text-gray-300">
                   <span className="jp-char">{item.emoji}</span>
                   {item.label}
                 </span>
-                <span className="text-gray-500">
-                  {mastered}/{item.total}
-                </span>
+                <span className="text-gray-600">{mastered}/{item.total}</span>
               </div>
-              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+              <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-purple-600 to-purple-400 rounded-full transition-all duration-500"
+                  className="h-full bg-white rounded-full transition-all duration-500"
                   style={{ width: `${pct}%` }}
                 />
               </div>
@@ -191,23 +188,39 @@ export default async function DashboardPage() {
           );
         })}
       </div>
-      <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-4">
-        <h2 className="font-semibold">Travel Readiness</h2>
+
+      {/* Travel Readiness */}
+      <div className="bg-gray-900 border border-white/10 rounded-xl p-5 space-y-3">
+        <h2 className="font-medium text-sm text-gray-400 uppercase tracking-wide">Travel Readiness</h2>
         <div className="flex items-center gap-3">
-          <span className="text-3xl">{travelLevel.icon}</span>
+          <span className="text-2xl">{travelLevel.icon}</span>
           <div>
-            <div className={`font-semibold text-base ${travelLevel.color}`}>{travelLevel.name}</div>
-            <div className="text-gray-400 text-xs mt-0.5">{travelScore}% travel-ready</div>
+            <div className={`font-semibold ${travelLevel.color}`}>{travelLevel.name}</div>
+            <div className="text-gray-600 text-xs">{travelScore}% travel-ready</div>
           </div>
         </div>
-        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
           <div
             className={`h-full bg-gradient-to-r ${travelLevel.bar} rounded-full transition-all duration-500`}
             style={{ width: `${travelScore}%` }}
           />
         </div>
-        <p className="text-gray-400 text-sm leading-relaxed">{travelLevel.description}</p>
+        <p className="text-gray-500 text-sm leading-relaxed">{travelLevel.description}</p>
       </div>
+
+      {/* Review weakest */}
+      <WeakestReviewButton />
     </div>
+  );
+}
+
+function WeakestReviewButton() {
+  return (
+    <Link
+      href="/review/weakest"
+      className="block text-center w-full py-3 border border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20 rounded-xl text-sm transition-colors"
+    >
+      Review my weakest items →
+    </Link>
   );
 }

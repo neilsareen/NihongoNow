@@ -7,7 +7,7 @@ interface LessonConfig {
 }
 
 const ITEMS_PER_MINUTE = 3;
-const LESSON_SIZE = 30;
+const LESSON_SIZE = 15;
 
 const EXERCISE_TYPES_BY_CONTENT: Record<ContentType, ExerciseType[]> = {
   HIRAGANA: [ExerciseType.CHARACTER_RECOGNITION, ExerciseType.CHARACTER_TO_SOUND, ExerciseType.SOUND_TO_CHARACTER, ExerciseType.MULTIPLE_CHOICE],
