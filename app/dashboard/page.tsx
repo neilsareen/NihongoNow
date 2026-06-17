@@ -93,8 +93,8 @@ export default async function DashboardPage() {
                         { name: "Complete Beginner", color: "text-gray-400", bar: "from-gray-600 to-gray-400", description: "Your journey is just starting! Keep at it — even a little Japanese goes a long way when visiting Japan." };
 
   const reviewLabel = reviewsDue > 0
-    ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due`
-    : "No reviews due · new content";
+    ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due + new content`
+    : "New content only";
 
   return (
     <div className="space-y-5">

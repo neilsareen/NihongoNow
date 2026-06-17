@@ -554,10 +554,7 @@ export default function LessonPage() {
       <div className="w-full max-w-sm">
         <div className="flex justify-between items-center mb-2 text-xs text-gray-600">
           <span>{currentIndex + 1} / {totalUnanswered}</span>
-          <div className="flex items-center gap-2">
-            {currentItem && <MasteryBar review={currentItem.review} />}
-            <span className="capitalize">{currentItem?.contentType.toLowerCase()}</span>
-          </div>
+          <span className="capitalize">{currentItem?.contentType.toLowerCase()}</span>
           <button
             onClick={() => setShowDoneDialog(true)}
             className="text-gray-600 hover:text-gray-400 transition-colors"
@@ -589,8 +586,19 @@ export default function LessonPage() {
         </>
       ) : (
         <>
-          <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center min-h-56 gap-4">
-            {currentItem && <CardFront item={currentItem} />}
+          <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center min-h-56 gap-4">
+            <div className="flex-1 flex items-center justify-center w-full">
+              {currentItem && <CardFront item={currentItem} />}
+            </div>
+            {currentItem && (
+              <div
+                className="w-full border-t border-white/5 pt-3 flex items-center gap-2"
+                title="Your mastery progress for this item: New → Learning → Familiar → Strong → Mastered"
+              >
+                <span className="text-xs text-gray-700">Mastery</span>
+                <MasteryBar review={currentItem.review} />
+              </div>
+            )}
           </div>
 
           {isListeningMC ? (
