@@ -152,18 +152,19 @@ function CardFront({ item }: { item: LessonItem }) {
   const { content, contentType } = item;
   if (!content) return <p className="text-gray-400">No content</p>;
 
-  if (isListening(item)) {
+  if (isListening(item) || item.exerciseType === "SOUND_TO_CHARACTER") {
     const text = getJapaneseText(item);
+    const label = item.exerciseType === "SOUND_TO_CHARACTER" ? "Which character is this?" : "Listen and identify";
     return (
       <div className="flex flex-col items-center gap-4">
-        <div className="text-gray-400 text-sm">Listen and identify</div>
+        <div className="text-gray-400 text-sm">{label}</div>
         <button
           onClick={() => speak(text)}
           className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 text-3xl flex items-center justify-center transition-colors"
         >
           ▶
         </button>
-        <div className="text-gray-500 text-xs">Tap to play</div>
+        <div className="text-gray-500 text-xs">Tap to replay</div>
       </div>
     );
   }
@@ -399,6 +400,19 @@ export default function LessonPage() {
   const currentItem = unansweredItems[currentIndex] ?? null;
   const totalUnanswered = unansweredItems.length;
 
+  // Auto-play audio for listening and sound-to-character cards
+  useEffect(() => {
+    if (!currentItem) return;
+    const isAudio =
+      currentItem.exerciseType === "LISTENING" ||
+      currentItem.exerciseType === "SOUND_TO_CHARACTER";
+    if (!isAudio) return;
+    const text = getJapaneseText(currentItem);
+    if (!text) return;
+    const t = setTimeout(() => speak(text), 400);
+    return () => clearTimeout(t);
+  }, [currentItem?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function submitReview(item: LessonItem, quality: 1 | 5) {
     if (isCulturalTipItem(item)) return;
     fetch("/api/review", {
@@ -510,18 +524,68 @@ export default function LessonPage() {
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
 
+  // LISTENING + vocab/phrase: hear audio, pick English meaning
   const isListeningMC = currentItem
     ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
     : false;
 
+  // SOUND_TO_CHARACTER + hiragana/katakana: hear audio, pick the character
+  const isSoundToCharMC = currentItem
+    ? currentItem.exerciseType === "SOUND_TO_CHARACTER" &&
+      (currentItem.contentType === "HIRAGANA" || currentItem.contentType === "KATAKANA")
+    : false;
+
+  // MULTIPLE_CHOICE + kanji: see kanji, pick the English meaning
+  const isKanjiMC = currentItem
+    ? currentItem.exerciseType === "MULTIPLE_CHOICE" && currentItem.contentType === "KANJI"
+    : false;
+
+  const isAnyMC = isListeningMC || isSoundToCharMC || isKanjiMC;
+
+  const mcCorrectValue: string = (() => {
+    if (!currentItem) return "";
+    if (isSoundToCharMC) return currentItem.content?.character ?? "";
+    if (isKanjiMC) return currentItem.content?.meanings?.[0] ?? "";
+    return currentItem.content?.english ?? "";
+  })();
+
   const mcChoices: string[] = (() => {
-    if (!isListeningMC || !currentItem || !lesson) return [];
-    const correctAnswer = currentItem.content?.english ?? "";
+    if (!isAnyMC || !currentItem || !lesson) return [];
+
+    if (isSoundToCharMC) {
+      const others = lesson.items
+        .filter(
+          (i) =>
+            i.id !== currentItem.id &&
+            i.contentType === currentItem.contentType &&
+            i.content?.character &&
+            i.content.character !== mcCorrectValue
+        )
+        .map((i) => i.content!.character as string);
+      const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+      return [...shuffled, mcCorrectValue].sort(() => Math.random() - 0.5);
+    }
+
+    if (isKanjiMC) {
+      const others = lesson.items
+        .filter(
+          (i) =>
+            i.id !== currentItem.id &&
+            i.contentType === "KANJI" &&
+            i.content?.meanings?.[0] &&
+            i.content.meanings[0] !== mcCorrectValue
+        )
+        .map((i) => i.content!.meanings![0] as string);
+      const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+      return [...shuffled, mcCorrectValue].sort(() => Math.random() - 0.5);
+    }
+
+    // isListeningMC: pick from English meanings of other lesson items
     const others = lesson.items
-      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
+      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== mcCorrectValue)
       .map((i) => i.content!.english as string);
     const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
-    return [...shuffled, correctAnswer].sort(() => Math.random() - 0.5);
+    return [...shuffled, mcCorrectValue].sort(() => Math.random() - 0.5);
   })();
 
   return (
@@ -598,42 +662,77 @@ export default function LessonPage() {
             {currentItem && <CardFront item={currentItem} />}
           </div>
 
-          {isListeningMC ? (
+          {isAnyMC && mcChoices.length >= 2 ? (
             <div className="w-full max-w-sm space-y-2">
-              {mcChoices.map((choice) => {
-                const isCorrectAnswer = choice === (currentItem?.content?.english ?? "");
-                const isSelected = mcChoice === choice;
-                let btnClass = "w-full py-3 px-4 rounded-xl text-sm font-medium text-left border transition-colors ";
-                if (!mcChoice) {
-                  btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800";
-                } else if (isSelected && mcCorrect) {
-                  btnClass += "bg-green-900/50 border-green-700 text-green-300";
-                } else if (isSelected && !mcCorrect) {
-                  btnClass += "bg-red-900/50 border-red-700 text-red-300";
-                } else if (!isSelected && mcChoice && isCorrectAnswer) {
-                  btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
-                } else {
-                  btnClass += "bg-gray-900 border-white/5 text-gray-500";
-                }
-                return (
-                  <button
-                    key={choice}
-                    disabled={!!mcChoice}
-                    className={btnClass}
-                    onClick={() => {
-                      if (mcChoice) return;
-                      const correct = isCorrectAnswer;
-                      setMcChoice(choice);
-                      setMcCorrect(correct);
-                      if (correct) {
-                        setTimeout(() => handleAnswer(true), 800);
-                      }
-                    }}
-                  >
-                    {choice}
-                  </button>
-                );
-              })}
+              {isSoundToCharMC ? (
+                <div className="grid grid-cols-2 gap-3">
+                  {mcChoices.map((choice) => {
+                    const isCorrectAnswer = choice === mcCorrectValue;
+                    const isSelected = mcChoice === choice;
+                    let btnClass = "py-6 rounded-xl text-4xl font-bold jp-char border transition-colors flex items-center justify-center ";
+                    if (!mcChoice) {
+                      btnClass += "bg-gray-900 border-white/10 text-white hover:bg-gray-800";
+                    } else if (isSelected && mcCorrect) {
+                      btnClass += "bg-green-900/50 border-green-700 text-green-300";
+                    } else if (isSelected && !mcCorrect) {
+                      btnClass += "bg-red-900/50 border-red-700 text-red-300";
+                    } else if (!isSelected && mcChoice && isCorrectAnswer) {
+                      btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
+                    } else {
+                      btnClass += "bg-gray-900 border-white/5 text-gray-500";
+                    }
+                    return (
+                      <button
+                        key={choice}
+                        disabled={!!mcChoice}
+                        className={btnClass}
+                        onClick={() => {
+                          if (mcChoice) return;
+                          const correct = isCorrectAnswer;
+                          setMcChoice(choice);
+                          setMcCorrect(correct);
+                          if (correct) setTimeout(() => handleAnswer(true), 800);
+                        }}
+                      >
+                        {choice}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                mcChoices.map((choice) => {
+                  const isCorrectAnswer = choice === mcCorrectValue;
+                  const isSelected = mcChoice === choice;
+                  let btnClass = "w-full py-3 px-4 rounded-xl text-sm font-medium text-left border transition-colors ";
+                  if (!mcChoice) {
+                    btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800";
+                  } else if (isSelected && mcCorrect) {
+                    btnClass += "bg-green-900/50 border-green-700 text-green-300";
+                  } else if (isSelected && !mcCorrect) {
+                    btnClass += "bg-red-900/50 border-red-700 text-red-300";
+                  } else if (!isSelected && mcChoice && isCorrectAnswer) {
+                    btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
+                  } else {
+                    btnClass += "bg-gray-900 border-white/5 text-gray-500";
+                  }
+                  return (
+                    <button
+                      key={choice}
+                      disabled={!!mcChoice}
+                      className={btnClass}
+                      onClick={() => {
+                        if (mcChoice) return;
+                        const correct = isCorrectAnswer;
+                        setMcChoice(choice);
+                        setMcCorrect(correct);
+                        if (correct) setTimeout(() => handleAnswer(true), 800);
+                      }}
+                    >
+                      {choice}
+                    </button>
+                  );
+                })
+              )}
               {mcChoice && !mcCorrect && (
                 <button
                   onClick={() => handleAnswer(false)}
