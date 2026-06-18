@@ -156,14 +156,14 @@ function CardFront({ item }: { item: LessonItem }) {
     const text = getJapaneseText(item);
     return (
       <div className="flex flex-col items-center gap-4">
-        <div className="text-gray-400 text-sm">Listen and identify</div>
+        <div className="text-gray-400 text-sm">Listen and translate</div>
         <button
           onClick={() => speak(text)}
           className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 text-3xl flex items-center justify-center transition-colors"
         >
           ▶
         </button>
-        <div className="text-gray-500 text-xs">Tap to play</div>
+        <div className="text-gray-500 text-xs">Tap to replay</div>
       </div>
     );
   }
@@ -370,6 +370,7 @@ export default function LessonPage() {
   const [showDoneDialog, setShowDoneDialog] = useState(false);
   const [mcChoice, setMcChoice] = useState<string | null>(null);
   const [mcCorrect, setMcCorrect] = useState<boolean | null>(null);
+  const [mcChoices, setMcChoices] = useState<string[]>([]);
   const startTime = useRef(Date.now());
 
   useEffect(() => {
@@ -397,6 +398,33 @@ export default function LessonPage() {
 
   const unansweredItems = lesson ? lesson.items.filter((item) => item.answeredAt === null) : [];
   const currentItem = unansweredItems[currentIndex] ?? null;
+
+  // Compute stable MC choices once per card — avoids reshuffling on every re-render
+  useEffect(() => {
+    if (!currentItem || !lesson || !isListening(currentItem) ||
+        (currentItem.contentType !== "VOCABULARY" && currentItem.contentType !== "PHRASE")) {
+      setMcChoices([]);
+      return;
+    }
+    const correctAnswer = currentItem.content?.english ?? "";
+    const others = lesson.items
+      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
+      .map((i) => i.content!.english as string);
+    const shuffled = [...others].sort(() => Math.random() - 0.5).slice(0, 3);
+    setMcChoices([...shuffled, correctAnswer].sort(() => Math.random() - 0.5));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentItem?.id]);
+
+  // Auto-play audio when a listening card becomes active
+  useEffect(() => {
+    if (!currentItem || !isListening(currentItem)) return;
+    const text = getJapaneseText(currentItem);
+    if (!text) return;
+    const timer = setTimeout(() => speak(text), 400);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentItem?.id]);
+
   const totalUnanswered = unansweredItems.length;
 
   function submitReview(item: LessonItem, quality: 1 | 5) {
@@ -513,16 +541,6 @@ export default function LessonPage() {
   const isListeningMC = currentItem
     ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
     : false;
-
-  const mcChoices: string[] = (() => {
-    if (!isListeningMC || !currentItem || !lesson) return [];
-    const correctAnswer = currentItem.content?.english ?? "";
-    const others = lesson.items
-      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
-      .map((i) => i.content!.english as string);
-    const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
-    return [...shuffled, correctAnswer].sort(() => Math.random() - 0.5);
-  })();
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center px-4 pt-10 pb-8 gap-4">

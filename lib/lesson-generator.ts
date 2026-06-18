@@ -213,7 +213,11 @@ async function getNewContent(userId: string, budget: number, weakTypes: ContentT
 function pickExerciseType(contentType: ContentType, srsLevel: string): ExerciseType {
   const types = EXERCISE_TYPES_BY_CONTENT[contentType];
   if (srsLevel === "NEW") {
-    if (contentType === ContentType.VOCABULARY || contentType === ContentType.PHRASE) return ExerciseType.ENGLISH_TO_JAPANESE;
+    if (contentType === ContentType.VOCABULARY || contentType === ContentType.PHRASE) {
+      // 1 in 3 new vocab/phrase items is a listening card so learners encounter
+      // audio challenges from the start; the rest default to English→Japanese.
+      return Math.random() < 0.33 ? ExerciseType.LISTENING : ExerciseType.ENGLISH_TO_JAPANESE;
+    }
     return types[0];
   }
   return types[Math.floor(Math.random() * types.length)];
