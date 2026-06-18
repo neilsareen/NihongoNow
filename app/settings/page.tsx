@@ -12,13 +12,17 @@ export default function SettingsPage() {
   const supabase = createClient();
 
   const [studyGoal, setStudyGoal] = useState<number | null>(null);
+  const [showRomaji, setShowRomaji] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     fetch("/api/user/profile")
       .then((r) => r.json())
-      .then((d) => setStudyGoal(d.studyGoalMinutes ?? 20));
+      .then((d) => {
+        setStudyGoal(d.studyGoalMinutes ?? 20);
+        setShowRomaji(d.showRomaji ?? true);
+      });
   }, []);
 
   async function handleGoalChange(goal: number) {
@@ -29,6 +33,20 @@ export default function SettingsPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ studyGoalMinutes: goal }),
+    });
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handleRomajiToggle(enabled: boolean) {
+    setShowRomaji(enabled);
+    setSaving(true);
+    setSaved(false);
+    await fetch("/api/user/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ showRomaji: enabled }),
     });
     setSaving(false);
     setSaved(true);
@@ -78,6 +96,41 @@ export default function SettingsPage() {
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="bg-gray-900 border border-white/10 rounded-xl p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-gray-300">Romaji Display</h2>
+            {saving && <span className="text-xs text-gray-500">Saving…</span>}
+            {saved && <span className="text-xs text-green-400">Saved ✓</span>}
+          </div>
+          <p className="text-sm text-gray-500">
+            Show romaji (English pronunciation) alongside Japanese characters. Turn this off once you&apos;re comfortable reading hiragana and katakana.
+          </p>
+          {showRomaji !== null && (
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleRomajiToggle(true)}
+                className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                  showRomaji
+                    ? "bg-purple-600 border-purple-400 text-white"
+                    : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+                }`}
+              >
+                Show romaji
+              </button>
+              <button
+                onClick={() => handleRomajiToggle(false)}
+                className={`flex-1 py-2.5 rounded-lg border text-sm font-medium transition-all ${
+                  !showRomaji
+                    ? "bg-purple-600 border-purple-400 text-white"
+                    : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
+                }`}
+              >
+                Hide romaji
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="bg-gray-900 border border-white/10 rounded-xl p-6 space-y-4">

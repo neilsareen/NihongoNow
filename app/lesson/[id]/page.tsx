@@ -148,7 +148,7 @@ function getJapaneseText(item: LessonItem): string {
   return c.japanese ?? c.kana ?? "";
 }
 
-function CardFront({ item }: { item: LessonItem }) {
+function CardFront({ item, showRomaji }: { item: LessonItem; showRomaji: boolean }) {
   const { content, contentType } = item;
   if (!content) return <p className="text-gray-400">No content</p>;
 
@@ -181,6 +181,9 @@ function CardFront({ item }: { item: LessonItem }) {
       <div className="flex flex-col items-center gap-2">
         <span className="jp-char text-6xl font-bold text-white">{content.japanese}</span>
         <span className="jp-char text-2xl text-gray-300">{content.kana}</span>
+        {showRomaji && content.romaji && (
+          <span className="text-base text-gray-500 tracking-wide">{content.romaji}</span>
+        )}
       </div>
     );
   }
@@ -188,11 +191,14 @@ function CardFront({ item }: { item: LessonItem }) {
   return (
     <div className="flex flex-col items-center gap-2">
       <span className="jp-char text-3xl font-semibold text-white text-center">{content.japanese}</span>
+      {showRomaji && content.romaji && (
+        <span className="text-sm text-gray-500 tracking-wide">{content.romaji}</span>
+      )}
     </div>
   );
 }
 
-function CardBack({ item }: { item: LessonItem }) {
+function CardBack({ item, showRomaji }: { item: LessonItem; showRomaji: boolean }) {
   const { content, contentType } = item;
   if (!content) return null;
 
@@ -207,7 +213,7 @@ function CardBack({ item }: { item: LessonItem }) {
             {content.japanese && <AudioButton text={content.japanese} />}
           </div>
           {content.kana && <p className="jp-char text-xl text-gray-300">{content.kana}</p>}
-          {content.romaji && <p className="text-lg text-gray-400">{content.romaji}</p>}
+          {showRomaji && content.romaji && <p className="text-lg text-gray-400">{content.romaji}</p>}
         </div>
       );
     }
@@ -219,7 +225,7 @@ function CardBack({ item }: { item: LessonItem }) {
             {content.japanese && <AudioButton text={content.japanese} />}
           </div>
           {content.kana && <p className="jp-char text-lg text-gray-300">{content.kana}</p>}
-          {content.romaji && <p className="text-sm text-gray-500">{content.romaji}</p>}
+          {showRomaji && content.romaji && <p className="text-sm text-gray-500">{content.romaji}</p>}
         </div>
       );
     }
@@ -229,7 +235,7 @@ function CardBack({ item }: { item: LessonItem }) {
           <p className="jp-char text-6xl font-bold text-white">{content.character}</p>
           {content.character && <AudioButton text={content.character} />}
         </div>
-        {content.romaji && <p className="text-xl text-gray-300">{content.romaji}</p>}
+        {showRomaji && content.romaji && <p className="text-xl text-gray-300">{content.romaji}</p>}
       </div>
     );
   }
@@ -238,7 +244,10 @@ function CardBack({ item }: { item: LessonItem }) {
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
-          <p className="text-2xl font-semibold text-gray-200">{content.romaji}</p>
+          {showRomaji
+            ? <p className="text-2xl font-semibold text-gray-200">{content.romaji}</p>
+            : <p className="text-sm text-gray-600 italic">Use audio to check pronunciation</p>
+          }
           {japText && <AudioButton text={japText} />}
         </div>
         {content.mnemonicHint && (
@@ -263,7 +272,7 @@ function CardBack({ item }: { item: LessonItem }) {
               <div key={r} className="flex items-center gap-2 justify-center">
                 <AudioButton text={r} />
                 <span className="jp-char text-gray-200">{r}</span>
-                <span className="text-gray-500 text-sm">{r.toLowerCase()}</span>
+                {showRomaji && <span className="text-gray-500 text-sm">{r.toLowerCase()}</span>}
               </div>
             ))}
           </div>
@@ -303,7 +312,7 @@ function CardBack({ item }: { item: LessonItem }) {
     return (
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="flex items-center gap-2">
-          <p className="text-sm text-gray-400">{content.romaji}</p>
+          {showRomaji && <p className="text-sm text-gray-400">{content.romaji}</p>}
           {japText && <AudioButton text={japText} />}
         </div>
         <p className="text-xl text-white font-medium">{content.english}</p>
@@ -321,7 +330,7 @@ function CardBack({ item }: { item: LessonItem }) {
   return (
     <div className="flex flex-col items-center gap-3 text-center">
       <div className="flex items-center gap-2">
-        <p className="text-sm text-gray-400">{content.romaji}</p>
+        {showRomaji && <p className="text-sm text-gray-400">{content.romaji}</p>}
         {japText && <AudioButton text={japText} />}
       </div>
       <p className="text-xl text-white font-medium">{content.english}</p>
@@ -370,6 +379,7 @@ export default function LessonPage() {
   const [showDoneDialog, setShowDoneDialog] = useState(false);
   const [mcChoice, setMcChoice] = useState<string | null>(null);
   const [mcCorrect, setMcCorrect] = useState<boolean | null>(null);
+  const [showRomaji, setShowRomaji] = useState(true);
   const startTime = useRef(Date.now());
 
   useEffect(() => {
@@ -385,14 +395,16 @@ export default function LessonPage() {
   }, []);
 
   useEffect(() => {
-    fetch(`/api/lesson/${id}`)
-      .then((r) => r.json())
-      .then((data: LessonResult) => {
-        setLesson(data);
-        const firstUnanswered = data.items.findIndex((item) => item.answeredAt === null);
-        setCurrentIndex(firstUnanswered === -1 ? 0 : firstUnanswered);
-        setLoading(false);
-      });
+    Promise.all([
+      fetch(`/api/lesson/${id}`).then((r) => r.json()),
+      fetch("/api/user/profile").then((r) => r.json()),
+    ]).then(([data, profile]: [LessonResult, { showRomaji?: boolean }]) => {
+      setLesson(data);
+      setShowRomaji(profile.showRomaji ?? true);
+      const firstUnanswered = data.items.findIndex((item) => item.answeredAt === null);
+      setCurrentIndex(firstUnanswered === -1 ? 0 : firstUnanswered);
+      setLoading(false);
+    });
   }, [id]);
 
   const unansweredItems = lesson ? lesson.items.filter((item) => item.answeredAt === null) : [];
@@ -595,7 +607,7 @@ export default function LessonPage() {
                 <MasteryBar review={currentItem.review} />
               </div>
             )}
-            {currentItem && <CardFront item={currentItem} />}
+            {currentItem && <CardFront item={currentItem} showRomaji={showRomaji} />}
           </div>
 
           {isListeningMC ? (
@@ -647,7 +659,7 @@ export default function LessonPage() {
             <>
               <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
                 {revealed && currentItem
-                  ? <CardBack item={currentItem} />
+                  ? <CardBack item={currentItem} showRomaji={showRomaji} />
                   : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
                 }
               </div>

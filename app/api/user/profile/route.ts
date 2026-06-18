@@ -19,9 +19,10 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { studyGoalMinutes, displayName } = body as {
+  const { studyGoalMinutes, displayName, showRomaji } = body as {
     studyGoalMinutes?: number;
     displayName?: string;
+    showRomaji?: boolean;
   };
 
   const profile = await prisma.userProfile.update({
@@ -29,6 +30,7 @@ export async function PATCH(request: Request) {
     data: {
       ...(studyGoalMinutes !== undefined && { studyGoalMinutes }),
       ...(displayName !== undefined && { displayName }),
+      ...(showRomaji !== undefined && { showRomaji }),
     },
   });
 

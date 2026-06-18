@@ -53,6 +53,7 @@ model UserProfile {
   currentStage     LearningStage @default(HIRAGANA)
   nativeLevel      String?
   studyGoalMinutes Int           @default(20)
+  showRomaji       Boolean       @default(true)
   currentStreak    Int           @default(0)
   longestStreak    Int           @default(0)
   lastStudiedAt    DateTime?

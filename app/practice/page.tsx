@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
 
@@ -187,9 +187,11 @@ function SelectionView({
 function PracticeView({
   items,
   onFinish,
+  showRomaji,
 }: {
   items: PracticeItem[];
   onFinish: (correct: number, total: number) => void;
+  showRomaji: boolean;
 }) {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
@@ -312,9 +314,15 @@ function PracticeView({
                 ) : (
                   // Hiragana/Katakana revealed content
                   <div className="space-y-2 text-center">
-                    <p className="text-white font-semibold text-2xl tracking-wide">
-                      {item.romaji}
-                    </p>
+                    {showRomaji
+                      ? (
+                        <p className="text-white font-semibold text-2xl tracking-wide">
+                          {item.romaji}
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-600 italic">Use audio to check pronunciation</p>
+                      )
+                    }
                     {item.mnemonicHint && (
                       <p className="text-gray-400 text-sm italic px-2">
                         {item.mnemonicHint}
@@ -440,6 +448,13 @@ export default function PracticePage() {
     correct: 0,
     total: 0,
   });
+  const [showRomaji, setShowRomaji] = useState(true);
+
+  useEffect(() => {
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d: { showRomaji?: boolean }) => setShowRomaji(d.showRomaji ?? true));
+  }, []);
 
   function handleStart(fetchedItems: PracticeItem[]) {
     setItems(fetchedItems);
@@ -457,7 +472,7 @@ export default function PracticePage() {
   }
 
   if (view === "practice" && items.length > 0) {
-    return <PracticeView items={items} onFinish={handleFinish} />;
+    return <PracticeView items={items} onFinish={handleFinish} showRomaji={showRomaji} />;
   }
 
   if (view === "summary") {
