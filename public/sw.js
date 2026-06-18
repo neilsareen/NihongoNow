@@ -1,4 +1,4 @@
-const CACHE = "nihongo-now-v1";
+const CACHE = "nihongo-now-v2";
 const PRECACHE = ["/", "/dashboard", "/offline.html"];
 
 self.addEventListener("install", (e) => {
@@ -10,7 +10,13 @@ self.addEventListener("activate", (e) => {
   e.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
-    ).then(() => self.clients.claim())
+    ).then(() => {
+      self.clients.claim();
+      // Notify all open tabs that a new version is active
+      self.clients.matchAll({ type: "window" }).then((clients) => {
+        clients.forEach((client) => client.postMessage({ type: "SW_UPDATED" }));
+      });
+    })
   );
 });
 
