@@ -1,0 +1,338 @@
+name: Claude Auto Task
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (find Ready task but do not implement)'
+        required: false
+        default: 'false'
+        type: boolean
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  auto-task:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Find Ready task from project board
+        id: find_task
+        run: |
+          # Find the NihongoNow project
+          PROJECT_DATA=$(gh api graphql -f query='
+            query {
+              user(login: "neilsareen") {
+                projectsV2(first: 10) {
+                  nodes {
+                    id
+                    title
+                    number
+                    fields(first: 20) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                      }
+                    }
+                    items(first: 50) {
+                      nodes {
+                        id
+                        fieldValues(first: 20) {
+                          nodes {
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              name
+                              field {
+                                ... on ProjectV2SingleSelectField {
+                                  name
+                                }
+                              }
+                            }
+                          }
+                        }
+                        content {
+                          ... on Issue {
+                            id
+                            number
+                            title
+                            body
+                            url
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ')
+
+          echo "Project data retrieved"
+
+          # Find the NihongoNow project
+          PROJECT_ID=$(echo "$PROJECT_DATA" | jq -r '
+            .data.user.projectsV2.nodes[]
+            | select(.title | ascii_downcase | contains("nihongonow"))
+            | .id
+          ' | head -1)
+
+          if [ -z "$PROJECT_ID" ]; then
+            # Fall back to first project
+            PROJECT_ID=$(echo "$PROJECT_DATA" | jq -r '.data.user.projectsV2.nodes[0].id')
+            PROJECT_TITLE=$(echo "$PROJECT_DATA" | jq -r '.data.user.projectsV2.nodes[0].title')
+            echo "Using first project: $PROJECT_TITLE"
+          fi
+
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+
+          # Get the Status field ID and option IDs
+          STATUS_FIELD_ID=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .fields.nodes[]
+            | select(.name == "Status")
+            | .id
+          ')
+
+          READY_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .fields.nodes[]
+            | select(.name == "Status")
+            | .options[]
+            | select(.name | ascii_downcase | contains("ready"))
+            | .id
+          ' | head -1)
+
+          IN_PROGRESS_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .fields.nodes[]
+            | select(.name == "Status")
+            | .options[]
+            | select(.name | ascii_downcase | contains("in progress"))
+            | .id
+          ' | head -1)
+
+          IN_REVIEW_OPTION_ID=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .fields.nodes[]
+            | select(.name == "Status")
+            | .options[]
+            | select(.name | ascii_downcase | contains("review"))
+            | .id
+          ' | head -1)
+
+          echo "status_field_id=$STATUS_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "in_progress_option_id=$IN_PROGRESS_OPTION_ID" >> $GITHUB_OUTPUT
+          echo "in_review_option_id=$IN_REVIEW_OPTION_ID" >> $GITHUB_OUTPUT
+
+          # Find first Ready item
+          READY_ITEM=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .items.nodes[]
+            | select(
+                .fieldValues.nodes[]
+                | select(.field.name == "Status" and (.name | ascii_downcase | contains("ready")))
+                | . != null
+              )
+          ' | head -c 5000)
+
+          ITEM_ID=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .items.nodes[]
+            | select(
+                any(.fieldValues.nodes[];
+                  .field.name == "Status" and (.name | ascii_downcase | contains("ready")))
+              )
+            | .id
+          ' | head -1)
+
+          ISSUE_NUMBER=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .items.nodes[]
+            | select(
+                any(.fieldValues.nodes[];
+                  .field.name == "Status" and (.name | ascii_downcase | contains("ready")))
+              )
+            | .content.number
+          ' | head -1)
+
+          ISSUE_TITLE=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .items.nodes[]
+            | select(
+                any(.fieldValues.nodes[];
+                  .field.name == "Status" and (.name | ascii_downcase | contains("ready")))
+              )
+            | .content.title
+          ' | head -1)
+
+          ISSUE_BODY=$(echo "$PROJECT_DATA" | jq -r --arg pid "$PROJECT_ID" '
+            .data.user.projectsV2.nodes[]
+            | select(.id == $pid)
+            | .items.nodes[]
+            | select(
+                any(.fieldValues.nodes[];
+                  .field.name == "Status" and (.name | ascii_downcase | contains("ready")))
+              )
+            | .content.body
+          ' | head -1)
+
+          if [ -z "$ITEM_ID" ] || [ "$ITEM_ID" = "null" ]; then
+            echo "No Ready tasks found in project board"
+            echo "has_task=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Found Ready task: #$ISSUE_NUMBER - $ISSUE_TITLE"
+          echo "item_id=$ITEM_ID" >> $GITHUB_OUTPUT
+          echo "issue_number=$ISSUE_NUMBER" >> $GITHUB_OUTPUT
+          echo "issue_title=$ISSUE_TITLE" >> $GITHUB_OUTPUT
+          # Write body to file to avoid length limits
+          echo "$ISSUE_BODY" > /tmp/issue_body.txt
+          echo "has_task=true" >> $GITHUB_OUTPUT
+
+      - name: Move task to In Progress
+        if: steps.find_task.outputs.has_task == 'true' && inputs.dry_run != 'true'
+        run: |
+          gh api graphql -f query='
+            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId
+                itemId: $itemId
+                fieldId: $fieldId
+                value: { singleSelectOptionId: $optionId }
+              }) {
+                projectV2Item { id }
+              }
+            }
+          ' \
+          -f projectId="${{ steps.find_task.outputs.project_id }}" \
+          -f itemId="${{ steps.find_task.outputs.item_id }}" \
+          -f fieldId="${{ steps.find_task.outputs.status_field_id }}" \
+          -f optionId="${{ steps.find_task.outputs.in_progress_option_id }}"
+
+          echo "Moved issue #${{ steps.find_task.outputs.issue_number }} to In Progress"
+
+      - name: Build Claude prompt
+        if: steps.find_task.outputs.has_task == 'true'
+        id: build_prompt
+        run: |
+          ISSUE_BODY=$(cat /tmp/issue_body.txt)
+          ISSUE_NUMBER="${{ steps.find_task.outputs.issue_number }}"
+          ISSUE_TITLE="${{ steps.find_task.outputs.issue_title }}"
+
+          cat > /tmp/claude_prompt.txt << 'PROMPT_EOF'
+          You are working on NihongoNow, a Japanese language learning app built with Next.js 15, TypeScript, Prisma ORM, and Supabase. The app helps users learn Japanese through lessons, vocabulary practice, spaced repetition reviews, and analytics.
+
+          Key architecture:
+          - Next.js 15 App Router with React 18
+          - TypeScript throughout
+          - Prisma ORM with Supabase PostgreSQL database
+          - Tailwind CSS + Radix UI components
+          - Zustand for state management
+          - Framer Motion for animations
+          - Recharts for analytics
+
+          App structure:
+          - app/dashboard — main dashboard
+          - app/lesson — lesson interface
+          - app/practice — vocabulary practice
+          - app/review — spaced repetition review
+          - app/analytics — progress analytics
+          - app/settings — user settings
+          - app/auth, app/login, app/onboarding — authentication flow
+          - prisma/ — database schema and seed data
+
+          Your task is to implement the following GitHub issue on the master branch:
+          PROMPT_EOF
+
+          echo "Issue #${ISSUE_NUMBER}: ${ISSUE_TITLE}" >> /tmp/claude_prompt.txt
+          echo "" >> /tmp/claude_prompt.txt
+          echo "$ISSUE_BODY" >> /tmp/claude_prompt.txt
+          cat >> /tmp/claude_prompt.txt << 'PROMPT_EOF2'
+
+          Instructions:
+          1. Read the issue carefully and understand what needs to be implemented
+          2. Explore the codebase to understand the existing patterns before making changes
+          3. Implement the requested feature or fix following the existing code patterns
+          4. Make sure your changes are complete and don't break existing functionality
+          5. Commit your changes with a clear, descriptive commit message referencing the issue number
+          6. Do NOT create a pull request — commit directly to master
+          PROMPT_EOF2
+
+          echo "prompt_file=/tmp/claude_prompt.txt" >> $GITHUB_OUTPUT
+
+      - name: Run Claude Code to implement task
+        if: steps.find_task.outputs.has_task == 'true' && inputs.dry_run != 'true'
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt_file: /tmp/claude_prompt.txt
+          allowed_tools: "Bash,Read,Write,Edit,Glob,Grep"
+          max_turns: "30"
+
+      - name: Move task to In Review
+        if: steps.find_task.outputs.has_task == 'true' && inputs.dry_run != 'true'
+        run: |
+          gh api graphql -f query='
+            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId
+                itemId: $itemId
+                fieldId: $fieldId
+                value: { singleSelectOptionId: $optionId }
+              }) {
+                projectV2Item { id }
+              }
+            }
+          ' \
+          -f projectId="${{ steps.find_task.outputs.project_id }}" \
+          -f itemId="${{ steps.find_task.outputs.item_id }}" \
+          -f fieldId="${{ steps.find_task.outputs.status_field_id }}" \
+          -f optionId="${{ steps.find_task.outputs.in_review_option_id }}"
+
+          echo "Moved issue #${{ steps.find_task.outputs.issue_number }} to In Review"
+
+          # Add a comment to the issue
+          gh issue comment ${{ steps.find_task.outputs.issue_number }} \
+            --repo neilsareen/nihongonow \
+            --body "Implementation complete. Committed to master branch. Moving to In Review."
+
+      - name: Summary
+        if: always()
+        run: |
+          if [ "${{ steps.find_task.outputs.has_task }}" = "true" ]; then
+            echo "## Task Processed" >> $GITHUB_STEP_SUMMARY
+            echo "- Issue: #${{ steps.find_task.outputs.issue_number }} — ${{ steps.find_task.outputs.issue_title }}" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ inputs.dry_run }}" = "true" ]; then
+              echo "- Mode: Dry run (no changes made)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- Status: Moved to In Review" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "## No Ready Tasks" >> $GITHUB_STEP_SUMMARY
+            echo "No tasks found in the Ready column of the project board." >> $GITHUB_STEP_SUMMARY
+          fi
