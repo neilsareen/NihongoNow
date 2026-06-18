@@ -2,12 +2,13 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import DailyGoalProgress from "./DailyGoalProgress";
 
 async function getDashboardData(userId: string) {
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
-  const [profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
+  const [profile, stats, progress, reviewsDue, inProgressLesson, todayLessons] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
@@ -19,13 +20,9 @@ async function getDashboardData(userId: string) {
       orderBy: { generatedAt: "desc" },
       include: { items: { select: { answeredAt: true }, orderBy: { displayOrder: "asc" } } },
     }),
-    prisma.lesson.aggregate({
-      where: { userId, completedAt: { gte: todayStart }, durationSeconds: { not: null } },
-      _sum: { durationSeconds: true },
-    }),
     prisma.lesson.count({ where: { userId, completedAt: { gte: todayStart } } }),
   ]);
-  return { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons };
+  return { profile, stats, progress, reviewsDue, inProgressLesson, todayLessons };
 }
 
 function getGreeting() {
@@ -47,7 +44,7 @@ export default async function DashboardPage() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) redirect("/api/auth/signout");
 
-  const { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons } = await getDashboardData(user.id);
+  const { profile, stats, progress, reviewsDue, inProgressLesson, todayLessons } = await getDashboardData(user.id);
   if (!profile) redirect("/onboarding");
 
   const accuracy = stats && stats.totalReviews > 0
@@ -58,10 +55,6 @@ export default async function DashboardPage() {
   const answeredCount = inProgressLesson?.items.filter((i) => i.answeredAt !== null).length ?? 0;
   const unansweredCount = inProgressLesson?.items.filter((i) => i.answeredAt === null).length ?? 0;
   const showContinue = answeredCount > 0 && unansweredCount > 0;
-
-  const todayMinutes = Math.round((todayStudy._sum.durationSeconds ?? 0) / 60);
-  const goalMinutes = profile.studyGoalMinutes;
-  const goalPct = Math.min(100, goalMinutes > 0 ? Math.round((todayMinutes / goalMinutes) * 100) : 0);
 
   const progressItems = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ" },
@@ -99,12 +92,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-5">
       {/* Daily goal */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${goalPct}%` }} />
-        </div>
-        <span className="text-xs text-gray-500 shrink-0">{todayMinutes} / {goalMinutes} min today</span>
-      </div>
+      <DailyGoalProgress goalMinutes={profile.studyGoalMinutes} />
 
       {/* Greeting */}
       <div className="flex items-center justify-between">
