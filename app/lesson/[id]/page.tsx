@@ -621,12 +621,20 @@ export default function LessonPage() {
                 Reveal
               </button>
             ) : (
-              <button
-                onClick={() => handleAnswer(true)}
-                className="w-full py-4 bg-white hover:bg-gray-100 text-gray-950 rounded-xl font-semibold text-base transition-colors"
-              >
-                Got it
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleAnswer(false)}
+                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-red-900/50 text-red-400 rounded-xl font-medium text-base transition-colors"
+                >
+                  Again ✗
+                </button>
+                <button
+                  onClick={() => handleAnswer(true)}
+                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-green-900/50 text-green-400 rounded-xl font-medium text-base transition-colors"
+                >
+                  Got it ✓
+                </button>
+              </div>
             )}
           </div>
         </>
