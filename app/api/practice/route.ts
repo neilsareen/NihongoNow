@@ -12,6 +12,45 @@ function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
+function getConsonantFamily(romaji: string): string {
+  if (!romaji) return "other";
+  const r = romaji.toLowerCase().trim();
+  if (/^[aeiou]/.test(r)) return "vowel";
+  if (r.startsWith("ch") || r.startsWith("ts")) return r.slice(0, 2);
+  if (r.startsWith("sh")) return "sh";
+  return r[0];
+}
+
+function spreadShuffleByFamily<T extends { romaji: string; contentType: ContentType }>(array: T[]): T[] {
+  const shuffled = shuffleArray(array);
+  const kana = shuffled.filter(i => i.contentType === ContentType.HIRAGANA || i.contentType === ContentType.KATAKANA);
+  const others = shuffled.filter(i => i.contentType !== ContentType.HIRAGANA && i.contentType !== ContentType.KATAKANA);
+
+  const families: Record<string, T[]> = {};
+  for (const item of kana) {
+    const f = getConsonantFamily(item.romaji);
+    if (!families[f]) families[f] = [];
+    families[f].push(item);
+  }
+  const queues = Object.values(families);
+  const spread: T[] = [];
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const q of queues) {
+      if (q.length > 0) { spread.push(q.shift()!); changed = true; }
+    }
+  }
+
+  const result: T[] = [];
+  const maxLen = Math.max(spread.length, others.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (i < spread.length) result.push(spread[i]);
+    if (i < others.length) result.push(others[i]);
+  }
+  return result;
+}
+
 export async function GET(request: Request) {
   const supabase = await createClient();
   const {
@@ -99,5 +138,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ items: shuffleArray(items) });
+  return NextResponse.json({ items: spreadShuffleByFamily(items) });
 }

@@ -166,7 +166,15 @@ function spreadByFamily(
       if (queue.length > 0) { spreadChars.push(queue.shift()!); changed = true; }
     }
   }
-  return interleaveItems(spreadChars, [...otherItems].sort(() => Math.random() - 0.5));
+  // Merge spread kana (order preserved) with shuffled non-kana items round-robin
+  const shuffledOthers = [...otherItems].sort(() => Math.random() - 0.5);
+  const merged: typeof charItems = [];
+  const maxLen = Math.max(spreadChars.length, shuffledOthers.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (i < spreadChars.length) merged.push(spreadChars[i]);
+    if (i < shuffledOthers.length) merged.push(shuffledOthers[i]);
+  }
+  return merged;
 }
 
 async function getWeakContentTypes(userId: string): Promise<ContentType[]> {
