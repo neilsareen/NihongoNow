@@ -16,7 +16,8 @@ export const metadata: Metadata = {
     title: "Ikou",
   },
   icons: {
-    apple: "/icon.svg",
+    apple: "/icon-192.png",
+    icon: "/icon-512.png",
   },
 };
 
