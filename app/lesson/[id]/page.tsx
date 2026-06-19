@@ -29,6 +29,7 @@ interface LessonItem {
     scenario?: string;
     isCulturalTip?: boolean;
     title?: string;
+    question?: string;
     body?: string;
     category?: string;
   } | null;
@@ -359,7 +360,7 @@ function CardBack({ item }: { item: LessonItem }) {
   );
 }
 
-function CulturalTipCard({ item }: { item: LessonItem }) {
+function CulturalTipQuestion({ item }: { item: LessonItem }) {
   const { content } = item;
   if (!content) return null;
   const category = CATEGORY_LABELS[content.category ?? ""] ?? "Culture";
@@ -368,7 +369,17 @@ function CulturalTipCard({ item }: { item: LessonItem }) {
       <p className="text-xs text-amber-600 uppercase tracking-widest font-medium">
         Japan Tip · {category}
       </p>
-      <h3 className="text-xl font-semibold text-white">{content.title}</h3>
+      <p className="text-white text-base leading-relaxed">{content.question}</p>
+    </div>
+  );
+}
+
+function CulturalTipAnswer({ item }: { item: LessonItem }) {
+  const { content } = item;
+  if (!content) return null;
+  return (
+    <div className="flex flex-col gap-3 w-full">
+      <h3 className="text-base font-semibold text-white">{content.title}</h3>
       <p className="text-gray-300 text-sm leading-relaxed">{content.body}</p>
     </div>
   );
@@ -599,15 +610,24 @@ export default function LessonPage() {
       {isCultural && currentItem ? (
         <>
           <div className="w-full max-w-sm bg-gray-900 border border-amber-900/30 rounded-2xl p-8 flex flex-col items-start justify-center gap-4 min-h-56">
-            <CulturalTipCard item={currentItem} />
+            {revealed ? <CulturalTipAnswer item={currentItem} /> : <CulturalTipQuestion item={currentItem} />}
           </div>
           <div className="w-full max-w-sm">
-            <button
-              onClick={() => handleAnswer(true)}
-              className="w-full py-4 bg-white hover:bg-gray-100 text-gray-950 rounded-xl font-semibold text-base transition-colors"
-            >
-              Got it
-            </button>
+            {!revealed ? (
+              <button
+                onClick={() => setRevealed(true)}
+                className="w-full py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium text-base transition-colors"
+              >
+                Reveal
+              </button>
+            ) : (
+              <button
+                onClick={() => handleAnswer(true)}
+                className="w-full py-4 bg-white hover:bg-gray-100 text-gray-950 rounded-xl font-semibold text-base transition-colors"
+              >
+                Got it
+              </button>
+            )}
           </div>
         </>
       ) : (
