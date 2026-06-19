@@ -37,6 +37,7 @@ interface LessonItem {
     srsLevel: string;
     totalAttempts: number;
     correctCount: number;
+    incorrectCount: number;
   } | null;
 }
 
@@ -242,7 +243,16 @@ function CardFront({ item }: { item: LessonItem }) {
   );
 }
 
-function CardBack({ item }: { item: LessonItem }) {
+function MnemonicTip({ hint }: { hint: string }) {
+  return (
+    <div className="mt-2 bg-amber-950/40 border border-amber-800/40 rounded-xl px-3 py-2 max-w-xs text-center">
+      <p className="text-xs text-amber-500 uppercase tracking-widest mb-1">Memory tip</p>
+      <p className="text-sm text-amber-200/80 leading-snug">{hint}</p>
+    </div>
+  );
+}
+
+function CardBack({ item, showMnemonic }: { item: LessonItem; showMnemonic: boolean }) {
   const { content, contentType } = item;
   if (!content) return null;
 
@@ -291,8 +301,8 @@ function CardBack({ item }: { item: LessonItem }) {
           <p className="text-2xl font-semibold text-gray-200">{content.romaji}</p>
           {japText && <AudioButton text={japText} />}
         </div>
-        {content.mnemonicHint && (
-          <p className="text-sm text-gray-500 text-center max-w-xs">{content.mnemonicHint}</p>
+        {showMnemonic && content.mnemonicHint && (
+          <MnemonicTip hint={content.mnemonicHint} />
         )}
       </div>
     );
@@ -320,8 +330,8 @@ function CardBack({ item }: { item: LessonItem }) {
             <span className="text-gray-400">{firstExample[1]}</span>
           </div>
         )}
-        {content.mnemonicHint && (
-          <p className="text-xs text-gray-600 italic">{content.mnemonicHint}</p>
+        {showMnemonic && content.mnemonicHint && (
+          <MnemonicTip hint={content.mnemonicHint} />
         )}
       </div>
     );
@@ -408,6 +418,7 @@ export default function LessonPage() {
   const [showDoneDialog, setShowDoneDialog] = useState(false);
   const [mcChoice, setMcChoice] = useState<string | null>(null);
   const [mcCorrect, setMcCorrect] = useState<boolean | null>(null);
+  const [localWrongCounts, setLocalWrongCounts] = useState<Record<string, number>>({});
   const startTime = useRef(Date.now());
 
   useEffect(() => {
@@ -449,6 +460,12 @@ export default function LessonPage() {
     if (!currentItem || !lesson) return;
     setMcChoice(null);
     setMcCorrect(null);
+    if (!correct) {
+      setLocalWrongCounts((prev) => ({
+        ...prev,
+        [currentItem.contentId]: (prev[currentItem.contentId] ?? 0) + 1,
+      }));
+    }
     submitReview(currentItem, correct ? 5 : 1);
 
     const newCorrectCount = correctCount + (correct ? 1 : 0);
@@ -546,6 +563,10 @@ export default function LessonPage() {
 
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
+
+  const showMnemonic = currentItem
+    ? (currentItem.review?.incorrectCount ?? 0) + (localWrongCounts[currentItem.contentId] ?? 0) >= 2
+    : false;
 
   const isListeningMC = currentItem
     ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
@@ -693,7 +714,7 @@ export default function LessonPage() {
             <>
               <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
                 {revealed && currentItem
-                  ? <CardBack item={currentItem} />
+                  ? <CardBack item={currentItem} showMnemonic={showMnemonic} />
                   : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
                 }
               </div>

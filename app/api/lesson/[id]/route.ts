@@ -64,6 +64,7 @@ export async function GET(
             srsLevel: true,
             totalAttempts: true,
             correctCount: true,
+            incorrectCount: true,
           },
         })
       : [],
@@ -89,7 +90,7 @@ export async function GET(
       ...item,
       content: contentMap.get(item.contentId) ?? null,
       review: r
-        ? { srsLevel: r.srsLevel, totalAttempts: r.totalAttempts, correctCount: r.correctCount }
+        ? { srsLevel: r.srsLevel, totalAttempts: r.totalAttempts, correctCount: r.correctCount, incorrectCount: r.incorrectCount }
         : null,
     };
   });

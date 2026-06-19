@@ -238,6 +238,7 @@ function PracticeView({
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  const [wrongCounts, setWrongCounts] = useState<Record<string, number>>({});
 
   const item = items[index];
   const total = items.length;
@@ -246,6 +247,12 @@ function PracticeView({
 
   function advance(wasCorrect: boolean) {
     const newCorrect = wasCorrect ? correctCount + 1 : correctCount;
+    if (!wasCorrect) {
+      setWrongCounts((prev) => ({
+        ...prev,
+        [item.id]: (prev[item.id] ?? 0) + 1,
+      }));
+    }
     if (index + 1 >= total) {
       onFinish(newCorrect, total);
     } else {
@@ -254,6 +261,8 @@ function PracticeView({
       setFlipped(false);
     }
   }
+
+  const showMnemonic = (wrongCounts[item.id] ?? 0) >= 2;
 
   return (
     <div className="min-h-screen bg-gray-950 text-white flex flex-col">
@@ -352,10 +361,11 @@ function PracticeView({
                     <p className="text-white font-semibold text-2xl tracking-wide">
                       {item.romaji}
                     </p>
-                    {item.mnemonicHint && (
-                      <p className="text-gray-400 text-sm italic px-2">
-                        {item.mnemonicHint}
-                      </p>
+                    {showMnemonic && item.mnemonicHint && (
+                      <div className="mt-1 bg-amber-950/40 border border-amber-800/40 rounded-xl px-3 py-2 max-w-xs text-center mx-auto">
+                        <p className="text-xs text-amber-500 uppercase tracking-widest mb-1">Memory tip</p>
+                        <p className="text-sm text-amber-200/80 leading-snug">{item.mnemonicHint}</p>
+                      </div>
                     )}
                   </div>
                 )}
