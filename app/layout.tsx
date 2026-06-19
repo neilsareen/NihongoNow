@@ -7,13 +7,13 @@ import { PWAUpdateBanner } from "@/app/components/pwa-update-banner";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Nihongo Now",
+  title: "Ikou",
   description: "Learn Japanese for your next trip to Japan",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Nihongo Now",
+    title: "Ikou",
   },
   icons: {
     apple: "/icon.svg",

@@ -46,8 +46,8 @@ export default function SettingsPage() {
       <nav className="border-b border-white/10 bg-gray-900/50 backdrop-blur sticky top-0 z-50">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/dashboard" className="font-bold text-lg flex items-center gap-2">
-            <span className="jp-char text-purple-400 text-xl">日</span>
-            <span>Nihongo Now</span>
+            <span className="jp-char text-purple-400 text-xl">行</span>
+            <span>Ikou</span>
           </Link>
         </div>
       </nav>

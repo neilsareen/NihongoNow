@@ -29,13 +29,13 @@ export default function SignupPage() {
     });
     if (error) {
       setError(error.message);
+      setLoading(false);
     } else if (data.session) {
-      router.push("/onboarding");
-      router.refresh();
+      window.location.href = "/onboarding";
     } else {
+      setLoading(false);
       setSuccess(true);
     }
-    setLoading(false);
   }
 
   async function handleGoogleSignup() {
@@ -74,7 +74,7 @@ export default function SignupPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <Link href="/" className="text-3xl jp-char text-white block mb-2">
-            日本語
+            行
           </Link>
           <h1 className="text-2xl font-bold text-white">Start your journey</h1>
           <p className="text-gray-500 text-sm mt-1">Create your free account</p>

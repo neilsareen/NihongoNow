@@ -10,8 +10,8 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-gray-950 text-white flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center max-w-xl mx-auto w-full">
-        <div className="mb-2 text-5xl jp-char font-bold text-white/90 tracking-tight">日本語</div>
-        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Nihongo Now</h1>
+        <div className="mb-2 text-5xl jp-char font-bold text-white/90 tracking-tight">行</div>
+        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight mb-3">Ikou</h1>
         <p className="text-gray-300 text-base sm:text-lg mb-1">
           Built for adults who want to navigate Japan with confidence — not just survive it.
         </p>

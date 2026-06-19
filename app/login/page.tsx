@@ -20,11 +20,10 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       setError(error.message);
+      setLoading(false);
     } else {
-      router.push("/dashboard");
-      router.refresh();
+      window.location.href = "/dashboard";
     }
-    setLoading(false);
   }
 
   async function handleGoogleLogin() {
@@ -40,7 +39,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <Link href="/" className="text-3xl jp-char text-white block mb-2">
-            日本語
+            行
           </Link>
           <h1 className="text-2xl font-bold text-white">Welcome back</h1>
           <p className="text-gray-500 text-sm mt-1">Sign in to continue learning</p>

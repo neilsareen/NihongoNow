@@ -468,7 +468,7 @@ export default function LessonPage() {
         {installPrompt && (
           <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-3 text-sm">
             <div>
-              <div className="font-medium text-white">Install Nihongo Now</div>
+              <div className="font-medium text-white">Install Ikou</div>
               <div className="text-gray-500 text-xs mt-0.5">Add to your home screen for quick access</div>
             </div>
             <button

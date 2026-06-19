@@ -111,8 +111,8 @@ export default async function AnalyticsPage() {
       <nav className="border-b border-white/10 bg-gray-950/90 backdrop-blur sticky top-0 z-50">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/dashboard" className="font-semibold flex items-center gap-1.5">
-            <span className="jp-char text-white text-lg">日</span>
-            <span className="text-sm">Nihongo Now</span>
+            <span className="jp-char text-white text-lg">行</span>
+            <span className="text-sm">Ikou</span>
           </Link>
           <Link href="/dashboard" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">← Dashboard</Link>
         </div>

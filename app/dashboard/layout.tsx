@@ -13,8 +13,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <nav className="sticky top-0 z-50 bg-gradient-to-b from-amber-400 to-orange-500 rounded-b-3xl shadow-lg shadow-orange-900/40">
         <div className="max-w-lg mx-auto px-5 h-16 flex items-center justify-between">
           <Link href="/dashboard" className="font-bold text-white flex items-center gap-2">
-            <span className="jp-char text-2xl leading-none">日</span>
-            <span className="text-sm tracking-widest uppercase">Nihongo Now</span>
+            <span className="jp-char text-2xl leading-none">行</span>
+            <span className="text-sm tracking-widest uppercase">Ikou</span>
           </Link>
           <div className="flex items-center gap-0.5 bg-black/15 rounded-full px-1.5 py-1">
             <Link href="/lesson" className="text-xs text-white/90 hover:text-white transition-colors px-2.5 py-1 rounded-full hover:bg-black/15">

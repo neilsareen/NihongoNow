@@ -44,7 +44,7 @@ export function PWAInstallBanner() {
       <div className="mx-4 mt-3 bg-gray-900 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium text-white">Add to Home Screen</p>
-          <p className="text-xs text-gray-500 mt-0.5">Install Nihongo Now for quick access</p>
+          <p className="text-xs text-gray-500 mt-0.5">Install Ikou for quick access</p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <button
