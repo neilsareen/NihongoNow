@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { KANA_KEYWORDS } from "@/lib/kana-keywords";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
 
@@ -285,12 +286,16 @@ function CardBack({ item }: { item: LessonItem }) {
   }
 
   if (contentType === "HIRAGANA" || contentType === "KATAKANA") {
+    const keyword = content.character ? KANA_KEYWORDS[content.character] : undefined;
     return (
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
           <p className="text-2xl font-semibold text-gray-200">{content.romaji}</p>
           {japText && <AudioButton text={japText} />}
         </div>
+        {keyword && (
+          <p className="text-base text-gray-300">{keyword}</p>
+        )}
         {content.mnemonicHint && (
           <p className="text-sm text-gray-500 text-center max-w-xs">{content.mnemonicHint}</p>
         )}
