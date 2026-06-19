@@ -131,6 +131,10 @@ function MasteryBar({ review }: { review: LessonItem["review"] }) {
   );
 }
 
+function katakanaToHiragana(str: string): string {
+  return str.replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 96)).replace(/-/g, "");
+}
+
 function kanaToRomaji(kana: string): string {
   const clean = kana.replace(/-/g, "").replace(/ー/g, "");
   // Katakana → hiragana
@@ -296,16 +300,15 @@ function CardBack({ item }: { item: LessonItem }) {
   if (contentType === "KANJI") {
     const exampleWords = content.exampleWords as Record<string, string> | null | undefined;
     const primaryKana = (content.onyomi ?? [])[0] ?? (content.kunyomi ?? [])[0] ?? "";
-    const romaji = primaryKana ? kanaToRomaji(primaryKana) : "";
+    const hiragana = primaryKana ? katakanaToHiragana(primaryKana) : "";
     const firstExample = exampleWords ? Object.entries(exampleWords)[0] : null;
     return (
       <div className="flex flex-col items-center gap-4 text-center max-w-xs w-full">
         <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(", ")}</p>
         {primaryKana && (
           <div className="flex items-center gap-3">
-            <AudioButton text={japText ?? ""} />
-            <span className="text-lg text-gray-200 font-medium">{romaji}</span>
-            <span className="jp-char text-lg text-gray-400">{primaryKana}</span>
+            <AudioButton text={primaryKana} />
+            <span className="jp-char text-lg text-gray-200 font-medium">{hiragana}</span>
           </div>
         )}
         {firstExample && (
