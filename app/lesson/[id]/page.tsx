@@ -389,8 +389,7 @@ export default function LessonPage() {
       .then((r) => r.json())
       .then((data: LessonResult) => {
         setLesson(data);
-        const firstUnanswered = data.items.findIndex((item) => item.answeredAt === null);
-        setCurrentIndex(firstUnanswered === -1 ? 0 : firstUnanswered);
+        setCurrentIndex(0);
         setLoading(false);
       });
   }, [id]);
