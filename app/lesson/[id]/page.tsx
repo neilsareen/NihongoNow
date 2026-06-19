@@ -131,6 +131,51 @@ function MasteryBar({ review }: { review: LessonItem["review"] }) {
   );
 }
 
+function kanaToRomaji(kana: string): string {
+  const clean = kana.replace(/-/g, "").replace(/ー/g, "");
+  // Katakana → hiragana
+  const hira = clean.replace(/[ァ-ヶ]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 96)
+  );
+  const T: Record<string, string> = {
+    "きゃ":"kya","きゅ":"kyu","きょ":"kyo","しゃ":"sha","しゅ":"shu","しょ":"sho",
+    "ちゃ":"cha","ちゅ":"chu","ちょ":"cho","にゃ":"nya","にゅ":"nyu","にょ":"nyo",
+    "ひゃ":"hya","ひゅ":"hyu","ひょ":"hyo","みゃ":"mya","みゅ":"myu","みょ":"myo",
+    "りゃ":"rya","りゅ":"ryu","りょ":"ryo","ぎゃ":"gya","ぎゅ":"gyu","ぎょ":"gyo",
+    "じゃ":"ja","じゅ":"ju","じょ":"jo","びゃ":"bya","びゅ":"byu","びょ":"byo",
+    "ぴゃ":"pya","ぴゅ":"pyu","ぴょ":"pyo",
+    "あ":"a","い":"i","う":"u","え":"e","お":"o",
+    "か":"ka","き":"ki","く":"ku","け":"ke","こ":"ko",
+    "さ":"sa","し":"shi","す":"su","せ":"se","そ":"so",
+    "た":"ta","ち":"chi","つ":"tsu","て":"te","と":"to",
+    "な":"na","に":"ni","ぬ":"nu","ね":"ne","の":"no",
+    "は":"ha","ひ":"hi","ふ":"fu","へ":"he","ほ":"ho",
+    "ま":"ma","み":"mi","む":"mu","め":"me","も":"mo",
+    "や":"ya","ゆ":"yu","よ":"yo",
+    "ら":"ra","り":"ri","る":"ru","れ":"re","ろ":"ro",
+    "わ":"wa","を":"o","ん":"n",
+    "が":"ga","ぎ":"gi","ぐ":"gu","げ":"ge","ご":"go",
+    "ざ":"za","じ":"ji","ず":"zu","ぜ":"ze","ぞ":"zo",
+    "だ":"da","ぢ":"ji","づ":"zu","で":"de","ど":"do",
+    "ば":"ba","び":"bi","ぶ":"bu","べ":"be","ぼ":"bo",
+    "ぱ":"pa","ぴ":"pi","ぷ":"pu","ぺ":"pe","ぽ":"po",
+  };
+  let result = "";
+  let i = 0;
+  while (i < hira.length) {
+    if (hira[i] === "っ") {
+      const next2 = T[hira.substring(i + 1, i + 3)] ?? T[hira[i + 1]] ?? "";
+      result += next2[0] ?? "";
+      i++; continue;
+    }
+    const two = T[hira.substring(i, i + 2)];
+    if (two) { result += two; i += 2; continue; }
+    result += T[hira[i]] ?? hira[i];
+    i++;
+  }
+  return result;
+}
+
 function isE2J(item: LessonItem) {
   return item.exerciseType === "ENGLISH_TO_JAPANESE";
 }
@@ -250,50 +295,29 @@ function CardBack({ item }: { item: LessonItem }) {
 
   if (contentType === "KANJI") {
     const exampleWords = content.exampleWords as Record<string, string> | null | undefined;
+    const primaryKana = (content.onyomi ?? [])[0] ?? (content.kunyomi ?? [])[0] ?? "";
+    const romaji = primaryKana ? kanaToRomaji(primaryKana) : "";
+    const firstExample = exampleWords ? Object.entries(exampleWords)[0] : null;
     return (
-      <div className="flex flex-col items-center gap-3 text-center max-w-xs w-full">
-        <div className="flex items-center gap-2 flex-wrap justify-center">
-          <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(" · ")}</p>
-          {japText && <AudioButton text={japText} />}
-        </div>
-        {(content.onyomi ?? []).length > 0 && (
-          <div className="space-y-1.5 w-full">
-            <p className="text-xs text-gray-600 uppercase tracking-wide">On'yomi</p>
-            {(content.onyomi ?? []).map((r) => (
-              <div key={r} className="flex items-center gap-2 justify-center">
-                <AudioButton text={r} />
-                <span className="jp-char text-gray-200">{r}</span>
-                <span className="text-gray-500 text-sm">{r.toLowerCase()}</span>
-              </div>
-            ))}
+      <div className="flex flex-col items-center gap-4 text-center max-w-xs w-full">
+        <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(", ")}</p>
+        {primaryKana && (
+          <div className="flex items-center gap-3">
+            <AudioButton text={japText ?? ""} />
+            <span className="text-lg text-gray-200 font-medium">{romaji}</span>
+            <span className="jp-char text-lg text-gray-400">{primaryKana}</span>
           </div>
         )}
-        {(content.kunyomi ?? []).length > 0 && (
-          <div className="space-y-1.5 w-full">
-            <p className="text-xs text-gray-600 uppercase tracking-wide">Kun'yomi</p>
-            {(content.kunyomi ?? []).map((r) => (
-              <div key={r} className="flex items-center gap-2 justify-center">
-                <AudioButton text={r} />
-                <span className="jp-char text-gray-200">{r}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {exampleWords && Object.keys(exampleWords).length > 0 && (
-          <div className="space-y-1.5 w-full mt-1">
-            <p className="text-gray-600 text-xs uppercase tracking-wide">Words</p>
-            {Object.entries(exampleWords).map(([jp, en]) => (
-              <div key={jp} className="flex items-center gap-2 justify-center">
-                <AudioButton text={jp} />
-                <span className="jp-char text-gray-300">{jp}</span>
-                <span className="text-gray-500">·</span>
-                <span className="text-gray-400 text-sm">{en}</span>
-              </div>
-            ))}
+        {firstExample && (
+          <div className="flex items-center gap-2 text-sm">
+            <AudioButton text={firstExample[0]} />
+            <span className="jp-char text-gray-300">{firstExample[0]}</span>
+            <span className="text-gray-500">·</span>
+            <span className="text-gray-400">{firstExample[1]}</span>
           </div>
         )}
         {content.mnemonicHint && (
-          <p className="text-xs text-gray-600 max-w-xs italic mt-1">{content.mnemonicHint}</p>
+          <p className="text-xs text-gray-600 italic">{content.mnemonicHint}</p>
         )}
       </div>
     );

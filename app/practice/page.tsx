@@ -65,6 +65,50 @@ function AudioButton({
   );
 }
 
+function kanaToRomaji(kana: string): string {
+  const clean = kana.replace(/-/g, "").replace(/ー/g, "");
+  const hira = clean.replace(/[ァ-ヶ]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 96)
+  );
+  const T: Record<string, string> = {
+    "きゃ":"kya","きゅ":"kyu","きょ":"kyo","しゃ":"sha","しゅ":"shu","しょ":"sho",
+    "ちゃ":"cha","ちゅ":"chu","ちょ":"cho","にゃ":"nya","にゅ":"nyu","にょ":"nyo",
+    "ひゃ":"hya","ひゅ":"hyu","ひょ":"hyo","みゃ":"mya","みゅ":"myu","みょ":"myo",
+    "りゃ":"rya","りゅ":"ryu","りょ":"ryo","ぎゃ":"gya","ぎゅ":"gyu","ぎょ":"gyo",
+    "じゃ":"ja","じゅ":"ju","じょ":"jo","びゃ":"bya","びゅ":"byu","びょ":"byo",
+    "ぴゃ":"pya","ぴゅ":"pyu","ぴょ":"pyo",
+    "あ":"a","い":"i","う":"u","え":"e","お":"o",
+    "か":"ka","き":"ki","く":"ku","け":"ke","こ":"ko",
+    "さ":"sa","し":"shi","す":"su","せ":"se","そ":"so",
+    "た":"ta","ち":"chi","つ":"tsu","て":"te","と":"to",
+    "な":"na","に":"ni","ぬ":"nu","ね":"ne","の":"no",
+    "は":"ha","ひ":"hi","ふ":"fu","へ":"he","ほ":"ho",
+    "ま":"ma","み":"mi","む":"mu","め":"me","も":"mo",
+    "や":"ya","ゆ":"yu","よ":"yo",
+    "ら":"ra","り":"ri","る":"ru","れ":"re","ろ":"ro",
+    "わ":"wa","を":"o","ん":"n",
+    "が":"ga","ぎ":"gi","ぐ":"gu","げ":"ge","ご":"go",
+    "ざ":"za","じ":"ji","ず":"zu","ぜ":"ze","ぞ":"zo",
+    "だ":"da","ぢ":"ji","づ":"zu","で":"de","ど":"do",
+    "ば":"ba","び":"bi","ぶ":"bu","べ":"be","ぼ":"bo",
+    "ぱ":"pa","ぴ":"pi","ぷ":"pu","ぺ":"pe","ぽ":"po",
+  };
+  let result = "";
+  let i = 0;
+  while (i < hira.length) {
+    if (hira[i] === "っ") {
+      const next2 = T[hira.substring(i + 1, i + 3)] ?? T[hira[i + 1]] ?? "";
+      result += next2[0] ?? "";
+      i++; continue;
+    }
+    const two = T[hira.substring(i, i + 2)];
+    if (two) { result += two; i += 2; continue; }
+    result += T[hira[i]] ?? hira[i];
+    i++;
+  }
+  return result;
+}
+
 function parseExampleWords(raw: unknown): ExampleWord[] {
   if (!raw) return [];
   try {
@@ -269,42 +313,35 @@ function PracticeView({
 
                 {isKanji ? (
                   // Kanji revealed content
-                  <div className="space-y-2 text-center">
+                  <div className="space-y-3 text-center">
                     {item.meanings && item.meanings.length > 0 && (
                       <p className="text-white font-semibold text-lg">
-                        {item.meanings[0]}
+                        {item.meanings.join(", ")}
                       </p>
                     )}
-                    <div className="flex justify-center gap-6 text-sm">
-                      {item.onyomi && item.onyomi.length > 0 && (
-                        <div>
-                          <span className="text-gray-500 text-xs block mb-0.5">On:</span>
-                          <span className="text-gray-300">
-                            {item.onyomi.slice(0, 2).join(", ")}
-                          </span>
+                    {(() => {
+                      const primaryKana = (item.onyomi ?? [])[0] ?? (item.kunyomi ?? [])[0] ?? "";
+                      const romaji = primaryKana ? kanaToRomaji(primaryKana) : "";
+                      return primaryKana ? (
+                        <div className="flex items-center justify-center gap-3">
+                          <span className="text-gray-200 font-medium">{romaji}</span>
+                          <span className="jp-char text-gray-400">{primaryKana}</span>
                         </div>
-                      )}
-                      {item.kunyomi && item.kunyomi.length > 0 && (
-                        <div>
-                          <span className="text-gray-500 text-xs block mb-0.5">Kun:</span>
-                          <span className="text-gray-300">
-                            {item.kunyomi.slice(0, 2).join(", ")}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                      ) : null;
+                    })()}
                     {exampleWords.length > 0 && (
                       <div className="pt-1 space-y-1">
-                        {exampleWords.map((w, i) => (
-                          <p key={i} className="text-gray-400 text-sm">
-                            <span className="jp-char text-gray-200">{w.word}</span>
-                            {w.reading && (
-                              <span className="text-gray-500"> ({w.reading})</span>
-                            )}
+                        {exampleWords.slice(0, 1).map((w, i) => (
+                          <div key={i} className="flex items-center justify-center gap-2 text-sm">
+                            <AudioButton text={w.word ?? ""} />
+                            <span className="jp-char text-gray-300">{w.word}</span>
                             {w.meaning && (
-                              <span className="text-gray-500"> — {w.meaning}</span>
+                              <>
+                                <span className="text-gray-500">·</span>
+                                <span className="text-gray-400">{w.meaning}</span>
+                              </>
                             )}
-                          </p>
+                          </div>
                         ))}
                       </div>
                     )}
