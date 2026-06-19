@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
-import { KANA_KEYWORDS } from "@/lib/kana-keywords";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -353,16 +352,6 @@ function PracticeView({
                     <p className="text-white font-semibold text-2xl tracking-wide">
                       {item.romaji}
                     </p>
-                    {KANA_KEYWORDS[item.character] && (
-                      <p className="text-gray-300 text-base">
-                        {KANA_KEYWORDS[item.character]}
-                      </p>
-                    )}
-                    {item.mnemonicHint && (
-                      <p className="text-gray-400 text-sm italic px-2">
-                        {item.mnemonicHint}
-                      </p>
-                    )}
                   </div>
                 )}
               </div>
