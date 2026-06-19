@@ -143,21 +143,6 @@ export default async function DashboardPage() {
         </Link>
       )}
 
-      {/* Stats row */}
-      <div className="grid grid-cols-4 gap-2">
-        {[
-          { label: "XP", value: profile.xp.toLocaleString() },
-          { label: "Level", value: profile.level },
-          { label: "Accuracy", value: `${accuracy}%` },
-          { label: "Due", value: reviewsDue },
-        ].map((s) => (
-          <div key={s.label} className="bg-gray-900 border border-white/10 rounded-xl p-3 text-center">
-            <div className="text-lg font-bold">{s.value}</div>
-            <div className="text-gray-600 text-xs">{s.label}</div>
-          </div>
-        ))}
-      </div>
-
       {/* Mastery Progress */}
       <div className="bg-gray-900 border border-white/10 rounded-xl p-5 space-y-4">
         <h2 className="font-medium text-sm text-gray-400 uppercase tracking-wide">Mastery Progress</h2>
