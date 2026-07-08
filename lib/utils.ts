@@ -11,6 +11,26 @@ export function formatDuration(seconds: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+// Midnight "today" in the given IANA timezone, as a UTC instant — used for
+// day-boundary stats (e.g. "minutes studied today"). The server process's
+// own local time is usually UTC, which is wrong for a user in any other
+// timezone: their late-evening session can already fall after UTC midnight
+// and get miscounted as "today" before their day has actually started.
+export function getStartOfDayInTimezone(timeZone: string): Date {
+  const now = new Date();
+  let dateStr: string;
+  try {
+    dateStr = now.toLocaleDateString("en-CA", { timeZone });
+  } catch {
+    dateStr = now.toLocaleDateString("en-CA", { timeZone: "UTC" });
+  }
+  const guessUTC = new Date(`${dateStr}T00:00:00Z`);
+  const tzWallClock = new Date(guessUTC.toLocaleString("en-US", { timeZone }));
+  const utcWallClock = new Date(guessUTC.toLocaleString("en-US", { timeZone: "UTC" }));
+  const offsetMs = tzWallClock.getTime() - utcWallClock.getTime();
+  return new Date(guessUTC.getTime() - offsetMs);
+}
+
 // Kanji whose most natural standalone reading is on'yomi: counting numbers,
 // plus 本 which is overwhelmingly read as "hon" (book) rather than its
 // kun'yomi "moto" (origin/root) when encountered on its own.

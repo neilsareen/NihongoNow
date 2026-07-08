@@ -3,6 +3,12 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    /* Bumps every rem-based size (text, spacing, radii) up ~12% for a
+       chunkier, friendlier feel — not just larger text in isolation. */
+    font-size: 18px;
+  }
+
   :root {
     --background: 0 0% 100%;
     --foreground: 224 71.4% 4.1%;

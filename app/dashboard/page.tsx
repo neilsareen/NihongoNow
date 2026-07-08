@@ -2,10 +2,11 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { cookies } from "next/headers";
+import { getStartOfDayInTimezone } from "@/lib/utils";
 
-async function getDashboardData(userId: string) {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+async function getDashboardData(userId: string, timeZone: string) {
+  const todayStart = getStartOfDayInTimezone(timeZone);
 
   const [profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
@@ -47,7 +48,8 @@ export default async function DashboardPage() {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) redirect("/api/auth/signout");
 
-  const { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons } = await getDashboardData(user.id);
+  const timeZone = (await cookies()).get("tz")?.value || "UTC";
+  const { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons } = await getDashboardData(user.id, timeZone);
   if (!profile) redirect("/onboarding");
 
   const accuracy = stats && stats.totalReviews > 0
