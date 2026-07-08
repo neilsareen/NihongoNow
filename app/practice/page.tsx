@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
+import { pickPrimaryKanjiReading } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -320,7 +321,11 @@ function PracticeView({
                       </p>
                     )}
                     {(() => {
-                      const primaryKana = (item.onyomi ?? [])[0] ?? (item.kunyomi ?? [])[0] ?? "";
+                      const primaryKana = pickPrimaryKanjiReading(
+                        item.character,
+                        item.onyomi ?? [],
+                        item.kunyomi ?? []
+                      );
                       const romaji = primaryKana ? kanaToRomaji(primaryKana) : "";
                       return primaryKana ? (
                         <div className="flex items-center justify-center gap-3">

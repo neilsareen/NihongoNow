@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { pickPrimaryKanjiReading } from "@/lib/utils";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
 
@@ -297,7 +298,11 @@ function CardBack({ item }: { item: LessonItem }) {
 
   if (contentType === "KANJI") {
     const exampleWords = content.exampleWords as Record<string, string> | null | undefined;
-    const primaryKana = (content.onyomi ?? [])[0] ?? (content.kunyomi ?? [])[0] ?? "";
+    const primaryKana = pickPrimaryKanjiReading(
+      content.character ?? "",
+      content.onyomi ?? [],
+      content.kunyomi ?? []
+    );
     const hiragana = primaryKana ? katakanaToHiragana(primaryKana) : "";
     const firstExample = exampleWords ? Object.entries(exampleWords)[0] : null;
     return (

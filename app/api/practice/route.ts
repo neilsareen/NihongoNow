@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { pickPrimaryKanjiReading } from "@/lib/utils";
 import { ContentType } from "@prisma/client";
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -128,7 +129,7 @@ export async function GET(request: Request) {
         id: k.id,
         contentType: ContentType.KANJI,
         character: k.character,
-        romaji: k.onyomi[0] ?? k.kunyomi[0] ?? "",
+        romaji: pickPrimaryKanjiReading(k.character, k.onyomi, k.kunyomi),
         meanings: k.meanings,
         onyomi: k.onyomi,
         kunyomi: k.kunyomi,
