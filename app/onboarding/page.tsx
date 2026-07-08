@@ -71,31 +71,31 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gray-950 bg-ambient-glow flex items-center justify-center px-4 py-12">
       <div className="max-w-lg w-full space-y-8">
         <div className="text-center text-white">
-          <Link href="/" className="text-4xl jp-char block mb-2">
+          <Link href="/" className="text-5xl jp-char block mb-3 animate-float">
             日本語
           </Link>
-          <h1 className="text-2xl font-bold">
+          <h1 className="font-display text-2xl font-bold">
             Let&apos;s personalize your learning
           </h1>
-          <p className="text-purple-200 mt-2 text-sm">
-            We&apos;ll build a custom path just for you
+          <p className="text-gray-400 mt-2 text-sm">
+            We&apos;ll build a custom path just for you ✨
           </p>
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-white font-semibold">
+          <h2 className="font-display text-white font-semibold">
             What&apos;s your current Japanese level?
           </h2>
           {LEVELS.map((level) => (
             <button
               key={level.id}
               onClick={() => setSelectedLevel(level.id)}
-              className={`w-full text-left p-4 rounded-xl border transition-all ${
+              className={`w-full text-left p-4 rounded-2xl border transition-all ${
                 selectedLevel === level.id
-                  ? "bg-purple-600/40 border-purple-400"
+                  ? "bg-sunset-soft border-orange-400/60 shadow-glow-warm scale-[1.01]"
                   : "bg-white/5 border-white/10 hover:bg-white/10"
               }`}
             >
@@ -111,15 +111,15 @@ export default function OnboardingPage() {
         </div>
 
         <div className="space-y-3">
-          <h2 className="text-white font-semibold">Daily study goal</h2>
+          <h2 className="font-display text-white font-semibold">Daily study goal</h2>
           <div className="flex gap-3">
             {[10, 15, 20, 30].map((min) => (
               <button
                 key={min}
                 onClick={() => setStudyGoal(min)}
-                className={`flex-1 py-2.5 rounded-xl border text-sm font-medium transition-all ${
+                className={`flex-1 py-2.5 rounded-2xl border text-sm font-medium transition-all ${
                   studyGoal === min
-                    ? "bg-purple-600 border-purple-400 text-white"
+                    ? "bg-sunset border-transparent text-white shadow-glow-warm"
                     : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
                 }`}
               >
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
         </div>
 
         {error && (
-          <div className="bg-red-500/20 border border-red-500/30 text-red-200 rounded-lg p-3 text-sm">
+          <div className="bg-red-500/20 border border-red-500/30 text-red-200 rounded-2xl p-3 text-sm">
             {error}
           </div>
         )}
@@ -138,7 +138,7 @@ export default function OnboardingPage() {
         <button
           onClick={handleComplete}
           disabled={!selectedLevel || loading}
-          className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 text-white font-semibold py-3 rounded-xl transition-colors"
+          className="w-full bg-sunset disabled:opacity-40 text-white font-display font-semibold py-3 rounded-full shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] transition-transform"
         >
           {loading ? "Setting up your account..." : "Start Learning →"}
         </button>

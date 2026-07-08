@@ -186,9 +186,10 @@ function SelectionView({
       </header>
 
       <main className="max-w-lg mx-auto px-4 pt-10 pb-12">
-        <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-6">
+        <div className="bg-gray-900 border border-white/10 rounded-3xl p-6 space-y-6">
           <div className="text-center space-y-1">
-            <h1 className="text-2xl font-bold">Character Practice</h1>
+            <div className="text-4xl mb-1">練習</div>
+            <h1 className="font-display text-2xl font-bold">Character Practice</h1>
             <p className="text-gray-400 text-sm">Choose which characters to practice</p>
           </div>
 
@@ -197,9 +198,9 @@ function SelectionView({
               <button
                 key={type}
                 onClick={() => toggle(type)}
-                className={`flex-1 py-3 px-2 rounded-xl border text-sm font-medium transition-all ${
+                className={`flex-1 py-3 px-2 rounded-2xl border text-sm font-medium transition-all ${
                   selected.has(type)
-                    ? "bg-white text-gray-950 border-white"
+                    ? "bg-sunset text-white border-transparent shadow-glow-warm scale-[1.02]"
                     : "bg-transparent text-gray-400 border-white/20 hover:border-white/40 hover:text-white"
                 }`}
               >
@@ -215,7 +216,7 @@ function SelectionView({
           <button
             onClick={startPractice}
             disabled={loading}
-            className="w-full py-3 rounded-xl bg-white text-gray-950 font-semibold text-sm hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-full bg-sunset text-white shadow-glow-warm font-display font-semibold text-sm hover:scale-[1.015] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Loading…" : "Start Practice"}
           </button>
@@ -275,9 +276,9 @@ function PracticeView({
       </header>
 
       {/* Progress bar */}
-      <div className="w-full h-1 bg-white/10">
+      <div className="w-full h-1.5 bg-white/10">
         <div
-          className="h-1 bg-white transition-all duration-300"
+          className="h-1.5 bg-sunset transition-all duration-300"
           style={{ width: `${((index + 1) / total) * 100}%` }}
         />
       </div>
@@ -285,9 +286,10 @@ function PracticeView({
       <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-8 pb-12 flex flex-col gap-6">
         {/* Flashcard */}
         <div
+          key={index}
           onClick={() => !flipped && setFlipped(true)}
-          className={`bg-gray-900 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-4 p-8 min-h-64 cursor-pointer select-none transition-all ${
-            flipped ? "cursor-default" : "hover:border-white/25 active:scale-[0.99]"
+          className={`bg-gray-900 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-4 p-8 min-h-64 cursor-pointer select-none transition-all animate-pop-in ${
+            flipped ? "cursor-default shadow-glow-warm border-orange-500/20" : "hover:border-white/25 active:scale-[0.99]"
           }`}
         >
           {/* Character */}
@@ -369,15 +371,15 @@ function PracticeView({
           <div className="flex gap-3">
             <button
               onClick={() => advance(false)}
-              className="flex-1 py-3 rounded-xl border border-white/20 text-gray-300 text-sm font-medium hover:bg-white/5 transition-colors"
+              className="flex-1 py-3 rounded-2xl border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-950/40 transition-colors active:scale-[0.98]"
             >
-              Again
+              Again ✗
             </button>
             <button
               onClick={() => advance(true)}
-              className="flex-1 py-3 rounded-xl bg-white text-gray-950 text-sm font-semibold hover:bg-gray-100 transition-colors"
+              className="flex-1 py-3 rounded-2xl bg-sunset text-white shadow-glow-warm text-sm font-display font-semibold hover:scale-[1.015] active:scale-[0.98] transition-transform"
             >
-              Got it
+              Got it ✓
             </button>
           </div>
         )}
@@ -422,24 +424,25 @@ function SummaryView({
       </header>
 
       <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-10 pb-12 flex flex-col items-center gap-6">
-        <div className="bg-gray-900 border border-white/10 rounded-2xl p-8 w-full text-center space-y-6">
+        <div className="text-5xl animate-bounce-soft">{accuracy >= 80 ? "🎉" : accuracy >= 50 ? "👍" : "💪"}</div>
+        <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 w-full text-center space-y-6 animate-pop-in">
           <div className="space-y-1">
             <p className="text-gray-400 text-sm">Session complete</p>
-            <p className="text-5xl font-bold">{accuracy}%</p>
+            <p className="font-display text-6xl font-bold text-sunset">{accuracy}%</p>
             <p className="text-gray-400 text-sm">accuracy</p>
           </div>
 
           <div className="flex justify-center gap-8 text-sm text-gray-400">
             <div className="text-center">
-              <p className="text-white text-2xl font-semibold">{correct}</p>
+              <p className="text-white text-2xl font-display font-semibold">{correct}</p>
               <p>Correct</p>
             </div>
             <div className="text-center">
-              <p className="text-white text-2xl font-semibold">{total - correct}</p>
+              <p className="text-white text-2xl font-display font-semibold">{total - correct}</p>
               <p>Missed</p>
             </div>
             <div className="text-center">
-              <p className="text-white text-2xl font-semibold">{total}</p>
+              <p className="text-white text-2xl font-display font-semibold">{total}</p>
               <p>Total</p>
             </div>
           </div>
@@ -448,13 +451,13 @@ function SummaryView({
         <div className="w-full space-y-3">
           <button
             onClick={onPracticeAgain}
-            className="w-full py-3 rounded-xl bg-white text-gray-950 font-semibold text-sm hover:bg-gray-100 transition-colors"
+            className="w-full py-3 rounded-full bg-sunset text-white shadow-glow-warm font-display font-semibold text-sm hover:scale-[1.015] active:scale-[0.98] transition-transform"
           >
             Practice Again
           </button>
           <Link
             href="/dashboard"
-            className="block w-full py-3 rounded-xl border border-white/20 text-gray-300 text-sm font-medium hover:bg-white/5 transition-colors text-center"
+            className="block w-full py-3 rounded-full border border-white/20 text-gray-300 text-sm font-medium hover:bg-white/5 transition-colors text-center"
           >
             Back to Dashboard
           </Link>

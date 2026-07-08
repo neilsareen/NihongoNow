@@ -64,11 +64,11 @@ export default async function DashboardPage() {
   const goalPct = Math.min(100, goalMinutes > 0 ? Math.round((todayMinutes / goalMinutes) * 100) : 0);
 
   const progressItems = [
-    { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ" },
-    { label: "Katakana", stage: "KATAKANA", total: 69, emoji: "ア" },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, emoji: "漢" },
-    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, emoji: "📖" },
-    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬" },
+    { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ", bar: "from-pink-500 to-rose-400" },
+    { label: "Katakana", stage: "KATAKANA", total: 69, emoji: "ア", bar: "from-sky-500 to-cyan-400" },
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, emoji: "漢", bar: "from-red-500 to-orange-400" },
+    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, emoji: "📖", bar: "from-emerald-500 to-green-400" },
+    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬", bar: "from-violet-500 to-purple-400" },
   ];
 
   const masteredByStage = (stage: string, total: number) => {
@@ -100,8 +100,8 @@ export default async function DashboardPage() {
     <div className="space-y-5">
       {/* Daily goal */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-1.5 bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${goalPct}%` }} />
+        <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
+          <div className="h-full bg-sunset rounded-full transition-all duration-500" style={{ width: `${goalPct}%` }} />
         </div>
         <span className="text-xs text-gray-500 shrink-0">{todayMinutes} / {goalMinutes} min today</span>
       </div>
@@ -109,43 +109,45 @@ export default async function DashboardPage() {
       {/* Greeting */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold">{getGreeting()}, {profile.displayName || "Learner"}</h1>
+          <h1 className="font-display text-2xl font-bold">{getGreeting()}, {profile.displayName || "Learner"} 👋</h1>
           <p className="text-gray-500 mt-0.5 text-sm">
-            {reviewsDue > 0 ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due` : "All caught up on reviews"}
+            {reviewsDue > 0 ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due` : "All caught up on reviews ✨"}
           </p>
         </div>
-        <div className="text-right">
-          <div className="text-xl font-bold text-orange-400">🔥 {profile.currentStreak}</div>
-          <div className="text-xs text-gray-600">day streak</div>
+        <div className="text-right bg-gradient-to-br from-orange-500/15 to-pink-500/10 border border-orange-500/20 rounded-2xl px-3.5 py-2">
+          <div className="font-display text-2xl font-bold text-orange-400 flex items-center gap-1">
+            <span className="animate-wiggle inline-block">🔥</span> {profile.currentStreak}
+          </div>
+          <div className="text-[11px] text-gray-500">day streak</div>
         </div>
       </div>
 
       {/* Lesson CTA */}
       {showContinue && inProgressLesson ? (
-        <Link href={`/lesson/${inProgressLesson.id}`} className="block bg-gray-800 hover:bg-gray-700 border border-white/10 rounded-xl p-5 transition-colors">
+        <Link href={`/lesson/${inProgressLesson.id}`} className="block bg-sunset rounded-2xl p-5 shadow-glow-warm hover:scale-[1.015] active:scale-[0.99] transition-transform">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-semibold text-white">Continue Lesson</div>
-              <div className="text-gray-400 text-sm mt-0.5">{answeredCount} done · {unansweredCount} remaining</div>
+              <div className="font-display font-bold text-white text-lg">Continue Lesson</div>
+              <div className="text-white/80 text-sm mt-0.5">{answeredCount} done · {unansweredCount} remaining</div>
             </div>
-            <div className="text-2xl text-gray-400">▶</div>
+            <div className="text-2xl text-white/90">▶</div>
           </div>
         </Link>
       ) : (
-        <Link href="/lesson" className="block bg-gray-800 hover:bg-gray-700 border border-white/10 rounded-xl p-5 transition-colors">
+        <Link href="/lesson" className="block bg-sunset rounded-2xl p-5 shadow-glow-warm hover:scale-[1.015] active:scale-[0.99] transition-transform">
           <div className="flex items-center justify-between">
             <div>
-              <div className="font-semibold text-white">{lessonOrdinal(todayLessons + 1)}</div>
-              <div className="text-gray-400 text-sm mt-0.5">{reviewLabel}</div>
+              <div className="font-display font-bold text-white text-lg">{lessonOrdinal(todayLessons + 1)}</div>
+              <div className="text-white/80 text-sm mt-0.5">{reviewLabel}</div>
             </div>
-            <div className="text-2xl text-gray-400">▶</div>
+            <div className="text-2xl text-white/90">▶</div>
           </div>
         </Link>
       )}
 
       {/* Mastery Progress */}
-      <div className="bg-gray-900 border border-white/10 rounded-xl p-5 space-y-4">
-        <h2 className="font-medium text-sm text-gray-400 uppercase tracking-wide">Mastery Progress</h2>
+      <div className="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-4">
+        <h2 className="font-display font-semibold text-sm text-gray-300 tracking-wide">Mastery Progress</h2>
         {progressItems.map((item) => {
           const p = progressMap[item.stage];
           const mastered = p?.masteredItems ?? 0;
@@ -159,8 +161,8 @@ export default async function DashboardPage() {
                 </span>
                 <span className="text-gray-600">{mastered}/{item.total}</span>
               </div>
-              <div className="h-1 bg-gray-800 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                <div className={`h-full bg-gradient-to-r ${item.bar} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
               </div>
             </div>
           );
@@ -168,13 +170,13 @@ export default async function DashboardPage() {
       </div>
 
       {/* Travel Readiness */}
-      <div className="bg-gray-900 border border-white/10 rounded-xl p-5 space-y-3">
-        <h2 className="font-medium text-sm text-gray-400 uppercase tracking-wide">Travel Readiness</h2>
+      <div className="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-3">
+        <h2 className="font-display font-semibold text-sm text-gray-300 tracking-wide">Travel Readiness 🗾</h2>
         <div className="flex items-center justify-between">
-          <div className={`font-semibold ${travelLevel.color}`}>{travelLevel.name}</div>
+          <div className={`font-display font-semibold ${travelLevel.color}`}>{travelLevel.name}</div>
           <div className="text-gray-600 text-xs">{travelScore}%</div>
         </div>
-        <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
+        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
           <div className={`h-full bg-gradient-to-r ${travelLevel.bar} rounded-full transition-all duration-500`} style={{ width: `${travelScore}%` }} />
         </div>
         <p className="text-gray-500 text-sm leading-relaxed">{travelLevel.description}</p>
@@ -187,7 +189,7 @@ export default async function DashboardPage() {
 
 function WeakestReviewButton() {
   return (
-    <Link href="/review/weakest" className="block text-center w-full py-3 border border-white/10 text-gray-500 hover:text-gray-300 hover:border-white/20 rounded-xl text-sm transition-colors">
+    <Link href="/review/weakest" className="block text-center w-full py-3 border border-white/10 text-gray-400 hover:text-white hover:border-white/25 hover:bg-white/[0.03] rounded-full text-sm transition-colors">
       Review my weakest items →
     </Link>
   );

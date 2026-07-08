@@ -63,6 +63,44 @@ const config: Config = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        display: ["var(--font-display)", "sans-serif"],
+      },
+      keyframes: {
+        "pop-in": {
+          "0%": { opacity: "0", transform: "scale(0.92) translateY(6px)" },
+          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
+        },
+        "bounce-soft": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
+        },
+        wiggle: {
+          "0%, 100%": { transform: "rotate(-4deg)" },
+          "50%": { transform: "rotate(4deg)" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.6" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-8px)" },
+        },
+        "pop-once": {
+          "0%": { transform: "scale(1)" },
+          "40%": { transform: "scale(1.15)" },
+          "100%": { transform: "scale(1)" },
+        },
+      },
+      animation: {
+        "pop-in": "pop-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both",
+        "bounce-soft": "bounce-soft 2s ease-in-out infinite",
+        wiggle: "wiggle 1s ease-in-out infinite",
+        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+        float: "float 4s ease-in-out infinite",
+        "pop-once": "pop-once 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
+      },
     },
   },
   plugins: [],

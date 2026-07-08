@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Baloo_2 } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { PWAUpdateBanner } from "@/app/components/pwa-update-banner";
 
 const inter = Inter({ subsets: ["latin"] });
+const baloo = Baloo_2({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
   title: "Ikou",
@@ -31,7 +32,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen bg-gray-950 text-white antialiased`}>
+      <body className={`${inter.className} ${baloo.variable} min-h-screen bg-gray-950 text-white antialiased`}>
         {children}
         <PWAUpdateBanner />
         <Script id="sw-register" strategy="afterInteractive">{`

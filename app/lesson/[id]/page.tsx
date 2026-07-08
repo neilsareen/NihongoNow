@@ -523,22 +523,23 @@ export default function LessonPage() {
           </div>
         )}
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-white mb-1">Lesson Complete</h1>
-          <p className="text-gray-500 text-sm">Good work.</p>
+          <div className="text-5xl mb-2 animate-bounce-soft">🎉</div>
+          <h1 className="font-display text-3xl font-bold text-white mb-1">Lesson Complete!</h1>
+          <p className="text-gray-500 text-sm">Nice work — see you next time.</p>
         </div>
-        <div className="bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center gap-4 w-full max-w-sm">
+        <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center gap-4 w-full max-w-sm animate-pop-in">
           <div className="text-center">
-            <p className="text-5xl font-bold text-white">{finalResults.accuracy}%</p>
+            <p className="font-display text-6xl font-bold text-sunset">{finalResults.accuracy}%</p>
             <p className="text-gray-500 mt-1 text-sm">Accuracy</p>
           </div>
           <div className="flex gap-6 text-sm">
-            <span className="text-green-400">{finalResults.correct} correct</span>
-            <span className="text-red-400">{finalResults.total - finalResults.correct} incorrect</span>
+            <span className="text-green-400">✓ {finalResults.correct} correct</span>
+            <span className="text-red-400">✗ {finalResults.total - finalResults.correct} incorrect</span>
           </div>
         </div>
         <a
           href="/dashboard"
-          className="px-8 py-3 bg-white text-gray-950 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
+          className="px-8 py-3 bg-sunset text-white shadow-glow-warm rounded-full font-display font-semibold hover:scale-[1.03] active:scale-[0.98] transition-transform"
         >
           Back to Dashboard
         </a>
@@ -601,9 +602,9 @@ export default function LessonPage() {
             Done
           </button>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-1">
+        <div className="w-full bg-gray-800 rounded-full h-1.5">
           <div
-            className="bg-white h-1 rounded-full transition-all duration-300"
+            className="bg-sunset h-1.5 rounded-full transition-all duration-300"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -611,14 +612,14 @@ export default function LessonPage() {
 
       {isCultural && currentItem ? (
         <>
-          <div className="w-full max-w-sm bg-gray-900 border border-amber-900/30 rounded-2xl p-8 flex flex-col items-start justify-center gap-4 min-h-56">
+          <div key={currentItem.id} className="w-full max-w-sm bg-gray-900 border border-amber-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
             {revealed ? <CulturalTipAnswer item={currentItem} /> : <CulturalTipQuestion item={currentItem} />}
           </div>
           <div className="w-full max-w-sm">
             {!revealed ? (
               <button
                 onClick={() => setRevealed(true)}
-                className="w-full py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium text-base transition-colors"
+                className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
               >
                 Reveal
               </button>
@@ -626,13 +627,13 @@ export default function LessonPage() {
               <div className="flex gap-3">
                 <button
                   onClick={() => handleAnswer(false)}
-                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-red-900/50 text-red-400 rounded-xl font-medium text-base transition-colors"
+                  className="flex-1 py-4 bg-gray-900 hover:bg-red-950/40 border border-red-500/30 text-red-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
                 >
                   Again ✗
                 </button>
                 <button
                   onClick={() => handleAnswer(true)}
-                  className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-green-900/50 text-green-400 rounded-xl font-medium text-base transition-colors"
+                  className="flex-1 py-4 bg-gray-900 hover:bg-green-950/40 border border-green-500/30 text-green-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
                 >
                   Got it ✓
                 </button>
@@ -642,7 +643,7 @@ export default function LessonPage() {
         </>
       ) : (
         <>
-          <div className="relative w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-10 flex flex-col items-center justify-center min-h-56 gap-4">
+          <div key={currentItem?.id} className="relative w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-10 flex flex-col items-center justify-center min-h-56 gap-4 animate-pop-in">
             {currentItem && (
               <div
                 className="absolute top-3 right-3"
@@ -659,13 +660,13 @@ export default function LessonPage() {
               {mcChoices.map((choice) => {
                 const isCorrectAnswer = choice === (currentItem?.content?.english ?? "");
                 const isSelected = mcChoice === choice;
-                let btnClass = "w-full py-3 px-4 rounded-xl text-sm font-medium text-left border transition-colors ";
+                let btnClass = "w-full py-3 px-4 rounded-2xl text-sm font-medium text-left border transition-all ";
                 if (!mcChoice) {
-                  btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800";
+                  btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800 hover:border-white/20";
                 } else if (isSelected && mcCorrect) {
-                  btnClass += "bg-green-900/50 border-green-700 text-green-300";
+                  btnClass += "bg-green-900/50 border-green-500/50 text-green-300 shadow-glow-green animate-pop-once";
                 } else if (isSelected && !mcCorrect) {
-                  btnClass += "bg-red-900/50 border-red-700 text-red-300";
+                  btnClass += "bg-red-900/50 border-red-500/50 text-red-300 shadow-glow-red";
                 } else if (!isSelected && mcChoice && isCorrectAnswer) {
                   btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
                 } else {
@@ -693,7 +694,7 @@ export default function LessonPage() {
               {mcChoice && !mcCorrect && (
                 <button
                   onClick={() => handleAnswer(false)}
-                  className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-colors mt-1"
+                  className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl text-sm font-medium transition-colors mt-1"
                 >
                   Continue
                 </button>
@@ -701,7 +702,7 @@ export default function LessonPage() {
             </div>
           ) : (
             <>
-              <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-2xl p-8 flex flex-col items-center justify-center min-h-32">
+              <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-32">
                 {revealed && currentItem
                   ? <CardBack item={currentItem} />
                   : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
@@ -711,7 +712,7 @@ export default function LessonPage() {
                 {!revealed ? (
                   <button
                     onClick={() => setRevealed(true)}
-                    className="flex-1 py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-xl font-medium text-base transition-colors"
+                    className="flex-1 py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
                   >
                     Reveal
                   </button>
@@ -719,13 +720,13 @@ export default function LessonPage() {
                   <>
                     <button
                       onClick={() => handleAnswer(false)}
-                      className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-red-900/50 text-red-400 rounded-xl font-medium text-base transition-colors"
+                      className="flex-1 py-4 bg-gray-900 hover:bg-red-950/40 border border-red-500/30 text-red-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
                     >
                       Again ✗
                     </button>
                     <button
                       onClick={() => handleAnswer(true)}
-                      className="flex-1 py-4 bg-gray-900 hover:bg-gray-800 border border-green-900/50 text-green-400 rounded-xl font-medium text-base transition-colors"
+                      className="flex-1 py-4 bg-gray-900 hover:bg-green-950/40 border border-green-500/30 text-green-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
                     >
                       Got it ✓
                     </button>
