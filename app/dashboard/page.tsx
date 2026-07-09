@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import { Bell, ChevronRight, Flame } from "lucide-react";
 import { getStartOfDayInTimezone } from "@/lib/utils";
 
 async function getDashboardData(userId: string, timeZone: string) {
@@ -43,6 +44,32 @@ function lessonOrdinal(n: number): string {
   return `Today's ${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]} Lesson`;
 }
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
+}
+
+function weekStrip(streak: number) {
+  const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  const today = new Date();
+  const dow = (today.getDay() + 6) % 7; // 0 = Monday
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - dow);
+
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    const daysAgo = dow - i;
+    return {
+      label: labels[i],
+      date: d.getDate(),
+      isToday: i === dow,
+      inStreak: daysAgo >= 0 && daysAgo < streak,
+    };
+  });
+}
+
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -65,12 +92,14 @@ export default async function DashboardPage() {
   const goalMinutes = profile.studyGoalMinutes;
   const goalPct = Math.min(100, goalMinutes > 0 ? Math.round((todayMinutes / goalMinutes) * 100) : 0);
 
-  const progressItems = [
-    { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ", bar: "from-pink-500 to-rose-400" },
-    { label: "Katakana", stage: "KATAKANA", total: 69, emoji: "ア", bar: "from-sky-500 to-cyan-400" },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, emoji: "漢", bar: "from-red-500 to-orange-400" },
-    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, emoji: "📖", bar: "from-emerald-500 to-green-400" },
-    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬", bar: "from-violet-500 to-purple-400" },
+  const ringItems = [
+    { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ", from: "#a78bfa", to: "#7c3aed" },
+    { label: "Katakana", stage: "KATAKANA", total: 69, emoji: "ア", from: "#fbbf24", to: "#d97706" },
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, emoji: "漢", from: "#4ade80", to: "#16a34a" },
+  ];
+  const secondaryItems = [
+    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, emoji: "📖", bar: "from-sky-500 to-cyan-400" },
+    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬", bar: "from-rose-500 to-pink-400" },
   ];
 
   const masteredByStage = (stage: string, total: number) => {
@@ -98,59 +127,111 @@ export default async function DashboardPage() {
     ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due + new content`
     : "New content only";
 
+  const week = weekStrip(profile.currentStreak);
+  const lessonHref = showContinue && inProgressLesson ? `/lesson/${inProgressLesson.id}` : "/lesson";
+  const lessonTitle = showContinue && inProgressLesson ? "Continue Lesson" : lessonOrdinal(todayLessons + 1);
+  const lessonSubtitle = showContinue && inProgressLesson
+    ? `${answeredCount} done · ${unansweredCount} remaining`
+    : reviewLabel;
+
   return (
     <div className="space-y-5">
-      {/* Daily goal */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-2 bg-gray-800 rounded-full overflow-hidden">
-          <div className="h-full bg-sunset rounded-full transition-all duration-500" style={{ width: `${goalPct}%` }} />
-        </div>
-        <span className="text-xs text-gray-500 shrink-0">{todayMinutes} / {goalMinutes} min today</span>
-      </div>
-
-      {/* Greeting */}
+      {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">{getGreeting()}, {profile.displayName || "Learner"} 👋</h1>
-          <p className="text-gray-500 mt-0.5 text-sm">
-            {reviewsDue > 0 ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due` : "All caught up on reviews ✨"}
-          </p>
-        </div>
-        <div className="text-right bg-gradient-to-br from-orange-500/15 to-pink-500/10 border border-orange-500/20 rounded-2xl px-3.5 py-2">
-          <div className="font-display text-2xl font-bold text-orange-400 flex items-center gap-1">
-            <span className="animate-wiggle inline-block">🔥</span> {profile.currentStreak}
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-sunset flex items-center justify-center font-display font-bold text-white shrink-0">
+            {initials(profile.displayName || "Learner")}
           </div>
-          <div className="text-[11px] text-gray-500">day streak</div>
+          <div>
+            <p className="text-gray-500 text-sm">{getGreeting()}</p>
+            <p className="font-display font-bold text-lg leading-tight">{profile.displayName || "Learner"}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1 bg-gradient-to-br from-orange-500/15 to-pink-500/10 border border-orange-500/20 rounded-full pl-2.5 pr-3 h-11">
+            <Flame className="w-4 h-4 text-orange-400 animate-wiggle" fill="currentColor" />
+            <span className="font-display font-bold text-orange-400 text-sm">{profile.currentStreak}</span>
+          </div>
+          <div className="w-11 h-11 rounded-full bg-gray-900 border border-white/10 flex items-center justify-center">
+            <Bell className="w-5 h-5 text-gray-400" />
+          </div>
         </div>
       </div>
 
-      {/* Lesson CTA */}
-      {showContinue && inProgressLesson ? (
-        <Link href={`/lesson/${inProgressLesson.id}`} className="block bg-sunset rounded-2xl p-5 shadow-glow-warm hover:scale-[1.015] active:scale-[0.99] transition-transform">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-display font-bold text-white text-lg">Continue Lesson</div>
-              <div className="text-white/80 text-sm mt-0.5">{answeredCount} done · {unansweredCount} remaining</div>
-            </div>
-            <div className="text-2xl text-white/90">▶</div>
+      {/* Today's progress ring */}
+      <div className="bg-gray-900 border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4">
+        <div className="w-full flex items-center justify-between text-sm">
+          <span className="font-display font-semibold text-gray-300">Today&apos;s Progress</span>
+          <span className="text-gray-500 text-xs">
+            {reviewsDue > 0 ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due` : "All caught up ✨"}
+          </span>
+        </div>
+        <div
+          className="relative w-40 h-40 rounded-full grid place-items-center shrink-0"
+          style={{ background: `conic-gradient(#fbbf24, #fb923c, #ec4899 ${goalPct}%, rgba(255,255,255,0.06) ${goalPct}%)` }}
+        >
+          <div className="absolute inset-3 rounded-full bg-gray-900 flex flex-col items-center justify-center">
+            <span className="font-display text-4xl font-bold">{todayMinutes}</span>
+            <span className="text-gray-500 text-xs mt-0.5">of {goalMinutes} min today</span>
           </div>
-        </Link>
-      ) : (
-        <Link href="/lesson" className="block bg-sunset rounded-2xl p-5 shadow-glow-warm hover:scale-[1.015] active:scale-[0.99] transition-transform">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="font-display font-bold text-white text-lg">{lessonOrdinal(todayLessons + 1)}</div>
-              <div className="text-white/80 text-sm mt-0.5">{reviewLabel}</div>
-            </div>
-            <div className="text-2xl text-white/90">▶</div>
-          </div>
-        </Link>
-      )}
+        </div>
+      </div>
 
-      {/* Mastery Progress */}
+      {/* Ring stat cards */}
+      <div className="grid grid-cols-3 gap-3">
+        {ringItems.map((item) => {
+          const p = progressMap[item.stage];
+          const mastered = p?.masteredItems ?? 0;
+          const pct = Math.min(100, Math.round((mastered / item.total) * 100));
+          return (
+            <div key={item.label} className="rounded-2xl p-3.5 flex flex-col items-center gap-2" style={{ background: `linear-gradient(135deg, ${item.from}, ${item.to})` }}>
+              <div
+                className="relative w-14 h-14 rounded-full grid place-items-center shrink-0"
+                style={{ background: `conic-gradient(rgba(255,255,255,0.95) ${pct}%, rgba(0,0,0,0.25) ${pct}%)` }}
+              >
+                <div className="absolute inset-1.5 rounded-full flex items-center justify-center text-[11px] font-display font-bold text-white" style={{ background: item.to }}>
+                  {pct}%
+                </div>
+              </div>
+              <span className="text-white text-xs font-semibold flex items-center gap-1">
+                <span className="jp-char">{item.emoji}</span> {item.label}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Week strip */}
+      <div className="flex justify-between gap-1.5">
+        {week.map((day) => (
+          <div
+            key={day.label}
+            className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-2xl ${
+              day.isToday ? "bg-sunset shadow-glow-warm" : "bg-gray-900 border border-white/10"
+            }`}
+          >
+            <span className={`text-[11px] ${day.isToday ? "text-white/80" : "text-gray-500"}`}>{day.label}</span>
+            <span className={`text-sm font-display font-semibold ${day.isToday ? "text-white" : "text-gray-300"}`}>{day.date}</span>
+            <span className={`w-1 h-1 rounded-full ${day.isToday ? "bg-white" : day.inStreak ? "bg-orange-400" : "bg-transparent"}`} />
+          </div>
+        ))}
+      </div>
+
+      {/* Lesson CTA row */}
+      <Link href={lessonHref} className="flex items-center gap-3 bg-gray-900 border border-white/10 rounded-2xl p-3.5 hover:border-white/20 transition-colors">
+        <div className="w-12 h-12 rounded-xl bg-sunset flex items-center justify-center text-xl shrink-0">📘</div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-semibold text-white text-sm truncate">{lessonTitle}</div>
+          <div className="text-gray-500 text-xs truncate">{lessonSubtitle}</div>
+        </div>
+        <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+          <ChevronRight className="w-5 h-5 text-white" />
+        </div>
+      </Link>
+
+      {/* Vocabulary + Phrases */}
       <div className="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-4">
-        <h2 className="font-display font-semibold text-sm text-gray-300 tracking-wide">Mastery Progress</h2>
-        {progressItems.map((item) => {
+        {secondaryItems.map((item) => {
           const p = progressMap[item.stage];
           const mastered = p?.masteredItems ?? 0;
           const pct = Math.min(100, Math.round((mastered / item.total) * 100));
@@ -158,7 +239,7 @@ export default async function DashboardPage() {
             <div key={item.label}>
               <div className="flex justify-between text-sm mb-1">
                 <span className="flex items-center gap-2 text-gray-300">
-                  <span className="jp-char">{item.emoji}</span>
+                  <span>{item.emoji}</span>
                   {item.label}
                 </span>
                 <span className="text-gray-600">{mastered}/{item.total}</span>
