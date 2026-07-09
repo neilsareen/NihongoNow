@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { AVATAR_OPTIONS } from "@/lib/utils";
 
 export async function GET() {
   const supabase = await createClient();
@@ -19,16 +20,22 @@ export async function PATCH(request: Request) {
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = await request.json();
-  const { studyGoalMinutes, displayName } = body as {
+  const { studyGoalMinutes, displayName, avatarUrl } = body as {
     studyGoalMinutes?: number;
     displayName?: string;
+    avatarUrl?: string;
   };
+
+  if (avatarUrl !== undefined && !AVATAR_OPTIONS.some((a) => a.key === avatarUrl)) {
+    return NextResponse.json({ error: "Invalid avatar" }, { status: 400 });
+  }
 
   const profile = await prisma.userProfile.update({
     where: { id: user.id },
     data: {
       ...(studyGoalMinutes !== undefined && { studyGoalMinutes }),
       ...(displayName !== undefined && { displayName }),
+      ...(avatarUrl !== undefined && { avatarUrl }),
     },
   });
 

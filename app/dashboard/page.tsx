@@ -4,22 +4,32 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { Bell, ChevronRight, Flame } from "lucide-react";
-import { getStartOfDayInTimezone } from "@/lib/utils";
+import { getStartOfDayInTimezone, getAvatar } from "@/lib/utils";
+
+const LESSON_TYPE_SYMBOL: Record<string, string> = {
+  HIRAGANA: "あ",
+  KATAKANA: "ア",
+  KANJI: "漢",
+  VOCABULARY: "語",
+  PHRASE: "話",
+};
 
 async function getDashboardData(userId: string, timeZone: string) {
   const todayStart = getStartOfDayInTimezone(timeZone);
 
-  const [profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
+  const [profile, stats, progress, dueReviewsByType, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
-    prisma.review.count({
+    prisma.review.groupBy({
+      by: ["contentType"],
       where: { userId, nextReviewAt: { lte: new Date() }, srsLevel: { not: "MASTERED" } },
+      _count: { _all: true },
     }),
     prisma.lesson.findFirst({
       where: { userId, completedAt: null },
       orderBy: { generatedAt: "desc" },
-      include: { items: { select: { answeredAt: true }, orderBy: { displayOrder: "asc" } } },
+      include: { items: { select: { answeredAt: true, contentType: true }, orderBy: { displayOrder: "asc" } } },
     }),
     prisma.lesson.aggregate({
       where: { userId, completedAt: { gte: todayStart }, durationSeconds: { not: null } },
@@ -27,7 +37,24 @@ async function getDashboardData(userId: string, timeZone: string) {
     }),
     prisma.lesson.count({ where: { userId, completedAt: { gte: todayStart } } }),
   ]);
-  return { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons };
+  const reviewsDue = dueReviewsByType.reduce((sum, r) => sum + r._count._all, 0);
+  return { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons };
+}
+
+// What symbol best represents the makeup of a lesson: for an in-progress
+// lesson, whichever content type its items are mostly made of; for an
+// upcoming one (not generated yet), whichever type dominates the reviews
+// that'll fill it, falling back to the learner's least-mastered stage.
+function dominantLessonSymbol(counts: Partial<Record<string, number>>, fallbackStage: string | null): string {
+  let best: string | null = null;
+  let bestCount = 0;
+  for (const [type, count] of Object.entries(counts)) {
+    if ((count ?? 0) > bestCount) {
+      best = type;
+      bestCount = count ?? 0;
+    }
+  }
+  return LESSON_TYPE_SYMBOL[best ?? fallbackStage ?? "VOCABULARY"] ?? "行";
 }
 
 function getGreeting() {
@@ -42,12 +69,6 @@ function lessonOrdinal(n: number): string {
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
   return `Today's ${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]} Lesson`;
-}
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  return (parts[0][0] + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
 function weekStrip(streak: number) {
@@ -76,8 +97,10 @@ export default async function DashboardPage() {
   if (authError || !user) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, stats, progress, reviewsDue, inProgressLesson, todayStudy, todayLessons } = await getDashboardData(user.id, timeZone);
+  const { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons } = await getDashboardData(user.id, timeZone);
   if (!profile) redirect("/onboarding");
+
+  const avatar = getAvatar(profile.avatarUrl);
 
   const accuracy = stats && stats.totalReviews > 0
     ? Math.round((stats.correctReviews / stats.totalReviews) * 100) : 0;
@@ -134,14 +157,34 @@ export default async function DashboardPage() {
     ? `${answeredCount} done · ${unansweredCount} remaining`
     : reviewLabel;
 
+  // Which content type a lesson is "mostly" made of, to pick its icon glyph.
+  const fallbackStage =
+    masteredByStage("HIRAGANA", 71) < 0.9 ? "HIRAGANA" :
+    masteredByStage("KATAKANA", 69) < 0.9 ? "KATAKANA" :
+    masteredByStage("ESSENTIAL_KANJI", 1500) < 0.9 ? "KANJI" :
+    masteredByStage("CORE_VOCAB", 2000) < 0.9 ? "VOCABULARY" :
+    "PHRASE";
+  const lessonTypeCounts: Partial<Record<string, number>> = inProgressLesson
+    ? inProgressLesson.items.reduce((acc, i) => {
+        acc[i.contentType] = (acc[i.contentType] ?? 0) + 1;
+        return acc;
+      }, {} as Partial<Record<string, number>>)
+    : Object.fromEntries(dueReviewsByType.map((r) => [r.contentType, r._count._all]));
+  const lessonSymbol = dominantLessonSymbol(lessonTypeCounts, fallbackStage);
+
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-sunset flex items-center justify-center font-display font-bold text-white shrink-0">
-            {initials(profile.displayName || "Learner")}
-          </div>
+          <Link
+            href="/settings"
+            className="w-12 h-12 rounded-full flex items-center justify-center jp-char text-xl font-bold text-white shrink-0"
+            style={{ background: `linear-gradient(135deg, ${avatar.from}, ${avatar.to})` }}
+            title="Change avatar"
+          >
+            {avatar.char}
+          </Link>
           <div>
             <p className="text-gray-500 text-sm">{getGreeting()}</p>
             <p className="font-display font-bold text-lg leading-tight">{profile.displayName || "Learner"}</p>
@@ -219,7 +262,7 @@ export default async function DashboardPage() {
 
       {/* Lesson CTA row */}
       <Link href={lessonHref} className="flex items-center gap-3 bg-gray-900 border border-white/10 rounded-2xl p-3.5 hover:border-white/20 transition-colors">
-        <div className="w-12 h-12 rounded-xl bg-sunset flex items-center justify-center text-xl shrink-0">📘</div>
+        <div className="w-12 h-12 rounded-xl bg-sunset flex items-center justify-center jp-char text-2xl font-bold text-white shrink-0">{lessonSymbol}</div>
         <div className="flex-1 min-w-0">
           <div className="font-display font-semibold text-white text-sm truncate">{lessonTitle}</div>
           <div className="text-gray-500 text-xs truncate">{lessonSubtitle}</div>

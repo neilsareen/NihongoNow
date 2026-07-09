@@ -54,6 +54,27 @@ export function pickPrimaryKanjiReading(
   return (onyomi[0] ?? kunyomi[0] ?? "").replace(/-/g, "");
 }
 
+// Selectable profile avatars — single kanji glyphs on a gradient background,
+// stored by key in UserProfile.avatarUrl (an otherwise-unused legacy field).
+export const AVATAR_OPTIONS = [
+  { key: "samurai", char: "侍", label: "Samurai", from: "#f87171", to: "#b91c1c" },
+  { key: "ninja",   char: "忍", label: "Ninja",   from: "#818cf8", to: "#4338ca" },
+  { key: "dragon",  char: "龍", label: "Dragon",  from: "#34d399", to: "#047857" },
+  { key: "sakura",  char: "桜", label: "Sakura",  from: "#f9a8d4", to: "#db2777" },
+  { key: "koi",     char: "鯉", label: "Koi",     from: "#fb923c", to: "#ea580c" },
+  { key: "fuji",    char: "富", label: "Fuji",    from: "#38bdf8", to: "#0284c7" },
+  { key: "kitsune", char: "狐", label: "Kitsune", from: "#fbbf24", to: "#d97706" },
+  { key: "neko",    char: "猫", label: "Neko",    from: "#a78bfa", to: "#7c3aed" },
+  { key: "fortune", char: "福", label: "Fortune", from: "#facc15", to: "#ca8a04" },
+  { key: "wa",      char: "和", label: "Wa",      from: "#4ade80", to: "#16a34a" },
+] as const;
+
+export type AvatarKey = (typeof AVATAR_OPTIONS)[number]["key"];
+
+export function getAvatar(key: string | null | undefined) {
+  return AVATAR_OPTIONS.find((a) => a.key === key) ?? AVATAR_OPTIONS[0];
+}
+
 export function getXPForLevel(level: number): number {
   return Math.floor(100 * Math.pow(1.5, level - 1));
 }

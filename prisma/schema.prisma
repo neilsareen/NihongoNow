@@ -49,7 +49,7 @@ model UserProfile {
   id               String        @id
   email            String        @unique
   displayName      String?
-  avatarUrl        String?
+  avatarUrl        String?       // stores a key from lib/utils.ts AVATAR_OPTIONS, not an actual URL
   currentStage     LearningStage @default(HIRAGANA)
   nativeLevel      String?
   studyGoalMinutes Int           @default(20)
