@@ -71,26 +71,6 @@ function lessonOrdinal(n: number): string {
   return `Today's ${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]} Lesson`;
 }
 
-function weekStrip(streak: number) {
-  const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const today = new Date();
-  const dow = (today.getDay() + 6) % 7; // 0 = Monday
-  const monday = new Date(today);
-  monday.setDate(today.getDate() - dow);
-
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    const daysAgo = dow - i;
-    return {
-      label: labels[i],
-      date: d.getDate(),
-      isToday: i === dow,
-      inStreak: daysAgo >= 0 && daysAgo < streak,
-    };
-  });
-}
-
 export default async function DashboardPage() {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -150,7 +130,6 @@ export default async function DashboardPage() {
     ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due + new content`
     : "New content only";
 
-  const week = weekStrip(profile.currentStreak);
   const lessonHref = showContinue && inProgressLesson ? `/lesson/${inProgressLesson.id}` : "/lesson";
   const lessonTitle = showContinue && inProgressLesson ? "Continue Lesson" : lessonOrdinal(todayLessons + 1);
   const lessonSubtitle = showContinue && inProgressLesson
@@ -179,7 +158,7 @@ export default async function DashboardPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/settings"
-            className="w-12 h-12 rounded-full flex items-center justify-center jp-char text-xl font-bold text-white shrink-0"
+            className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white shrink-0"
             style={{ background: `linear-gradient(135deg, ${avatar.from}, ${avatar.to})` }}
             title="Change avatar"
           >
@@ -202,20 +181,20 @@ export default async function DashboardPage() {
       </div>
 
       {/* Today's progress ring */}
-      <div className="bg-gray-900 border border-white/10 rounded-3xl p-6 flex flex-col items-center gap-4">
-        <div className="w-full flex items-center justify-between text-sm">
-          <span className="font-display font-semibold text-gray-300">Today&apos;s Progress</span>
-          <span className="text-gray-500 text-xs">
-            {reviewsDue > 0 ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due` : "All caught up ✨"}
-          </span>
-        </div>
+      <div className="bg-gray-900 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
         <div
-          className="relative w-40 h-40 rounded-full grid place-items-center shrink-0"
+          className="relative w-16 h-16 rounded-full grid place-items-center shrink-0"
           style={{ background: `conic-gradient(#fbbf24, #fb923c, #ec4899 ${goalPct}%, rgba(255,255,255,0.06) ${goalPct}%)` }}
         >
-          <div className="absolute inset-3 rounded-full bg-gray-900 flex flex-col items-center justify-center">
-            <span className="font-display text-4xl font-bold">{todayMinutes}</span>
-            <span className="text-gray-500 text-xs mt-0.5">of {goalMinutes} min today</span>
+          <div className="absolute inset-1.5 rounded-full bg-gray-900 flex flex-col items-center justify-center">
+            <span className="font-display text-base font-bold">{todayMinutes}</span>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-semibold text-gray-300 text-sm">Today&apos;s Progress</div>
+          <div className="text-gray-500 text-xs mt-0.5">{todayMinutes} of {goalMinutes} min today</div>
+          <div className="text-gray-500 text-xs mt-0.5">
+            {reviewsDue > 0 ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due` : "All caught up ✨"}
           </div>
         </div>
       </div>
@@ -242,22 +221,6 @@ export default async function DashboardPage() {
             </div>
           );
         })}
-      </div>
-
-      {/* Week strip */}
-      <div className="flex justify-between gap-1.5">
-        {week.map((day) => (
-          <div
-            key={day.label}
-            className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-2xl ${
-              day.isToday ? "bg-sunset shadow-glow-warm" : "bg-gray-900 border border-white/10"
-            }`}
-          >
-            <span className={`text-[11px] ${day.isToday ? "text-white/80" : "text-gray-500"}`}>{day.label}</span>
-            <span className={`text-sm font-display font-semibold ${day.isToday ? "text-white" : "text-gray-300"}`}>{day.date}</span>
-            <span className={`w-1 h-1 rounded-full ${day.isToday ? "bg-white" : day.inStreak ? "bg-orange-400" : "bg-transparent"}`} />
-          </div>
-        ))}
       </div>
 
       {/* Lesson CTA row */}

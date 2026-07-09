@@ -87,7 +87,7 @@ export default function SettingsPage() {
                 key={a.key}
                 onClick={() => handleAvatarChange(a.key)}
                 title={a.label}
-                className={`aspect-square rounded-full flex items-center justify-center jp-char text-xl font-bold text-white transition-transform ${
+                className={`aspect-square rounded-full flex items-center justify-center text-xl font-bold text-white transition-transform ${
                   avatarKey === a.key ? "ring-2 ring-offset-2 ring-offset-gray-900 ring-white scale-105" : "hover:scale-105"
                 }`}
                 style={{ background: `linear-gradient(135deg, ${a.from}, ${a.to})` }}
