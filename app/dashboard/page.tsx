@@ -158,8 +158,8 @@ export default async function DashboardPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/settings"
-            className="w-12 h-12 rounded-full flex items-center justify-center text-xl font-bold text-white shrink-0"
-            style={{ background: `linear-gradient(135deg, ${avatar.from}, ${avatar.to})` }}
+            className="w-12 h-12 rounded-full bg-black flex items-center justify-center text-2xl shrink-0"
+            style={{ border: `2px solid ${avatar.to}` }}
             title="Change avatar"
           >
             {avatar.char}
