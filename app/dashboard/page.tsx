@@ -96,9 +96,9 @@ export default async function DashboardPage() {
   const goalPct = Math.min(100, goalMinutes > 0 ? Math.round((todayMinutes / goalMinutes) * 100) : 0);
 
   const ringItems = [
-    { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ", from: "#a78bfa", to: "#7c3aed" },
-    { label: "Katakana", stage: "KATAKANA", total: 69, emoji: "ア", from: "#fbbf24", to: "#d97706" },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, emoji: "漢", from: "#4ade80", to: "#16a34a" },
+    { label: "Hiragana", stage: "HIRAGANA", practiceType: "HIRAGANA", total: 71, emoji: "あ", from: "#a78bfa", to: "#7c3aed" },
+    { label: "Katakana", stage: "KATAKANA", practiceType: "KATAKANA", total: 69, emoji: "ア", from: "#fbbf24", to: "#d97706" },
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", practiceType: "KANJI", total: 1500, emoji: "漢", from: "#4ade80", to: "#16a34a" },
   ];
   const secondaryItems = [
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, emoji: "📖", bar: "from-sky-500 to-cyan-400" },
@@ -206,7 +206,12 @@ export default async function DashboardPage() {
           const mastered = p?.masteredItems ?? 0;
           const pct = Math.min(100, Math.round((mastered / item.total) * 100));
           return (
-            <div key={item.label} className="rounded-2xl p-3.5 flex flex-col items-center gap-2" style={{ background: `linear-gradient(135deg, ${item.from}, ${item.to})` }}>
+            <Link
+              key={item.label}
+              href={`/practice?type=${item.practiceType}`}
+              className="rounded-2xl p-3.5 flex flex-col items-center gap-2 hover:scale-[1.03] active:scale-[0.98] transition-transform"
+              style={{ background: `linear-gradient(135deg, ${item.from}, ${item.to})` }}
+            >
               <div
                 className="relative w-14 h-14 rounded-full grid place-items-center shrink-0"
                 style={{ background: `conic-gradient(rgba(255,255,255,0.95) ${pct}%, rgba(0,0,0,0.25) ${pct}%)` }}
@@ -218,7 +223,7 @@ export default async function DashboardPage() {
               <span className="text-white text-xs font-semibold flex items-center gap-1">
                 <span className="jp-char">{item.emoji}</span> {item.label}
               </span>
-            </div>
+            </Link>
           );
         })}
       </div>

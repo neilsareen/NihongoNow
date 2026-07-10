@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
 
@@ -234,6 +235,18 @@ function SelectionView({
           </button>
         </div>
       </main>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Loading view — shown while auto-starting a practice session
+// ---------------------------------------------------------------------------
+
+function LoadingView() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <p className="text-gray-400 text-sm">Loading…</p>
     </div>
   );
 }
@@ -483,15 +496,46 @@ function SummaryView({
 // Root page — state machine
 // ---------------------------------------------------------------------------
 
-type View = "selection" | "practice" | "summary";
+type View = "loading" | "selection" | "practice" | "summary";
 
-export default function PracticePage() {
-  const [view, setView] = useState<View>("selection");
+const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI"];
+
+function PracticePageInner() {
+  const searchParams = useSearchParams();
+  const requestedType = searchParams.get("type")?.toUpperCase();
+  const autoType = AUTO_START_TYPES.includes(requestedType as TypeKey)
+    ? (requestedType as TypeKey)
+    : null;
+
+  const [view, setView] = useState<View>(autoType ? "loading" : "selection");
   const [items, setItems] = useState<PracticeItem[]>([]);
   const [results, setResults] = useState<{ correct: number; total: number }>({
     correct: 0,
     total: 0,
   });
+
+  useEffect(() => {
+    if (!autoType) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/practice?types=${autoType}`);
+        if (!res.ok) throw new Error("Failed to load practice items");
+        const data = await res.json();
+        if (!cancelled) {
+          setItems(data.items as PracticeItem[]);
+          setView("practice");
+        }
+      } catch {
+        if (!cancelled) setView("selection");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // Only ever auto-start once, for the type present on initial load.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function handleStart(fetchedItems: PracticeItem[]) {
     setItems(fetchedItems);
@@ -506,6 +550,10 @@ export default function PracticePage() {
   function handlePracticeAgain() {
     setView("selection");
     setItems([]);
+  }
+
+  if (view === "loading") {
+    return <LoadingView />;
   }
 
   if (view === "practice" && items.length > 0) {
@@ -523,4 +571,12 @@ export default function PracticePage() {
   }
 
   return <SelectionView onStart={handleStart} />;
+}
+
+export default function PracticePage() {
+  return (
+    <Suspense fallback={<LoadingView />}>
+      <PracticePageInner />
+    </Suspense>
+  );
 }
