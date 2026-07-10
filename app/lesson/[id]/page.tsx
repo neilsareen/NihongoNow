@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { pickPrimaryKanjiReading } from "@/lib/utils";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
 
@@ -182,6 +181,15 @@ function kanaToRomaji(kana: string): string {
   return result;
 }
 
+function kanjiReadings(onyomi: string[] = [], kunyomi: string[] = []) {
+  const readings = [
+    ...onyomi.map((r) => ({ label: "on" as const, kana: katakanaToHiragana(r) })),
+    ...kunyomi.map((r) => ({ label: "kun" as const, kana: katakanaToHiragana(r) })),
+  ].filter((r) => r.kana);
+  const seen = new Set<string>();
+  return readings.filter((r) => (seen.has(r.kana) ? false : (seen.add(r.kana), true))).slice(0, 3);
+}
+
 function isE2J(item: LessonItem) {
   return item.exerciseType === "ENGLISH_TO_JAPANESE";
 }
@@ -298,20 +306,21 @@ function CardBack({ item }: { item: LessonItem }) {
 
   if (contentType === "KANJI") {
     const exampleWords = content.exampleWords as Record<string, string> | null | undefined;
-    const primaryKana = pickPrimaryKanjiReading(
-      content.character ?? "",
-      content.onyomi ?? [],
-      content.kunyomi ?? []
-    );
-    const hiragana = primaryKana ? katakanaToHiragana(primaryKana) : "";
+    const readings = kanjiReadings(content.onyomi, content.kunyomi);
     const firstExample = exampleWords ? Object.entries(exampleWords)[0] : null;
     return (
       <div className="flex flex-col items-center gap-4 text-center max-w-xs w-full">
         <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(", ")}</p>
-        {primaryKana && (
-          <div className="flex items-center gap-3">
-            <AudioButton text={primaryKana} />
-            <span className="jp-char text-lg text-gray-200 font-medium">{hiragana}</span>
+        {readings.length > 0 && (
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            {readings.map((r) => (
+              <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
+                <AudioButton text={r.kana} />
+                <span className="jp-char text-gray-200 font-medium">{r.kana}</span>
+                <span className="text-gray-500 text-sm">{kanaToRomaji(r.kana)}</span>
+                <span className="text-gray-600 text-[10px] uppercase tracking-wide">{r.label}</span>
+              </div>
+            ))}
           </div>
         )}
         {firstExample && (

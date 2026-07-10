@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
-import { pickPrimaryKanjiReading } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -108,6 +107,19 @@ function kanaToRomaji(kana: string): string {
     i++;
   }
   return result;
+}
+
+function katakanaToHiragana(str: string): string {
+  return str.replace(/[ァ-ヶ]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 96)).replace(/-/g, "");
+}
+
+function kanjiReadings(onyomi: string[] = [], kunyomi: string[] = []) {
+  const readings = [
+    ...onyomi.map((r) => ({ label: "on" as const, kana: katakanaToHiragana(r) })),
+    ...kunyomi.map((r) => ({ label: "kun" as const, kana: katakanaToHiragana(r) })),
+  ].filter((r) => r.kana);
+  const seen = new Set<string>();
+  return readings.filter((r) => (seen.has(r.kana) ? false : (seen.add(r.kana), true))).slice(0, 3);
 }
 
 function parseExampleWords(raw: unknown): ExampleWord[] {
@@ -323,16 +335,16 @@ function PracticeView({
                       </p>
                     )}
                     {(() => {
-                      const primaryKana = pickPrimaryKanjiReading(
-                        item.character,
-                        item.onyomi ?? [],
-                        item.kunyomi ?? []
-                      );
-                      const romaji = primaryKana ? kanaToRomaji(primaryKana) : "";
-                      return primaryKana ? (
-                        <div className="flex items-center justify-center gap-3">
-                          <span className="text-gray-200 font-medium">{romaji}</span>
-                          <span className="jp-char text-gray-400">{primaryKana}</span>
+                      const readings = kanjiReadings(item.onyomi, item.kunyomi);
+                      return readings.length > 0 ? (
+                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
+                          {readings.map((r) => (
+                            <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
+                              <span className="jp-char text-gray-300">{r.kana}</span>
+                              <span className="text-gray-500 text-sm">{kanaToRomaji(r.kana)}</span>
+                              <span className="text-gray-600 text-[10px] uppercase tracking-wide">{r.label}</span>
+                            </div>
+                          ))}
                         </div>
                       ) : null;
                     })()}
