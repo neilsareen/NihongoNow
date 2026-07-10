@@ -37,6 +37,7 @@ interface LessonItem {
     srsLevel: string;
     totalAttempts: number;
     correctCount: number;
+    incorrectCount: number;
   } | null;
 }
 
@@ -130,6 +131,32 @@ function MasteryBar({ review }: { review: LessonItem["review"] }) {
       <span className={`text-xs ${display.color}`}>{pct}%</span>
     </div>
   );
+}
+
+function MnemonicButton({ hint }: { hint: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-medium transition-colors"
+        title="You've missed this one before — tap for a memory trick"
+      >
+        💡 {show ? "Hide hint" : "Need a hint?"}
+      </button>
+      {show && (
+        <p className="text-xs text-gray-400 italic text-center max-w-xs px-2">{hint}</p>
+      )}
+    </div>
+  );
+}
+
+function shouldShowMnemonicHint(item: LessonItem): boolean {
+  if (isE2J(item) || isListening(item)) return false;
+  if (item.contentType !== "HIRAGANA" && item.contentType !== "KATAKANA" && item.contentType !== "KANJI") return false;
+  if (!item.content?.mnemonicHint) return false;
+  return (item.review?.incorrectCount ?? 0) > 1;
 }
 
 function katakanaToHiragana(str: string): string {
@@ -663,6 +690,10 @@ export default function LessonPage() {
             )}
             {currentItem && <CardFront item={currentItem} />}
           </div>
+
+          {currentItem && shouldShowMnemonicHint(currentItem) && (
+            <MnemonicButton key={currentItem.id} hint={currentItem.content!.mnemonicHint!} />
+          )}
 
           {isListeningMC ? (
             <div className="w-full max-w-sm space-y-2">
