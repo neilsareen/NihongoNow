@@ -87,10 +87,9 @@ export default function SettingsPage() {
                 key={a.key}
                 onClick={() => handleAvatarChange(a.key)}
                 title={a.label}
-                className={`aspect-square rounded-full bg-black flex items-center justify-center p-1.5 transition-transform ${
+                className={`aspect-square rounded-full bg-gray-800 flex items-center justify-center p-1.5 transition-transform ${
                   avatarKey === a.key ? "ring-2 ring-offset-2 ring-offset-gray-900 ring-white scale-105" : "hover:scale-105"
                 }`}
-                style={{ border: `2px solid ${a.accent}` }}
               >
                 <img src={a.image} alt={a.label} className="w-full h-full object-contain drop-shadow-sm" />
               </button>
