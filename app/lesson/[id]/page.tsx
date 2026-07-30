@@ -156,7 +156,7 @@ function shouldShowMnemonicHint(item: LessonItem): boolean {
   if (isE2J(item) || isListening(item)) return false;
   if (item.contentType !== "HIRAGANA" && item.contentType !== "KATAKANA" && item.contentType !== "KANJI") return false;
   if (!item.content?.mnemonicHint) return false;
-  return (item.review?.incorrectCount ?? 0) > 1;
+  return (item.review?.incorrectCount ?? 0) > 0;
 }
 
 function katakanaToHiragana(str: string): string {
