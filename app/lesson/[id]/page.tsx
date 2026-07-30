@@ -448,6 +448,18 @@ export default function LessonPage() {
   const [mcCorrect, setMcCorrect] = useState<boolean | null>(null);
   const [mnemonicInterstitial, setMnemonicInterstitial] = useState<string | null>(null);
   const startTime = useRef(Date.now());
+  // Guards against a double-tap/ghost-click firing an answer handler twice for
+  // the same item before React commits the advance, which silently skips a card.
+  const answeringRef = useRef(false);
+  const dismissingRef = useRef(false);
+
+  useEffect(() => {
+    answeringRef.current = false;
+  }, [currentIndex]);
+
+  useEffect(() => {
+    dismissingRef.current = false;
+  }, [mnemonicInterstitial]);
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
@@ -513,6 +525,8 @@ export default function LessonPage() {
 
   function handleAnswer(correct: boolean) {
     if (!currentItem || !lesson) return;
+    if (answeringRef.current) return;
+    answeringRef.current = true;
     setMcChoice(null);
     setMcCorrect(null);
     submitReview(currentItem, correct ? 5 : 1);
@@ -549,6 +563,8 @@ export default function LessonPage() {
         </div>
         <button
           onClick={() => {
+            if (dismissingRef.current) return;
+            dismissingRef.current = true;
             setMnemonicInterstitial(null);
             advanceAfterAnswer(false);
           }}
