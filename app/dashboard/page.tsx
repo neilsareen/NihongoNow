@@ -179,6 +179,23 @@ export default async function DashboardPage() {
         </div>
       </div>
 
+      {/* Lesson CTA — the main "what to do next" action, so it leads the page */}
+      <Link
+        href={lessonHref}
+        className="flex items-center gap-4 bg-sunset shadow-glow-warm rounded-2xl p-4 hover:scale-[1.015] active:scale-[0.98] transition-transform"
+      >
+        <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center jp-char text-3xl font-bold text-white shrink-0">
+          {lessonSymbol}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="font-display font-bold text-white text-base truncate">{lessonTitle}</div>
+          <div className="text-white/80 text-xs mt-0.5 truncate">{lessonSubtitle}</div>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+          <ChevronRight className="w-5 h-5 text-white" />
+        </div>
+      </Link>
+
       {/* Today's progress ring */}
       <div className="bg-gray-900 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
         <div
@@ -226,18 +243,6 @@ export default async function DashboardPage() {
           );
         })}
       </div>
-
-      {/* Lesson CTA row */}
-      <Link href={lessonHref} className="flex items-center gap-3 bg-gray-900 border border-white/10 rounded-2xl p-3.5 hover:border-white/20 transition-colors">
-        <div className="w-12 h-12 rounded-xl bg-sunset flex items-center justify-center jp-char text-2xl font-bold text-white shrink-0">{lessonSymbol}</div>
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-semibold text-white text-sm truncate">{lessonTitle}</div>
-          <div className="text-gray-500 text-xs truncate">{lessonSubtitle}</div>
-        </div>
-        <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-          <ChevronRight className="w-5 h-5 text-white" />
-        </div>
-      </Link>
 
       {/* Vocabulary + Phrases */}
       <div className="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-4">
