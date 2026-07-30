@@ -1,6 +1,10 @@
 import { prisma } from "./prisma";
 import { ContentType, ExerciseType } from "@prisma/client";
 import { getRandomCulturalTip } from "./cultural-tips";
+import { SCRIPT_INTROS } from "./script-intros";
+
+// Hiragana/katakana displayOrder >= this value are dakuten/handakuten (modified) kana
+const DAKUTEN_DISPLAY_ORDER_START = 47;
 
 interface LessonConfig {
   userId: string;
@@ -72,7 +76,8 @@ export async function generateDailyLesson(config: LessonConfig) {
   const newItemBudget = Math.max(3, Math.round(newItemSeconds / AVG_SECONDS_PER_ITEM));
 
   const weakTypes = await getWeakContentTypes(userId);
-  const newItems = await getNewContent(userId, newItemBudget, weakTypes);
+  const { items: newItems, hasLearnedHiragana, hasLearnedKatakana, hasLearnedDakuten } =
+    await getNewContent(userId, newItemBudget, weakTypes);
   const spreadNewItems = spreadByFamily(newItems);
 
   const reviewItems = dueReviews.map((review) => ({
@@ -97,7 +102,29 @@ export async function generateDailyLesson(config: LessonConfig) {
     exerciseType: ExerciseType.SCENARIO,
   };
   const insertAt = Math.min(baseItems.length, 2 + Math.floor(Math.random() * 4));
+
+  // Explainer cards shown once, before a learner meets a new script or the
+  // dakuten/handakuten modifiers, for the first time
+  const scriptIntroItems: typeof baseItems = [];
+  const introducesHiragana = newItems.some((i) => i.contentType === ContentType.HIRAGANA);
+  const introducesKatakana = newItems.some((i) => i.contentType === ContentType.KATAKANA);
+  const introducesDakuten = newItems.some(
+    (i) =>
+      (i.contentType === ContentType.HIRAGANA || i.contentType === ContentType.KATAKANA) &&
+      (i.displayOrder ?? 0) >= DAKUTEN_DISPLAY_ORDER_START
+  );
+  if (!hasLearnedHiragana && introducesHiragana) {
+    scriptIntroItems.push({ contentType: ContentType.PHRASE, contentId: SCRIPT_INTROS.hiragana.id, exerciseType: ExerciseType.SCENARIO });
+  }
+  if (!hasLearnedKatakana && introducesKatakana) {
+    scriptIntroItems.push({ contentType: ContentType.PHRASE, contentId: SCRIPT_INTROS.katakana.id, exerciseType: ExerciseType.SCENARIO });
+  }
+  if (!hasLearnedDakuten && introducesDakuten) {
+    scriptIntroItems.push({ contentType: ContentType.PHRASE, contentId: SCRIPT_INTROS.dakuten.id, exerciseType: ExerciseType.SCENARIO });
+  }
+
   const finalItems = [
+    ...scriptIntroItems,
     ...baseItems.slice(0, insertAt),
     tipItem,
     ...baseItems.slice(insertAt),
@@ -200,22 +227,34 @@ async function getNewContent(userId: string, budget: number, weakTypes: ContentT
     if (!learnedByType[r.contentType]) learnedByType[r.contentType] = new Set();
     learnedByType[r.contentType].add(r.contentId);
   }
+  const learnedKanaIds = [
+    ...(learnedByType[ContentType.HIRAGANA] ?? []),
+    ...(learnedByType[ContentType.KATAKANA] ?? []),
+  ];
   const perType = Math.max(1, Math.floor(budget / 4));
   const boost = (type: ContentType) => weakTypes.includes(type) ? perType * 2 : perType;
-  const results: { contentType: ContentType; contentId: string; romaji?: string }[] = [];
-  const [newHiragana, newKatakana, newVocab, newKanji, newPhrases] = await Promise.all([
+  const results: { contentType: ContentType; contentId: string; romaji?: string; displayOrder?: number }[] = [];
+  const [newHiragana, newKatakana, newVocab, newKanji, newPhrases, learnedDakuten] = await Promise.all([
     prisma.japaneseCharacter.findMany({ where: { type: ContentType.HIRAGANA, id: { notIn: [...(learnedByType[ContentType.HIRAGANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: boost(ContentType.HIRAGANA) }),
     prisma.japaneseCharacter.findMany({ where: { type: ContentType.KATAKANA, id: { notIn: [...(learnedByType[ContentType.KATAKANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: boost(ContentType.KATAKANA) }),
     prisma.vocabulary.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.VOCABULARY] ?? [])] } }, orderBy: { frequency: "desc" }, take: boost(ContentType.VOCABULARY) }),
     prisma.kanji.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.KANJI] ?? [])] } }, orderBy: { frequency: "desc" }, take: boost(ContentType.KANJI) }),
     prisma.phrase.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.PHRASE] ?? [])] } }, orderBy: { difficulty: "asc" }, take: boost(ContentType.PHRASE) }),
+    learnedKanaIds.length
+      ? prisma.japaneseCharacter.findMany({ where: { id: { in: learnedKanaIds }, displayOrder: { gte: DAKUTEN_DISPLAY_ORDER_START } }, select: { id: true }, take: 1 })
+      : Promise.resolve([]),
   ]);
-  results.push(...newHiragana.map((i) => ({ contentType: ContentType.HIRAGANA, contentId: i.id, romaji: i.romaji })));
-  results.push(...newKatakana.map((i) => ({ contentType: ContentType.KATAKANA, contentId: i.id, romaji: i.romaji })));
+  results.push(...newHiragana.map((i) => ({ contentType: ContentType.HIRAGANA, contentId: i.id, romaji: i.romaji, displayOrder: i.displayOrder })));
+  results.push(...newKatakana.map((i) => ({ contentType: ContentType.KATAKANA, contentId: i.id, romaji: i.romaji, displayOrder: i.displayOrder })));
   results.push(...newVocab.map((i) => ({ contentType: ContentType.VOCABULARY, contentId: i.id })));
   results.push(...newKanji.map((i) => ({ contentType: ContentType.KANJI, contentId: i.id })));
   results.push(...newPhrases.map((i) => ({ contentType: ContentType.PHRASE, contentId: i.id })));
-  return results.slice(0, budget);
+  return {
+    items: results.slice(0, budget),
+    hasLearnedHiragana: (learnedByType[ContentType.HIRAGANA]?.size ?? 0) > 0,
+    hasLearnedKatakana: (learnedByType[ContentType.KATAKANA]?.size ?? 0) > 0,
+    hasLearnedDakuten: learnedDakuten.length > 0,
+  };
 }
 
 function pickExerciseType(contentType: ContentType, srsLevel: string): ExerciseType {

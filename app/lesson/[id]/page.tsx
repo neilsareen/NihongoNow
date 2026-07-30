@@ -28,6 +28,7 @@ interface LessonItem {
     exampleSentenceEn?: string;
     scenario?: string;
     isCulturalTip?: boolean;
+    isScriptIntro?: boolean;
     title?: string;
     question?: string;
     body?: string;
@@ -89,6 +90,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 function isCulturalTipItem(item: LessonItem): boolean {
   return !!item.content?.isCulturalTip;
+}
+
+function isScriptIntroItem(item: LessonItem): boolean {
+  return !!item.content?.isScriptIntro;
 }
 
 function speak(text: string, lang = "ja-JP") {
@@ -431,6 +436,20 @@ function CulturalTipAnswer({ item }: { item: LessonItem }) {
   );
 }
 
+function ScriptIntroCard({ item }: { item: LessonItem }) {
+  const { content } = item;
+  if (!content) return null;
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      <p className="text-xs text-sky-400 uppercase tracking-widest font-medium">
+        Before you begin
+      </p>
+      <h3 className="text-lg font-semibold text-white">{content.title}</h3>
+      <p className="text-gray-300 text-sm leading-relaxed">{content.body}</p>
+    </div>
+  );
+}
+
 function Spinner() {
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4">
@@ -496,7 +515,7 @@ export default function LessonPage() {
   const totalUnanswered = unansweredItems.length;
 
   function submitReview(item: LessonItem, quality: 1 | 5) {
-    if (isCulturalTipItem(item)) return;
+    if (isCulturalTipItem(item) || isScriptIntroItem(item)) return;
     fetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -642,6 +661,7 @@ export default function LessonPage() {
 
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
+  const isScriptIntro = currentItem ? isScriptIntroItem(currentItem) : false;
 
   const isListeningMC = currentItem
     ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
@@ -703,7 +723,21 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {isCultural && currentItem ? (
+      {isScriptIntro && currentItem ? (
+        <>
+          <div key={currentItem.id} className="w-full max-w-sm bg-gray-900 border border-sky-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
+            <ScriptIntroCard item={currentItem} />
+          </div>
+          <div className="w-full max-w-sm">
+            <button
+              onClick={() => handleAnswer(true)}
+              className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
+            >
+              Got it, let&apos;s start →
+            </button>
+          </div>
+        </>
+      ) : isCultural && currentItem ? (
         <>
           <div key={currentItem.id} className="w-full max-w-sm bg-gray-900 border border-amber-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
             {revealed ? <CulturalTipAnswer item={currentItem} /> : <CulturalTipQuestion item={currentItem} />}

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
+import { SCRIPT_INTRO_LIST } from "@/lib/script-intros";
 
 export async function GET(
   _request: Request,
@@ -25,9 +26,13 @@ export async function GET(
   if (lesson.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const culturalTipMap = new Map(CULTURAL_TIPS.map((t) => [t.id, t]));
+  const scriptIntroMap = new Map(SCRIPT_INTRO_LIST.map((t) => [t.id, t]));
 
-  const realItems = lesson.items.filter((i) => !i.contentId.startsWith("cultural-"));
+  const realItems = lesson.items.filter(
+    (i) => !i.contentId.startsWith("cultural-") && !i.contentId.startsWith("intro-")
+  );
   const culturalItems = lesson.items.filter((i) => i.contentId.startsWith("cultural-"));
+  const scriptIntroItems = lesson.items.filter((i) => i.contentId.startsWith("intro-"));
 
   const itemsByType = realItems.reduce<Record<string, typeof realItems>>(
     (acc, item) => {
@@ -79,6 +84,11 @@ export async function GET(
   for (const item of culturalItems) {
     const tip = culturalTipMap.get(item.contentId);
     if (tip) contentMap.set(item.contentId, { isCulturalTip: true, ...tip });
+  }
+
+  for (const item of scriptIntroItems) {
+    const intro = scriptIntroMap.get(item.contentId);
+    if (intro) contentMap.set(item.contentId, { isScriptIntro: true, ...intro });
   }
 
   const reviewMap = new Map<string, (typeof reviews)[0]>();
