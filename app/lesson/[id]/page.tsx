@@ -20,7 +20,7 @@ interface LessonItem {
     onyomi?: string[];
     kunyomi?: string[];
     meanings?: string[];
-    exampleWords?: Record<string, string> | null;
+    exampleWords?: { word?: string; reading?: string; meaning?: string }[] | null;
     japanese?: string;
     kana?: string;
     english?: string;
@@ -332,9 +332,8 @@ function CardBack({ item }: { item: LessonItem }) {
   }
 
   if (contentType === "KANJI") {
-    const exampleWords = content.exampleWords as Record<string, string> | null | undefined;
+    const exampleWords = (content.exampleWords ?? []).slice(0, 3);
     const readings = kanjiReadings(content.onyomi, content.kunyomi);
-    const firstExample = exampleWords ? Object.entries(exampleWords)[0] : null;
     return (
       <div className="flex flex-col items-center gap-4 text-center max-w-xs w-full">
         <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(", ")}</p>
@@ -350,12 +349,21 @@ function CardBack({ item }: { item: LessonItem }) {
             ))}
           </div>
         )}
-        {firstExample && (
-          <div className="flex items-center gap-2 text-sm">
-            <AudioButton text={firstExample[0]} />
-            <span className="jp-char text-gray-300">{firstExample[0]}</span>
-            <span className="text-gray-500">·</span>
-            <span className="text-gray-400">{firstExample[1]}</span>
+        {exampleWords.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-gray-600 text-[10px] uppercase tracking-wide">Common words</p>
+            {exampleWords.map((w, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <AudioButton text={w.word ?? ""} />
+                <span className="jp-char text-gray-300">{w.word}</span>
+                {w.meaning && (
+                  <>
+                    <span className="text-gray-500">·</span>
+                    <span className="text-gray-400">{w.meaning}</span>
+                  </>
+                )}
+              </div>
+            ))}
           </div>
         )}
         {content.mnemonicHint && (

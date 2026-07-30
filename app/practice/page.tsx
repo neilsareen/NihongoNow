@@ -127,7 +127,7 @@ function parseExampleWords(raw: unknown): ExampleWord[] {
   if (!raw) return [];
   try {
     const arr = Array.isArray(raw) ? raw : JSON.parse(raw as string);
-    return arr.slice(0, 2) as ExampleWord[];
+    return arr.slice(0, 3) as ExampleWord[];
   } catch {
     return [];
   }
@@ -396,7 +396,10 @@ function PracticeView({
                     })()}
                     {exampleWords.length > 0 && (
                       <div className="pt-1 space-y-1">
-                        {exampleWords.slice(0, 1).map((w, i) => (
+                        <p className="text-gray-600 text-[10px] uppercase tracking-wide">
+                          Common words
+                        </p>
+                        {exampleWords.map((w, i) => (
                           <div key={i} className="flex items-center justify-center gap-2 text-sm">
                             <AudioButton text={w.word ?? ""} />
                             <span className="jp-char text-gray-300">{w.word}</span>
