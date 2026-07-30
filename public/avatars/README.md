@@ -9,7 +9,7 @@
 | sakura.png | Cherry Blossom |
 | koi.png | Carp Streamer |
 | fuji.png | Mount Fuji |
-| kitsune.png | Fox |
+| usagi.png | Rabbit Face |
 | neko.png | Cat Face |
 | fortune.png | Four Leaf Clover |
 | wa.png | Shinto Shrine |

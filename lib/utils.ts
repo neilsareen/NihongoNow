@@ -55,20 +55,20 @@ export function pickPrimaryKanjiReading(
 }
 
 // Selectable profile avatars — 3D cartoon icons (Microsoft Fluent Emoji,
-// MIT licensed: https://github.com/microsoft/fluentui-emoji) on a gradient
-// backdrop, stored by key in UserProfile.avatarUrl (an otherwise-unused
-// legacy field).
+// MIT licensed: https://github.com/microsoft/fluentui-emoji) on a solid
+// black backdrop with a colored accent ring, stored by key in
+// UserProfile.avatarUrl (an otherwise-unused legacy field).
 export const AVATAR_OPTIONS = [
-  { key: "samurai", image: "/avatars/samurai.png", label: "Samurai", from: "#f87171", to: "#b91c1c" },
-  { key: "dragon",  image: "/avatars/dragon.png",  label: "Dragon",  from: "#34d399", to: "#047857" },
-  { key: "sakura",  image: "/avatars/sakura.png",  label: "Sakura",  from: "#f9a8d4", to: "#db2777" },
-  { key: "koi",     image: "/avatars/koi.png",     label: "Koi",     from: "#fb923c", to: "#ea580c" },
-  { key: "fuji",    image: "/avatars/fuji.png",    label: "Fuji",    from: "#38bdf8", to: "#0284c7" },
-  { key: "kitsune", image: "/avatars/kitsune.png", label: "Kitsune", from: "#fbbf24", to: "#d97706" },
-  { key: "neko",    image: "/avatars/neko.png",    label: "Neko",    from: "#a78bfa", to: "#7c3aed" },
-  { key: "fortune", image: "/avatars/fortune.png", label: "Fortune", from: "#facc15", to: "#ca8a04" },
-  { key: "wa",      image: "/avatars/wa.png",      label: "Wa",      from: "#4ade80", to: "#16a34a" },
-  { key: "kimono",  image: "/avatars/kimono.png",  label: "Kimono",  from: "#f472b6", to: "#9333ea" },
+  { key: "samurai", image: "/avatars/samurai.png", label: "Samurai", accent: "#ef4444" },
+  { key: "dragon",  image: "/avatars/dragon.png",  label: "Dragon",  accent: "#10b981" },
+  { key: "sakura",  image: "/avatars/sakura.png",  label: "Sakura",  accent: "#ec4899" },
+  { key: "koi",     image: "/avatars/koi.png",     label: "Koi",     accent: "#f97316" },
+  { key: "fuji",    image: "/avatars/fuji.png",    label: "Fuji",    accent: "#0ea5e9" },
+  { key: "usagi",   image: "/avatars/usagi.png",   label: "Usagi",   accent: "#c4b5fd" },
+  { key: "neko",    image: "/avatars/neko.png",    label: "Neko",    accent: "#8b5cf6" },
+  { key: "fortune", image: "/avatars/fortune.png", label: "Fortune", accent: "#eab308" },
+  { key: "wa",      image: "/avatars/wa.png",      label: "Wa",      accent: "#22c55e" },
+  { key: "kimono",  image: "/avatars/kimono.png",  label: "Kimono",  accent: "#a855f7" },
 ] as const;
 
 export type AvatarKey = (typeof AVATAR_OPTIONS)[number]["key"];
