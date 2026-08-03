@@ -371,9 +371,6 @@ function CardBack({ item }: { item: LessonItem }) {
             ))}
           </div>
         )}
-        {content.mnemonicHint && (
-          <p className="text-xs text-gray-600 italic">{content.mnemonicHint}</p>
-        )}
       </div>
     );
   }
@@ -473,20 +470,14 @@ export default function LessonPage() {
   const [showDoneDialog, setShowDoneDialog] = useState(false);
   const [mcChoice, setMcChoice] = useState<string | null>(null);
   const [mcCorrect, setMcCorrect] = useState<boolean | null>(null);
-  const [mnemonicInterstitial, setMnemonicInterstitial] = useState<string | null>(null);
   const startTime = useRef(Date.now());
   // Guards against a double-tap/ghost-click firing an answer handler twice for
   // the same item before React commits the advance, which silently skips a card.
   const answeringRef = useRef(false);
-  const dismissingRef = useRef(false);
 
   useEffect(() => {
     answeringRef.current = false;
   }, [currentIndex]);
-
-  useEffect(() => {
-    dismissingRef.current = false;
-  }, [mnemonicInterstitial]);
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setInstallPrompt(e); };
@@ -557,16 +548,7 @@ export default function LessonPage() {
     setMcChoice(null);
     setMcCorrect(null);
     submitReview(currentItem, correct ? 5 : 1);
-
-    const isCharType =
-      currentItem.contentType === "HIRAGANA" ||
-      currentItem.contentType === "KATAKANA" ||
-      currentItem.contentType === "KANJI";
-    if (!correct && isCharType && currentItem.content?.mnemonicHint) {
-      setMnemonicInterstitial(currentItem.content.mnemonicHint);
-    } else {
-      advanceAfterAnswer(correct);
-    }
+    advanceAfterAnswer(correct);
   }
 
   function handleEarlyExit() {
@@ -579,28 +561,6 @@ export default function LessonPage() {
       });
     }
     window.location.href = "/dashboard";
-  }
-
-  if (mnemonicInterstitial) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 pb-8 gap-6">
-        <div className="w-full max-w-sm bg-amber-950/40 border border-amber-700/50 rounded-3xl p-8 flex flex-col items-center gap-4 text-center">
-          <p className="text-amber-400 text-xs uppercase tracking-widest font-medium">Memory tip</p>
-          <p className="text-amber-100/90 text-base leading-relaxed">{mnemonicInterstitial}</p>
-        </div>
-        <button
-          onClick={() => {
-            if (dismissingRef.current) return;
-            dismissingRef.current = true;
-            setMnemonicInterstitial(null);
-            advanceAfterAnswer(false);
-          }}
-          className="w-full max-w-sm py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-semibold text-base transition-colors"
-        >
-          Got it, continue →
-        </button>
-      </div>
-    );
   }
 
   if (loading) return <Spinner />;

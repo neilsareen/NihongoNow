@@ -243,6 +243,25 @@ function SelectionView({
 // Loading view — shown while auto-starting a practice session
 // ---------------------------------------------------------------------------
 
+function MnemonicButton({ hint }: { hint: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-medium transition-colors"
+        title="Tap for a memory trick"
+      >
+        💡 {show ? "Hide hint" : "Need a hint?"}
+      </button>
+      {show && (
+        <p className="text-xs text-gray-400 italic text-center max-w-xs px-2">{hint}</p>
+      )}
+    </div>
+  );
+}
+
 function LoadingView() {
   return (
     <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
@@ -265,14 +284,13 @@ function PracticeView({
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
-  const [mnemonicInterstitial, setMnemonicInterstitial] = useState<string | null>(null);
 
   const item = items[index];
   const total = items.length;
   const isKanji = item.contentType === ContentType.KANJI;
   const exampleWords = parseExampleWords(item.exampleWords);
 
-  function doAdvance(wasCorrect: boolean) {
+  function advance(wasCorrect: boolean) {
     const newCorrect = wasCorrect ? correctCount + 1 : correctCount;
     if (index + 1 >= total) {
       onFinish(newCorrect, total);
@@ -281,38 +299,6 @@ function PracticeView({
       setIndex(index + 1);
       setFlipped(false);
     }
-  }
-
-  function advance(wasCorrect: boolean) {
-    const isCharType =
-      item.contentType === ContentType.HIRAGANA ||
-      item.contentType === ContentType.KATAKANA ||
-      item.contentType === ContentType.KANJI;
-    if (!wasCorrect && isCharType && item.mnemonicHint) {
-      setMnemonicInterstitial(item.mnemonicHint);
-    } else {
-      doAdvance(wasCorrect);
-    }
-  }
-
-  if (mnemonicInterstitial) {
-    return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center px-4 pb-8 gap-6">
-        <div className="w-full max-w-sm bg-amber-950/40 border border-amber-700/50 rounded-3xl p-8 flex flex-col items-center gap-4 text-center">
-          <p className="text-amber-400 text-xs uppercase tracking-widest font-medium">Memory tip</p>
-          <p className="text-amber-100/90 text-base leading-relaxed">{mnemonicInterstitial}</p>
-        </div>
-        <button
-          onClick={() => {
-            setMnemonicInterstitial(null);
-            doAdvance(false);
-          }}
-          className="w-full max-w-sm py-4 bg-gray-800 hover:bg-gray-700 text-white rounded-2xl font-semibold text-base transition-colors"
-        >
-          Got it, continue →
-        </button>
-      </div>
-    );
   }
 
   return (
@@ -426,6 +412,10 @@ function PracticeView({
             </div>
           )}
         </div>
+
+        {flipped && item.mnemonicHint && (
+          <MnemonicButton key={item.id} hint={item.mnemonicHint} />
+        )}
 
         {/* Action buttons — only visible after flip */}
         {flipped && (
