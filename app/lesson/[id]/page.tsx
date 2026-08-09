@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
@@ -492,6 +492,15 @@ export default function LessonPage() {
   }, []);
 
   useEffect(() => {
+    setLoading(true);
+    setRevealed(false);
+    setMcChoice(null);
+    setMcCorrect(null);
+    setCorrectCount(0);
+    setAnsweredCount(0);
+    setFinalResults(null);
+    answeringRef.current = false;
+    startTime.current = Date.now();
     fetch(`/api/lesson/${id}`)
       .then((r) => r.json())
       .then((data: LessonResult) => {
@@ -627,7 +636,7 @@ export default function LessonPage() {
     ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
     : false;
 
-  const mcChoices: string[] = (() => {
+  const mcChoices: string[] = useMemo(() => {
     if (!isListeningMC || !currentItem || !lesson) return [];
     const correctAnswer = currentItem.content?.english ?? "";
     const others = lesson.items
@@ -635,7 +644,8 @@ export default function LessonPage() {
       .map((i) => i.content!.english as string);
     const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
     return [...shuffled, correctAnswer].sort(() => Math.random() - 0.5);
-  })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentItem?.id, isListeningMC]);
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center px-4 pt-10 pb-8 gap-4">
@@ -793,7 +803,7 @@ export default function LessonPage() {
             </div>
           ) : (
             <>
-              <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-32">
+              <div key={currentItem?.id} className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-32">
                 {revealed && currentItem
                   ? <CardBack item={currentItem} />
                   : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
