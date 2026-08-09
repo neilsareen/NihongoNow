@@ -220,6 +220,23 @@ async function getWeakContentTypes(userId: string): Promise<ContentType[]> {
     .map(([k]) => k as ContentType);
 }
 
+// True once the user has every hiragana and katakana character at SRS level MASTERED.
+async function hasMasteredAllKana(userId: string): Promise<boolean> {
+  const [totalKana, masteredKana] = await Promise.all([
+    prisma.japaneseCharacter.count({
+      where: { type: { in: [ContentType.HIRAGANA, ContentType.KATAKANA] } },
+    }),
+    prisma.review.count({
+      where: {
+        userId,
+        contentType: { in: [ContentType.HIRAGANA, ContentType.KATAKANA] },
+        srsLevel: "MASTERED",
+      },
+    }),
+  ]);
+  return totalKana > 0 && masteredKana >= totalKana;
+}
+
 async function getNewContent(userId: string, budget: number, weakTypes: ContentType[]) {
   const existing = await prisma.review.findMany({ where: { userId }, select: { contentId: true, contentType: true } });
   const learnedByType: Record<string, Set<string>> = {};
@@ -231,15 +248,29 @@ async function getNewContent(userId: string, budget: number, weakTypes: ContentT
     ...(learnedByType[ContentType.HIRAGANA] ?? []),
     ...(learnedByType[ContentType.KATAKANA] ?? []),
   ];
+  const kanaMastered = await hasMasteredAllKana(userId);
   const perType = Math.max(1, Math.floor(budget / 4));
   const boost = (type: ContentType) => weakTypes.includes(type) ? perType * 2 : perType;
+  // Until every hiragana and katakana character is mastered, keep the whole new-item
+  // budget on kana and hold off introducing any words (vocab, kanji, phrases).
+  const kanaPerType = Math.max(1, Math.floor(budget / 2));
+  const kanaTake = (type: ContentType) => kanaMastered
+    ? boost(type)
+    : (weakTypes.includes(type) ? kanaPerType * 2 : kanaPerType);
+  const wordTake = (type: ContentType) => kanaMastered ? boost(type) : 0;
   const results: { contentType: ContentType; contentId: string; romaji?: string; displayOrder?: number }[] = [];
   const [newHiragana, newKatakana, newVocab, newKanji, newPhrases, learnedDakuten] = await Promise.all([
-    prisma.japaneseCharacter.findMany({ where: { type: ContentType.HIRAGANA, id: { notIn: [...(learnedByType[ContentType.HIRAGANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: boost(ContentType.HIRAGANA) }),
-    prisma.japaneseCharacter.findMany({ where: { type: ContentType.KATAKANA, id: { notIn: [...(learnedByType[ContentType.KATAKANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: boost(ContentType.KATAKANA) }),
-    prisma.vocabulary.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.VOCABULARY] ?? [])] } }, orderBy: { frequency: "desc" }, take: boost(ContentType.VOCABULARY) }),
-    prisma.kanji.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.KANJI] ?? [])] } }, orderBy: { frequency: "desc" }, take: boost(ContentType.KANJI) }),
-    prisma.phrase.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.PHRASE] ?? [])] } }, orderBy: { difficulty: "asc" }, take: boost(ContentType.PHRASE) }),
+    prisma.japaneseCharacter.findMany({ where: { type: ContentType.HIRAGANA, id: { notIn: [...(learnedByType[ContentType.HIRAGANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: kanaTake(ContentType.HIRAGANA) }),
+    prisma.japaneseCharacter.findMany({ where: { type: ContentType.KATAKANA, id: { notIn: [...(learnedByType[ContentType.KATAKANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: kanaTake(ContentType.KATAKANA) }),
+    wordTake(ContentType.VOCABULARY) > 0
+      ? prisma.vocabulary.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.VOCABULARY] ?? [])] } }, orderBy: { frequency: "desc" }, take: wordTake(ContentType.VOCABULARY) })
+      : Promise.resolve([]),
+    wordTake(ContentType.KANJI) > 0
+      ? prisma.kanji.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.KANJI] ?? [])] } }, orderBy: { frequency: "desc" }, take: wordTake(ContentType.KANJI) })
+      : Promise.resolve([]),
+    wordTake(ContentType.PHRASE) > 0
+      ? prisma.phrase.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.PHRASE] ?? [])] } }, orderBy: { difficulty: "asc" }, take: wordTake(ContentType.PHRASE) })
+      : Promise.resolve([]),
     learnedKanaIds.length
       ? prisma.japaneseCharacter.findMany({ where: { id: { in: learnedKanaIds }, displayOrder: { gte: DAKUTEN_DISPLAY_ORDER_START } }, select: { id: true }, take: 1 })
       : Promise.resolve([]),
