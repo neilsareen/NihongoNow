@@ -502,10 +502,14 @@ export default function LessonPage() {
     answeringRef.current = false;
     startTime.current = Date.now();
     fetch(`/api/lesson/${id}`)
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("Failed to load lesson"))))
       .then((data: LessonResult) => {
         setLesson(data);
         setCurrentIndex(0);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLesson(null);
         setLoading(false);
       });
   }, [id]);
