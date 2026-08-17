@@ -1,6 +1,11 @@
-const CACHE = "ikou-v1";
+// Bumped from ikou-v1 to purge caches poisoned by the bug below, where failed
+// responses (404s for chunks removed by a deploy) were stored permanently and
+// then served as JS forever, breaking the app with a client-side exception.
+// The activate handler deletes every cache whose name !== CACHE, so renaming
+// this constant is what actually clears the bad entries off existing devices.
+const CACHE = "ikou-v2";
 
-self.addEventListener("install", (e) => {
+self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
@@ -17,6 +22,13 @@ self.addEventListener("activate", (e) => {
   );
 });
 
+// Only a complete, successful, same-origin response is safe to keep. Caching a
+// 404/500 (or an opaque cross-origin response) means later serving an HTML
+// error body in place of a script, which throws on execution.
+function isCacheable(response) {
+  return response && response.ok && response.status === 200 && response.type === "basic";
+}
+
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
 
@@ -31,8 +43,13 @@ self.addEventListener("fetch", (e) => {
   // Never intercept API calls
   if (e.request.url.includes("/api/")) return;
 
-  // Cache-first for static assets (JS, CSS, fonts, images)
   const url = new URL(e.request.url);
+
+  // Let the service worker script itself always come from the network, so a
+  // broken worker can never cache itself into permanence.
+  if (url.pathname === "/sw.js") return;
+
+  // Cache-first for static assets (JS, CSS, fonts, images)
   const isStaticAsset =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/_next/image") ||
@@ -43,8 +60,10 @@ self.addEventListener("fetch", (e) => {
       caches.match(e.request).then((cached) => {
         if (cached) return cached;
         return fetch(e.request).then((r) => {
-          const clone = r.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, clone));
+          if (isCacheable(r)) {
+            const clone = r.clone();
+            caches.open(CACHE).then((c) => c.put(e.request, clone)).catch(() => {});
+          }
           return r;
         });
       })
