@@ -75,9 +75,20 @@ export default function GlobalError({
               </button>
             </div>
           )}
-          {error?.digest && (
-            <p className="text-gray-700 text-[10px] font-mono">ref: {error.digest}</p>
-          )}
+          {/* Surfaced so a failure on someone else's device can actually be
+              diagnosed — the console isn't reachable on mobile. */}
+          <details className="w-full max-w-xs text-left mt-2" open>
+            <summary className="text-gray-500 text-xs cursor-pointer">Error details</summary>
+            <pre className="mt-2 p-3 bg-black/40 border border-white/10 rounded-lg text-[10px] font-mono text-red-300 whitespace-pre-wrap break-words max-h-60 overflow-auto">
+              {[
+                error?.name && `${error.name}: ${error.message ?? ""}`,
+                error?.digest && `digest: ${error.digest}`,
+                error?.stack,
+              ]
+                .filter(Boolean)
+                .join("\n\n") || "No error details available"}
+            </pre>
+          </details>
         </div>
       </body>
     </html>

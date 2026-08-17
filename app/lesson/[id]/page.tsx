@@ -55,13 +55,16 @@ interface FinalResult {
 
 // Pick Japanese voices once, with variety across gender/accent
 let _jpVoices: SpeechSynthesisVoice[] = [];
+// Speech synthesis is absent in some Android WebViews and privacy browsers.
+// This runs at module scope, so an unguarded access throws while the route
+// chunk is evaluating and takes down the whole page rather than just audio.
 function loadJpVoices() {
-  if (typeof window === "undefined") return;
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
   const all = window.speechSynthesis.getVoices();
   const ja = all.filter((v) => v.lang.startsWith("ja"));
   _jpVoices = ja.length > 0 ? ja : [];
 }
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && window.speechSynthesis) {
   window.speechSynthesis.addEventListener("voiceschanged", loadJpVoices);
   loadJpVoices();
 }
