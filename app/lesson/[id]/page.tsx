@@ -521,6 +521,24 @@ export default function LessonPage() {
   const currentItem = unansweredItems[currentIndex] ?? null;
   const totalUnanswered = unansweredItems.length;
 
+  const isListeningMC = currentItem
+    ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
+    : false;
+
+  // Must stay above the loading/empty/results early returns below: those skip
+  // the rest of the render, so calling a hook after them changes the hook count
+  // between renders and React throws "rendered more hooks than expected".
+  const mcChoices: string[] = useMemo(() => {
+    if (!isListeningMC || !currentItem || !lesson) return [];
+    const correctAnswer = currentItem.content?.english ?? "";
+    const others = lesson.items
+      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
+      .map((i) => i.content!.english as string);
+    const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
+    return [...shuffled, correctAnswer].sort(() => Math.random() - 0.5);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentItem?.id, isListeningMC]);
+
   function submitReview(item: LessonItem, quality: 1 | 5) {
     if (isCulturalTipItem(item) || isScriptIntroItem(item)) return;
     fetch("/api/review", {
@@ -638,21 +656,6 @@ export default function LessonPage() {
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
   const isScriptIntro = currentItem ? isScriptIntroItem(currentItem) : false;
-
-  const isListeningMC = currentItem
-    ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
-    : false;
-
-  const mcChoices: string[] = useMemo(() => {
-    if (!isListeningMC || !currentItem || !lesson) return [];
-    const correctAnswer = currentItem.content?.english ?? "";
-    const others = lesson.items
-      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
-      .map((i) => i.content!.english as string);
-    const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
-    return [...shuffled, correctAnswer].sort(() => Math.random() - 0.5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentItem?.id, isListeningMC]);
 
   return (
     <div className="min-h-screen bg-gray-950 flex flex-col items-center px-4 pt-10 pb-8 gap-4">
