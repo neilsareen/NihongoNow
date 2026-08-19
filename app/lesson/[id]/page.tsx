@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import { readingSpeechText, speak, speechText } from "@/lib/speech";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
 
@@ -53,25 +54,6 @@ interface FinalResult {
   accuracy: number;
 }
 
-// Pick Japanese voices once, with variety across gender/accent
-let _jpVoices: SpeechSynthesisVoice[] = [];
-// Speech synthesis is absent in some Android WebViews and privacy browsers.
-// This runs at module scope, so an unguarded access throws while the route
-// chunk is evaluating and takes down the whole page rather than just audio.
-function loadJpVoices() {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  const all = window.speechSynthesis.getVoices();
-  const ja = all.filter((v) => v.lang.startsWith("ja"));
-  _jpVoices = ja.length > 0 ? ja : [];
-}
-if (typeof window !== "undefined" && window.speechSynthesis) {
-  window.speechSynthesis.addEventListener("voiceschanged", loadJpVoices);
-  loadJpVoices();
-}
-
-// Index advances per speak() call to cycle through available voices
-let _voiceIdx = 0;
-
 const SRS_DISPLAY: Record<string, { label: string; color: string }> = {
   NEW:      { label: "New",      color: "text-gray-500" },
   LEARNING: { label: "Learning", color: "text-blue-400" },
@@ -97,20 +79,6 @@ function isCulturalTipItem(item: LessonItem): boolean {
 
 function isScriptIntroItem(item: LessonItem): boolean {
   return !!item.content?.isScriptIntro;
-}
-
-function speak(text: string, lang = "ja-JP") {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  u.rate = 0.85;
-  if (_jpVoices.length > 0) {
-    // Cycle through available Japanese voices for variety
-    u.voice = _jpVoices[_voiceIdx % _jpVoices.length];
-    _voiceIdx++;
-  }
-  window.speechSynthesis.speak(u);
 }
 
 function AudioButton({ text, lang = "ja-JP", size = "sm" }: { text: string; lang?: string; size?: "sm" | "md" }) {
@@ -233,13 +201,9 @@ function isListening(item: LessonItem) {
   return item.exerciseType === "LISTENING";
 }
 
-function getJapaneseText(item: LessonItem): string {
-  const c = item.content;
-  if (!c) return "";
-  if (item.contentType === "HIRAGANA" || item.contentType === "KATAKANA" || item.contentType === "KANJI") {
-    return c.character ?? "";
-  }
-  return c.japanese ?? c.kana ?? "";
+// Audio always plays the kana reading, never the kanji — see lib/speech.
+function getSpeechText(item: LessonItem): string {
+  return speechText(item.contentType, item.content);
 }
 
 function CardFront({ item }: { item: LessonItem }) {
@@ -247,7 +211,7 @@ function CardFront({ item }: { item: LessonItem }) {
   if (!content) return <p className="text-gray-400">No content</p>;
 
   if (isListening(item)) {
-    const text = getJapaneseText(item);
+    const text = getSpeechText(item);
     return (
       <div className="flex flex-col items-center gap-4">
         <div className="text-gray-400 text-sm">Listen and identify</div>
@@ -290,7 +254,7 @@ function CardBack({ item }: { item: LessonItem }) {
   const { content, contentType } = item;
   if (!content) return null;
 
-  const japText = getJapaneseText(item);
+  const speechTextForItem = getSpeechText(item);
 
   if (isE2J(item)) {
     if (contentType === "VOCABULARY") {
@@ -298,7 +262,7 @@ function CardBack({ item }: { item: LessonItem }) {
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="flex items-center gap-2">
             <p className="jp-char text-4xl font-bold text-white">{content.japanese}</p>
-            {content.japanese && <AudioButton text={content.japanese} />}
+            {content.kana && <AudioButton text={readingSpeechText(content.kana)} />}
           </div>
           {content.kana && <p className="jp-char text-xl text-gray-300">{content.kana}</p>}
           {content.romaji && <p className="text-lg text-gray-400">{content.romaji}</p>}
@@ -310,7 +274,7 @@ function CardBack({ item }: { item: LessonItem }) {
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="flex items-center gap-2">
             <p className="jp-char text-3xl font-semibold text-white">{content.japanese}</p>
-            {content.japanese && <AudioButton text={content.japanese} />}
+            {content.kana && <AudioButton text={readingSpeechText(content.kana)} />}
           </div>
           {content.kana && <p className="jp-char text-lg text-gray-300">{content.kana}</p>}
           {content.romaji && <p className="text-sm text-gray-500">{content.romaji}</p>}
@@ -321,7 +285,7 @@ function CardBack({ item }: { item: LessonItem }) {
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="flex items-center gap-2">
           <p className="jp-char text-6xl font-bold text-white">{content.character}</p>
-          {content.character && <AudioButton text={content.character} />}
+          {speechTextForItem && <AudioButton text={speechTextForItem} />}
         </div>
         {content.romaji && <p className="text-xl text-gray-300">{content.romaji}</p>}
       </div>
@@ -333,7 +297,7 @@ function CardBack({ item }: { item: LessonItem }) {
       <div className="flex flex-col items-center gap-3">
         <div className="flex items-center gap-2">
           <p className="text-2xl font-semibold text-gray-200">{content.romaji}</p>
-          {japText && <AudioButton text={japText} />}
+          {speechTextForItem && <AudioButton text={speechTextForItem} />}
         </div>
       </div>
     );
@@ -349,7 +313,7 @@ function CardBack({ item }: { item: LessonItem }) {
           <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
             {readings.map((r) => (
               <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
-                <AudioButton text={r.kana} />
+                <AudioButton text={readingSpeechText(r.kana)} />
                 <span className="jp-char text-gray-200 font-medium">{r.kana}</span>
                 <span className="text-gray-500 text-sm">{kanaToRomaji(r.kana)}</span>
                 <span className="text-gray-600 text-[10px] uppercase tracking-wide">{r.label}</span>
@@ -362,7 +326,7 @@ function CardBack({ item }: { item: LessonItem }) {
             <p className="text-gray-600 text-[10px] uppercase tracking-wide">Common words</p>
             {exampleWords.map((w, i) => (
               <div key={i} className="flex items-center gap-2 text-sm">
-                <AudioButton text={w.word ?? ""} />
+                <AudioButton text={w.reading || w.word || ""} />
                 <span className="jp-char text-gray-300">{w.word}</span>
                 {w.meaning && (
                   <>
@@ -383,7 +347,7 @@ function CardBack({ item }: { item: LessonItem }) {
       <div className="flex flex-col items-center gap-3 text-center">
         <div className="flex items-center gap-2">
           <p className="text-sm text-gray-400">{content.romaji}</p>
-          {japText && <AudioButton text={japText} />}
+          {speechTextForItem && <AudioButton text={speechTextForItem} />}
         </div>
         <p className="text-xl text-white font-medium">{content.english}</p>
         {content.exampleSentenceJa && (
@@ -401,7 +365,7 @@ function CardBack({ item }: { item: LessonItem }) {
     <div className="flex flex-col items-center gap-3 text-center">
       <div className="flex items-center gap-2">
         <p className="text-sm text-gray-400">{content.romaji}</p>
-        {japText && <AudioButton text={japText} />}
+        {speechTextForItem && <AudioButton text={speechTextForItem} />}
       </div>
       <p className="text-xl text-white font-medium">{content.english}</p>
       {content.scenario && (

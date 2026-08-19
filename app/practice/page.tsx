@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
+import { speak, speechText } from "@/lib/speech";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -30,15 +31,6 @@ type ExampleWord = {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function speak(text: string, lang = "ja-JP") {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  u.rate = 0.9;
-  window.speechSynthesis.speak(u);
-}
 
 function AudioButton({
   text,
@@ -379,7 +371,7 @@ function PracticeView({
               <div className="border-t border-white/10 pt-4 space-y-3">
                 {/* Audio button */}
                 <div className="flex justify-center">
-                  <AudioButton text={item.character} size="md" />
+                  <AudioButton text={speechText(item.contentType, item)} size="md" />
                 </div>
 
                 {isKanji ? (
@@ -411,7 +403,7 @@ function PracticeView({
                         </p>
                         {exampleWords.map((w, i) => (
                           <div key={i} className="flex items-center justify-center gap-2 text-sm">
-                            <AudioButton text={w.word ?? ""} />
+                            <AudioButton text={w.reading || w.word || ""} />
                             <span className="jp-char text-gray-300">{w.word}</span>
                             {w.meaning && (
                               <>
