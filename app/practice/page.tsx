@@ -153,8 +153,25 @@ function SelectionView({
   const [selected, setSelected] = useState<Set<TypeKey>>(new Set(["HIRAGANA"]));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Assume locked until told otherwise, so kanji is never offered on a slow
+  // or failed response.
+  const [kanaMastered, setKanaMastered] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/progression")
+      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("failed"))))
+      .then((d) => {
+        if (!cancelled) setKanaMastered(!!d.kanaMastered);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function toggle(type: TypeKey) {
+    if (type === "KANJI" && !kanaMastered) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -207,19 +224,26 @@ function SelectionView({
           </div>
 
           <div className="flex gap-3 justify-center">
-            {(["HIRAGANA", "KATAKANA", "KANJI"] as TypeKey[]).map((type) => (
-              <button
-                key={type}
-                onClick={() => toggle(type)}
-                className={`flex-1 py-3 px-2 rounded-2xl border text-sm font-medium transition-all ${
-                  selected.has(type)
-                    ? "bg-sunset text-white border-transparent shadow-glow-warm scale-[1.02]"
-                    : "bg-transparent text-gray-400 border-white/20 hover:border-white/40 hover:text-white"
-                }`}
-              >
-                {TYPE_LABELS[type]}
-              </button>
-            ))}
+            {(["HIRAGANA", "KATAKANA", "KANJI"] as TypeKey[]).map((type) => {
+              const locked = type === "KANJI" && !kanaMastered;
+              return (
+                <button
+                  key={type}
+                  onClick={() => toggle(type)}
+                  disabled={locked}
+                  title={locked ? "Master all hiragana and katakana to unlock kanji" : undefined}
+                  className={`flex-1 py-3 px-2 rounded-2xl border text-sm font-medium transition-all ${
+                    locked
+                      ? "bg-transparent text-gray-700 border-white/5 cursor-not-allowed"
+                      : selected.has(type)
+                        ? "bg-sunset text-white border-transparent shadow-glow-warm scale-[1.02]"
+                        : "bg-transparent text-gray-400 border-white/20 hover:border-white/40 hover:text-white"
+                  }`}
+                >
+                  {locked ? `🔒 ${TYPE_LABELS[type]}` : TYPE_LABELS[type]}
+                </button>
+              );
+            })}
           </div>
 
           {error && (

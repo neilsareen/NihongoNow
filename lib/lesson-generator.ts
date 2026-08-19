@@ -2,6 +2,7 @@ import { prisma } from "./prisma";
 import { ContentType, ExerciseType } from "@prisma/client";
 import { getRandomCulturalTip } from "./cultural-tips";
 import { SCRIPT_INTROS } from "./script-intros";
+import { hasMasteredAllKana, KANA_TYPES } from "./progression";
 
 // Hiragana/katakana displayOrder >= this value are dakuten/handakuten (modified) kana
 const DAKUTEN_DISPLAY_ORDER_START = 47;
@@ -54,9 +55,19 @@ export async function generateDailyLesson(config: LessonConfig) {
   const effectiveBudget = TARGET_LESSON_SECONDS - culturalTipSeconds;
   const reviewBudget = Math.floor(effectiveBudget * 0.7);
 
-  // Fetch more than we'll use; trim by time budget
+  const kanaMastered = await hasMasteredAllKana(userId);
+
+  // Fetch more than we'll use; trim by time budget. While kana is unmastered
+  // the review queue is restricted to kana too: a learner who studied kanji
+  // before this gate existed still has those reviews on file, and without
+  // this filter they would keep resurfacing in every lesson.
   const allDueReviews = await prisma.review.findMany({
-    where: { userId, nextReviewAt: { lte: now }, srsLevel: { not: "MASTERED" } },
+    where: {
+      userId,
+      nextReviewAt: { lte: now },
+      srsLevel: { not: "MASTERED" },
+      ...(kanaMastered ? {} : { contentType: { in: KANA_TYPES } }),
+    },
     orderBy: [{ srsLevel: "asc" }, { nextReviewAt: "asc" }],
     take: 60,
   });
@@ -77,7 +88,7 @@ export async function generateDailyLesson(config: LessonConfig) {
 
   const weakTypes = await getWeakContentTypes(userId);
   const { items: newItems, hasLearnedHiragana, hasLearnedKatakana, hasLearnedDakuten } =
-    await getNewContent(userId, newItemBudget, weakTypes);
+    await getNewContent(userId, newItemBudget, weakTypes, kanaMastered);
   const spreadNewItems = spreadByFamily(newItems);
 
   const reviewItems = dueReviews.map((review) => ({
@@ -220,24 +231,12 @@ async function getWeakContentTypes(userId: string): Promise<ContentType[]> {
     .map(([k]) => k as ContentType);
 }
 
-// True once the user has every hiragana and katakana character at SRS level MASTERED.
-async function hasMasteredAllKana(userId: string): Promise<boolean> {
-  const [totalKana, masteredKana] = await Promise.all([
-    prisma.japaneseCharacter.count({
-      where: { type: { in: [ContentType.HIRAGANA, ContentType.KATAKANA] } },
-    }),
-    prisma.review.count({
-      where: {
-        userId,
-        contentType: { in: [ContentType.HIRAGANA, ContentType.KATAKANA] },
-        srsLevel: "MASTERED",
-      },
-    }),
-  ]);
-  return totalKana > 0 && masteredKana >= totalKana;
-}
-
-async function getNewContent(userId: string, budget: number, weakTypes: ContentType[]) {
+async function getNewContent(
+  userId: string,
+  budget: number,
+  weakTypes: ContentType[],
+  kanaMastered: boolean
+) {
   const existing = await prisma.review.findMany({ where: { userId }, select: { contentId: true, contentType: true } });
   const learnedByType: Record<string, Set<string>> = {};
   for (const r of existing) {
@@ -248,7 +247,6 @@ async function getNewContent(userId: string, budget: number, weakTypes: ContentT
     ...(learnedByType[ContentType.HIRAGANA] ?? []),
     ...(learnedByType[ContentType.KATAKANA] ?? []),
   ];
-  const kanaMastered = await hasMasteredAllKana(userId);
   const perType = Math.max(1, Math.floor(budget / 4));
   const boost = (type: ContentType) => weakTypes.includes(type) ? perType * 2 : perType;
   // Until every hiragana and katakana character is mastered, keep the whole new-item

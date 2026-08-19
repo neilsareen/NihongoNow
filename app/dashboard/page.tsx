@@ -3,8 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Bell, ChevronRight, Flame } from "lucide-react";
+import { Bell, ChevronRight, Flame, Lock } from "lucide-react";
 import { getStartOfDayInTimezone, getAvatar } from "@/lib/utils";
+import { hasMasteredAllKana, KANA_TYPES } from "@/lib/progression";
 
 const LESSON_TYPE_SYMBOL: Record<string, string> = {
   HIRAGANA: "あ",
@@ -17,13 +18,19 @@ const LESSON_TYPE_SYMBOL: Record<string, string> = {
 async function getDashboardData(userId: string, timeZone: string) {
   const todayStart = getStartOfDayInTimezone(timeZone);
 
+  // Resolved first so the review queries below can be scoped to it: while kana
+  // is unmastered, lessons only serve kana, so counting locked kanji reviews
+  // as "due" would promise work the learner can't actually be given.
+  const kanaMastered = await hasMasteredAllKana(userId);
+  const lockedTypeFilter = kanaMastered ? {} : { contentType: { in: KANA_TYPES } };
+
   const [profile, stats, progress, dueReviewsByType, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
     prisma.review.groupBy({
       by: ["contentType"],
-      where: { userId, nextReviewAt: { lte: new Date() }, srsLevel: { not: "MASTERED" } },
+      where: { userId, nextReviewAt: { lte: new Date() }, srsLevel: { not: "MASTERED" }, ...lockedTypeFilter },
       _count: { _all: true },
     }),
     prisma.lesson.findFirst({
@@ -38,7 +45,7 @@ async function getDashboardData(userId: string, timeZone: string) {
     prisma.lesson.count({ where: { userId, completedAt: { gte: todayStart } } }),
   ]);
   const reviewsDue = dueReviewsByType.reduce((sum, r) => sum + r._count._all, 0);
-  return { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons };
+  return { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons, kanaMastered };
 }
 
 // What symbol best represents the makeup of a lesson: for an in-progress
@@ -77,7 +84,7 @@ export default async function DashboardPage() {
   if (authError || !user) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons } = await getDashboardData(user.id, timeZone);
+  const { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons, kanaMastered } = await getDashboardData(user.id, timeZone);
   if (!profile) redirect("/onboarding");
 
   const avatar = getAvatar(profile.avatarUrl);
@@ -137,12 +144,15 @@ export default async function DashboardPage() {
     : reviewLabel;
 
   // Which content type a lesson is "mostly" made of, to pick its icon glyph.
-  const fallbackStage =
-    masteredByStage("HIRAGANA", 71) < 0.9 ? "HIRAGANA" :
-    masteredByStage("KATAKANA", 69) < 0.9 ? "KATAKANA" :
-    masteredByStage("ESSENTIAL_KANJI", 1500) < 0.9 ? "KANJI" :
-    masteredByStage("CORE_VOCAB", 2000) < 0.9 ? "VOCABULARY" :
-    "PHRASE";
+  // While kana is locked the lesson can only contain kana, so the icon must
+  // never fall back to 漢 (or a word type, which is also written in kanji).
+  const fallbackStage = !kanaMastered
+    ? (masteredByStage("HIRAGANA", 71) <= masteredByStage("KATAKANA", 69) ? "HIRAGANA" : "KATAKANA")
+    : masteredByStage("HIRAGANA", 71) < 0.9 ? "HIRAGANA" :
+      masteredByStage("KATAKANA", 69) < 0.9 ? "KATAKANA" :
+      masteredByStage("ESSENTIAL_KANJI", 1500) < 0.9 ? "KANJI" :
+      masteredByStage("CORE_VOCAB", 2000) < 0.9 ? "VOCABULARY" :
+      "PHRASE";
   const lessonTypeCounts: Partial<Record<string, number>> = inProgressLesson
     ? inProgressLesson.items.reduce((acc, i) => {
         acc[i.contentType] = (acc[i.contentType] ?? 0) + 1;
@@ -221,6 +231,24 @@ export default async function DashboardPage() {
           const p = progressMap[item.stage];
           const mastered = p?.masteredItems ?? 0;
           const pct = Math.min(100, Math.round((mastered / item.total) * 100));
+
+          // Kanji stays sealed until every kana is mastered — including its
+          // glyph, so no kanji character appears on the dashboard at all.
+          if (item.practiceType === "KANJI" && !kanaMastered) {
+            return (
+              <div
+                key={item.label}
+                className="rounded-2xl p-3.5 flex flex-col items-center gap-2 bg-gray-900 border border-white/10"
+                title="Master all hiragana and katakana to unlock kanji"
+              >
+                <div className="relative w-14 h-14 rounded-full grid place-items-center shrink-0 bg-white/[0.04]">
+                  <Lock className="w-5 h-5 text-gray-600" />
+                </div>
+                <span className="text-gray-600 text-xs font-semibold">{item.label}</span>
+              </div>
+            );
+          }
+
           return (
             <Link
               key={item.label}

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
+import { hasMasteredAllKana } from "@/lib/progression";
 import { ContentType } from "@prisma/client";
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -73,7 +74,17 @@ export async function GET(request: Request) {
   const charTypes = requestedTypes.filter(
     (t) => t === ContentType.HIRAGANA || t === ContentType.KATAKANA
   );
-  const includeKanji = requestedTypes.includes(ContentType.KANJI);
+  // Kanji stays locked until every kana is mastered. Enforced here rather than
+  // only in the UI, since the type comes straight off the query string.
+  const kanaMastered = await hasMasteredAllKana(user.id);
+  const includeKanji = requestedTypes.includes(ContentType.KANJI) && kanaMastered;
+
+  if (charTypes.length === 0 && !includeKanji) {
+    return NextResponse.json(
+      { error: "Master all hiragana and katakana to unlock kanji.", kanaLocked: true },
+      { status: 403 }
+    );
+  }
 
   const items: {
     id: string;

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { hasMasteredAllKana, KANA_TYPES } from "@/lib/progression";
 import { ExerciseType } from "@prisma/client";
 
 const EXERCISE_FOR_TYPE: Record<string, ExerciseType> = {
@@ -16,8 +17,17 @@ export async function POST() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  // Same kana gate as the daily lesson: pre-existing kanji reviews must not
+  // sneak back in through the weakest-items shortcut.
+  const kanaMastered = await hasMasteredAllKana(user.id);
+
   const reviews = await prisma.review.findMany({
-    where: { userId: user.id, totalAttempts: { gte: 3 }, srsLevel: { not: "MASTERED" } },
+    where: {
+      userId: user.id,
+      totalAttempts: { gte: 3 },
+      srsLevel: { not: "MASTERED" },
+      ...(kanaMastered ? {} : { contentType: { in: KANA_TYPES } }),
+    },
     orderBy: [{ correctCount: "asc" }, { totalAttempts: "desc" }],
     take: 15,
   });
