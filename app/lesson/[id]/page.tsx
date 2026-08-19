@@ -667,132 +667,44 @@ export default function LessonPage() {
         </div>
       </div>
 
-      {isScriptIntro && currentItem ? (
-        <>
-          <div key={currentItem.id} className="w-full max-w-sm bg-gray-900 border border-sky-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
-            <ScriptIntroCard item={currentItem} />
-          </div>
-          <div className="w-full max-w-sm">
-            <button
-              onClick={() => handleAnswer(true)}
-              className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
-            >
-              Got it, let&apos;s start →
-            </button>
-          </div>
-        </>
-      ) : isCultural && currentItem ? (
-        <>
-          <div key={currentItem.id} className="w-full max-w-sm bg-gray-900 border border-amber-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
-            {revealed ? <CulturalTipAnswer item={currentItem} /> : <CulturalTipQuestion item={currentItem} />}
-          </div>
-          <div className="w-full max-w-sm">
-            {!revealed ? (
-              <button
-                onClick={() => setRevealed(true)}
-                className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
-              >
-                Reveal
-              </button>
-            ) : (
-              <div className="flex gap-3">
-                <button
-                  onClick={() => handleAnswer(false)}
-                  className="flex-1 py-4 bg-gray-900 hover:bg-red-950/40 border border-red-500/30 text-red-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
-                >
-                  Again ✗
-                </button>
+      {/* One keyed wrapper for the whole card group. Every card, hint and
+          answer control for the current item lives inside this single subtree,
+          so advancing swaps it out as one unit. Previously these were sibling
+          nodes that each carried key={currentItem.id}; duplicate keys among
+          siblings make React drop one of them from its reconciliation map, and
+          the dropped card's DOM node is never removed — that is what left a
+          previous character sitting above the current one. */}
+      {currentItem && (
+        <div key={currentItem.id} className="w-full flex flex-col items-center gap-4">
+          {isScriptIntro ? (
+            <>
+              <div className="w-full max-w-sm bg-gray-900 border border-sky-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
+                <ScriptIntroCard item={currentItem} />
+              </div>
+              <div className="w-full max-w-sm">
                 <button
                   onClick={() => handleAnswer(true)}
-                  className="flex-1 py-4 bg-gray-900 hover:bg-green-950/40 border border-green-500/30 text-green-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
+                  className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
                 >
-                  Got it ✓
+                  Got it, let&apos;s start →
                 </button>
               </div>
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          <div key={currentItem?.id} className="relative w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-10 flex flex-col items-center justify-center min-h-56 gap-4 animate-pop-in">
-            {currentItem && (
-              <div
-                className="absolute top-3 right-3"
-                title="Your mastery progress for this item: New → Learning → Familiar → Strong → Mastered"
-              >
-                <MasteryBar review={currentItem.review} />
-              </div>
-            )}
-            {currentItem && <CardFront item={currentItem} />}
-          </div>
-
-          {currentItem && shouldShowMnemonicHint(currentItem) && (
-            <MnemonicButton key={currentItem.id} hint={currentItem.content!.mnemonicHint!} />
-          )}
-
-          {isListeningMC ? (
-            <div className="w-full max-w-sm space-y-2">
-              {mcChoices.map((choice) => {
-                const isCorrectAnswer = choice === (currentItem?.content?.english ?? "");
-                const isSelected = mcChoice === choice;
-                let btnClass = "w-full py-3 px-4 rounded-2xl text-sm font-medium text-left border transition-all ";
-                if (!mcChoice) {
-                  btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800 hover:border-white/20";
-                } else if (isSelected && mcCorrect) {
-                  btnClass += "bg-green-900/50 border-green-500/50 text-green-300 shadow-glow-green animate-pop-once";
-                } else if (isSelected && !mcCorrect) {
-                  btnClass += "bg-red-900/50 border-red-500/50 text-red-300 shadow-glow-red";
-                } else if (!isSelected && mcChoice && isCorrectAnswer) {
-                  btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
-                } else {
-                  btnClass += "bg-gray-900 border-white/5 text-gray-500";
-                }
-                return (
-                  <button
-                    key={choice}
-                    disabled={!!mcChoice}
-                    className={btnClass}
-                    onClick={() => {
-                      if (mcChoice) return;
-                      const correct = isCorrectAnswer;
-                      setMcChoice(choice);
-                      setMcCorrect(correct);
-                      if (correct) {
-                        setTimeout(() => handleAnswer(true), 800);
-                      }
-                    }}
-                  >
-                    {choice}
-                  </button>
-                );
-              })}
-              {mcChoice && !mcCorrect && (
-                <button
-                  onClick={() => handleAnswer(false)}
-                  className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl text-sm font-medium transition-colors mt-1"
-                >
-                  Continue
-                </button>
-              )}
-            </div>
-          ) : (
+            </>
+          ) : isCultural ? (
             <>
-              <div key={currentItem?.id} className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-32">
-                {revealed && currentItem
-                  ? <CardBack item={currentItem} />
-                  : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
-                }
+              <div className="w-full max-w-sm bg-gray-900 border border-amber-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
+                {revealed ? <CulturalTipAnswer item={currentItem} /> : <CulturalTipQuestion item={currentItem} />}
               </div>
-              <div className="flex gap-3 w-full max-w-sm">
+              <div className="w-full max-w-sm">
                 {!revealed ? (
                   <button
                     onClick={() => setRevealed(true)}
-                    className="flex-1 py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
+                    className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
                   >
                     Reveal
                   </button>
                 ) : (
-                  <>
+                  <div className="flex gap-3">
                     <button
                       onClick={() => handleAnswer(false)}
                       className="flex-1 py-4 bg-gray-900 hover:bg-red-950/40 border border-red-500/30 text-red-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
@@ -805,12 +717,109 @@ export default function LessonPage() {
                     >
                       Got it ✓
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </>
+          ) : (
+            <>
+              <div className="relative w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-10 flex flex-col items-center justify-center min-h-56 gap-4 animate-pop-in">
+                <div
+                  className="absolute top-3 right-3"
+                  title="Your mastery progress for this item: New → Learning → Familiar → Strong → Mastered"
+                >
+                  <MasteryBar review={currentItem.review} />
+                </div>
+                <CardFront item={currentItem} />
+              </div>
+
+              {shouldShowMnemonicHint(currentItem) && (
+                <MnemonicButton hint={currentItem.content!.mnemonicHint!} />
+              )}
+
+              {isListeningMC ? (
+                <div className="w-full max-w-sm space-y-2">
+                  {mcChoices.map((choice) => {
+                    const isCorrectAnswer = choice === (currentItem.content?.english ?? "");
+                    const isSelected = mcChoice === choice;
+                    let btnClass = "w-full py-3 px-4 rounded-2xl text-sm font-medium text-left border transition-all ";
+                    if (!mcChoice) {
+                      btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800 hover:border-white/20";
+                    } else if (isSelected && mcCorrect) {
+                      btnClass += "bg-green-900/50 border-green-500/50 text-green-300 shadow-glow-green animate-pop-once";
+                    } else if (isSelected && !mcCorrect) {
+                      btnClass += "bg-red-900/50 border-red-500/50 text-red-300 shadow-glow-red";
+                    } else if (!isSelected && mcChoice && isCorrectAnswer) {
+                      btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
+                    } else {
+                      btnClass += "bg-gray-900 border-white/5 text-gray-500";
+                    }
+                    return (
+                      <button
+                        key={choice}
+                        disabled={!!mcChoice}
+                        className={btnClass}
+                        onClick={() => {
+                          if (mcChoice) return;
+                          const correct = isCorrectAnswer;
+                          setMcChoice(choice);
+                          setMcCorrect(correct);
+                          if (correct) {
+                            setTimeout(() => handleAnswer(true), 800);
+                          }
+                        }}
+                      >
+                        {choice}
+                      </button>
+                    );
+                  })}
+                  {mcChoice && !mcCorrect && (
+                    <button
+                      onClick={() => handleAnswer(false)}
+                      className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl text-sm font-medium transition-colors mt-1"
+                    >
+                      Continue
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-32">
+                    {revealed
+                      ? <CardBack item={currentItem} />
+                      : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
+                    }
+                  </div>
+                  <div className="flex gap-3 w-full max-w-sm">
+                    {!revealed ? (
+                      <button
+                        onClick={() => setRevealed(true)}
+                        className="flex-1 py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
+                      >
+                        Reveal
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleAnswer(false)}
+                          className="flex-1 py-4 bg-gray-900 hover:bg-red-950/40 border border-red-500/30 text-red-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
+                        >
+                          Again ✗
+                        </button>
+                        <button
+                          onClick={() => handleAnswer(true)}
+                          className="flex-1 py-4 bg-gray-900 hover:bg-green-950/40 border border-green-500/30 text-green-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
+                        >
+                          Got it ✓
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
           )}
-        </>
+        </div>
       )}
     </div>
   );
