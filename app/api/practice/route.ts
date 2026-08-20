@@ -140,5 +140,15 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.json({ items: spreadShuffleByFamily(items) });
+  // The drill screen asks for a stack of a fixed size (10/25/50/100). Trim
+  // after the spread shuffle so a short stack is still a spread sample of the
+  // whole set rather than the first few of one family.
+  const limitParam = Number(searchParams.get("limit"));
+  const limit =
+    Number.isFinite(limitParam) && limitParam > 0
+      ? Math.min(Math.floor(limitParam), 500)
+      : null;
+  const ordered = spreadShuffleByFamily(items);
+
+  return NextResponse.json({ items: limit ? ordered.slice(0, limit) : ordered });
 }

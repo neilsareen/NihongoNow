@@ -166,12 +166,17 @@ const TYPES: { key: TypeKey; label: string; glyph: string; tone: string }[] = [
   { key: "KANJI", label: "Kanji", glyph: "漢", tone: "var(--track-kanji)" },
 ];
 
+/** Stack sizes on offer. The middle one is the default — a few minutes' worth. */
+const COUNTS = [10, 25, 50, 100] as const;
+const DEFAULT_COUNT = 25;
+
 function SelectionView({
   onStart,
 }: {
   onStart: (items: PracticeItem[]) => void;
 }) {
   const [selected, setSelected] = useState<Set<TypeKey>>(new Set(["HIRAGANA"]));
+  const [count, setCount] = useState<number>(DEFAULT_COUNT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Assume locked until told otherwise, so kanji is never offered on a slow
@@ -210,10 +215,12 @@ function SelectionView({
     setError(null);
     try {
       const types = Array.from(selected).join(",");
-      const res = await fetch(`/api/practice?types=${types}`);
+      const res = await fetch(`/api/practice?types=${types}&limit=${count}`);
       if (!res.ok) throw new Error("Failed to load practice items");
       const data = await res.json();
-      onStart(data.items as PracticeItem[]);
+      // The server already trims to the limit; slicing again keeps the stack
+      // honest if that ever changes.
+      onStart((data.items as PracticeItem[]).slice(0, count));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
       setLoading(false);
@@ -305,6 +312,38 @@ function SelectionView({
           })}
         </fieldset>
 
+        <fieldset className="space-y-3">
+          <legend className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-text-subtle mb-3">
+            How many cards?
+          </legend>
+          <div className="grid grid-cols-4 gap-2">
+            {COUNTS.map((n) => {
+              const isOn = count === n;
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setCount(n)}
+                  aria-pressed={isOn}
+                  className={cn(
+                    "h-14 rounded-tile border-2 bg-surface card-ledge",
+                    "font-display font-extrabold text-[19px] tnum transition-colors duration-150",
+                    isOn ? "text-text" : "border-line text-text-muted hover:border-line-strong"
+                  )}
+                  style={isOn ? { borderColor: "hsl(var(--sky))", color: "hsl(var(--sky))" } : undefined}
+                >
+                  {n}
+                </button>
+              );
+            })}
+          </div>
+          <p className="text-[13px] text-text-muted leading-relaxed font-medium">
+            You&rsquo;ll drill until all {count} are cleared. Any card you miss goes back
+            into the stack and comes round again — so a miss costs you a repeat, not the
+            card. If a script has fewer than {count} cards, you get everything it has.
+          </p>
+        </fieldset>
+
         {error && (
           <p className="text-[14px] text-rose font-semibold" role="alert">{error}</p>
         )}
@@ -361,44 +400,101 @@ function LoadingView() {
 // Practice view — flashcard
 // ---------------------------------------------------------------------------
 
+/**
+ * A missed card slots back in this many cards later: far enough that you have
+ * to recall it rather than echo it, near enough that it comes back inside the
+ * session.
+ */
+const RETRY_GAP = 3;
+
+interface SessionResults {
+  /** Cards in the stack. Every one of them is cleared by the end. */
+  size: number;
+  /** Cleared without ever going back in the stack. */
+  firstTry: number;
+  /** How many times a card was put back in the stack. */
+  putBack: number;
+  /** Longest run of consecutive correct answers. */
+  best: number;
+}
+
 function PracticeView({
   items,
   onFinish,
 }: {
   items: PracticeItem[];
-  onFinish: (correct: number, total: number, best: number) => void;
+  onFinish: (results: SessionResults) => void;
 }) {
-  const [index, setIndex] = useState(0);
+  // The stack itself. Cards leave it only by being answered correctly, so a
+  // session ends when it is empty rather than after a fixed number of turns.
+  const [queue, setQueue] = useState<PracticeItem[]>(items);
   const [flipped, setFlipped] = useState(false);
-  const [correctCount, setCorrectCount] = useState(0);
+  const [cleared, setCleared] = useState(0);
+  const [firstTry, setFirstTry] = useState(0);
+  const [putBack, setPutBack] = useState(0);
+  // Cards that have been missed at least once, so a later hit is not counted
+  // as a first-try hit.
+  const [missedIds] = useState(() => new Set<string>());
   // Run of consecutive hits, shown from three up — the same mechanic the
   // lesson player uses, so the two flows reward you the same way.
   const [streak, setStreak] = useState(0);
   const [best, setBest] = useState(0);
+  // Says out loud what just happened to the card, so "back in the stack" is
+  // something the app tells you rather than something you infer from a counter.
+  const [flash, setFlash] = useState<{ turn: number; correct: boolean } | null>(null);
 
-  const item = items[index];
-  const total = items.length;
+  const size = items.length;
+  const item = queue[0];
   const isKanji = item.contentType === ContentType.KANJI;
   const exampleWords = parseExampleWords(item.exampleWords);
   const readings = isKanji ? kanjiReadings(item.onyomi, item.kunyomi) : [];
+  const turn = cleared + putBack;
 
   const advance = useCallback(
     (wasCorrect: boolean) => {
-      const newCorrect = wasCorrect ? correctCount + 1 : correctCount;
-      const newStreak = wasCorrect ? streak + 1 : 0;
-      const newBest = Math.max(best, newStreak);
-      if (index + 1 >= total) {
-        onFinish(newCorrect, total, newBest);
-      } else {
-        setCorrectCount(newCorrect);
+      const current = queue[0];
+      const rest = queue.slice(1);
+
+      if (wasCorrect) {
+        const clean = !missedIds.has(current.id);
+        const newStreak = streak + 1;
+        const newBest = Math.max(best, newStreak);
+        if (rest.length === 0) {
+          onFinish({
+            size,
+            firstTry: firstTry + (clean ? 1 : 0),
+            putBack,
+            best: newBest,
+          });
+          return;
+        }
         setStreak(newStreak);
         setBest(newBest);
-        setIndex(index + 1);
-        setFlipped(false);
+        setCleared((c) => c + 1);
+        if (clean) setFirstTry((f) => f + 1);
+        setQueue(rest);
+      } else {
+        missedIds.add(current.id);
+        setStreak(0);
+        setPutBack((p) => p + 1);
+        // Slot it a few cards along; at the tail of a short stack it simply
+        // comes straight back, which is the point.
+        const at = Math.min(RETRY_GAP, rest.length);
+        setQueue([...rest.slice(0, at), current, ...rest.slice(at)]);
       }
+
+      setFlash({ turn: turn + 1, correct: wasCorrect });
+      setFlipped(false);
     },
-    [correctCount, streak, best, index, total, onFinish]
+    [queue, missedIds, streak, best, firstTry, putBack, size, turn, onFinish]
   );
+
+  // Clear the read-back after a beat so it reads as a reaction, not a label.
+  useEffect(() => {
+    if (!flash) return;
+    const t = setTimeout(() => setFlash(null), 2000);
+    return () => clearTimeout(t);
+  }, [flash]);
 
   // Same shortcuts as the lesson player, so the two flows feel like one app.
   useEffect(() => {
@@ -440,11 +536,13 @@ function PracticeView({
           </Link>
 
           <div className="flex-1">
+            {/* Progress is cards cleared out of the stack, not turns taken — a
+                miss holds the bar where it is instead of advancing it. */}
             <div className="h-3.5 rounded-full bg-surface-raised overflow-hidden">
               <div
                 className="h-full rounded-full bg-lime transition-[width] duration-500 ease-bounce"
                 style={{
-                  width: `${((index + 1) / total) * 100}%`,
+                  width: `${(cleared / size) * 100}%`,
                   boxShadow: "inset 0 2px 0 0 rgb(255 255 255 / 0.3)",
                 }}
               />
@@ -458,14 +556,44 @@ function PracticeView({
             </Chip>
           ) : (
             <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0 min-w-[3rem] text-right">
-              {index + 1}/{total}
+              {cleared}/{size}
             </span>
           )}
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-4">
-        <div key={index} className="flex-1 w-full flex flex-col gap-4 animate-pop-in">
+      <main className="flex-1 w-full max-w-md mx-auto px-4 py-4 flex flex-col gap-3">
+        {/* Running score. Spelled out rather than abbreviated, so there is no
+            guessing at what a number means mid-drill. */}
+        <div className="flex items-center justify-center gap-2 flex-wrap">
+          <Chip hue="var(--lime)">
+            <Check className="w-3.5 h-3.5" strokeWidth={3} />
+            <span className="tnum">{cleared}</span> got right
+          </Chip>
+          <Chip hue="var(--rose)">
+            <RotateCcw className="w-3.5 h-3.5" strokeWidth={2.5} />
+            <span className="tnum">{putBack}</span> back in the stack
+          </Chip>
+          <Chip>
+            <span className="tnum">{queue.length}</span> left to clear
+          </Chip>
+        </div>
+
+        <div className="h-5 flex items-center justify-center">
+          {flash && (
+            <p
+              key={flash.turn}
+              className="animate-pop-in text-[13px] font-display font-bold text-center"
+              style={{ color: `hsl(${flash.correct ? "var(--lime)" : "var(--rose)"})` }}
+            >
+              {flash.correct
+                ? "Right — that card is out of the stack."
+                : "Back in the stack — it will come round again."}
+            </p>
+          )}
+        </div>
+
+        <div key={turn} className="flex-1 w-full flex flex-col gap-4 animate-pop-in">
           <div className="flex-1 flex flex-col justify-center gap-4">
           <Card className="overflow-hidden">
             <div className="p-8 flex items-center justify-center min-h-[12rem]">
@@ -557,15 +685,17 @@ function PracticeView({
                 onClick={() => advance(false)}
                 className={buttonStyles({ variant: "reject", size: "lg", full: true })}
                 style={buttonVars("reject")}
+                title="Puts this card back in the stack"
               >
                 <RotateCcw className="w-[18px] h-[18px]" strokeWidth={2.5} />
-                Again
+                Missed it
                 <Key>1</Key>
               </button>
               <button
                 onClick={() => advance(true)}
                 className={buttonStyles({ variant: "affirm", size: "lg", full: true })}
                 style={buttonVars("affirm")}
+                title="Clears this card from the stack"
               >
                 <Check className="w-[18px] h-[18px]" strokeWidth={3} />
                 Got it
@@ -584,17 +714,16 @@ function PracticeView({
 // ---------------------------------------------------------------------------
 
 function SummaryView({
-  correct,
-  total,
-  best,
+  results,
   onPracticeAgain,
 }: {
-  correct: number;
-  total: number;
-  best: number;
+  results: SessionResults;
   onPracticeAgain: () => void;
 }) {
-  const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const { size, firstTry, putBack, best } = results;
+  // Everything gets cleared eventually, so the score worth reporting is how
+  // much of the stack went down on the first attempt.
+  const accuracy = size > 0 ? Math.round((firstTry / size) * 100) : 0;
   const great = accuracy >= 80;
   const hue = great ? "var(--lime)" : accuracy >= 50 ? "var(--sun)" : "var(--coral)";
 
@@ -617,13 +746,16 @@ function SummaryView({
             </span>
             <div className="relative p-6 text-center">
               <p className="font-display font-bold text-[13px] uppercase tracking-[0.12em] opacity-75">
-                Session complete
+                Stack cleared — all {size} cards
               </p>
               <p className="font-display font-extrabold text-mega tnum mt-2">
                 {accuracy}
                 <span className="text-3xl align-top">%</span>
               </p>
-              <p className="font-display font-bold text-[17px] mt-1">
+              <p className="font-display font-bold text-[15px] opacity-80">
+                right on the first try
+              </p>
+              <p className="font-display font-bold text-[17px] mt-2">
                 {great
                   ? "That set is well in hand."
                   : accuracy >= 50
@@ -635,13 +767,13 @@ function SummaryView({
 
           <div className="grid grid-cols-3 gap-2.5 stagger">
             {[
-              { label: "Correct", value: correct, tone: "var(--lime)" },
-              { label: "Missed", value: total - correct, tone: "var(--rose)" },
+              { label: "Right first try", value: firstTry, tone: "var(--lime)" },
+              { label: "Put back in stack", value: putBack, tone: "var(--rose)" },
               { label: "Best run", value: best, tone: "var(--sun)" },
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-tile border-2 border-line bg-surface card-ledge py-3.5 text-center"
+                className="rounded-tile border-2 border-line bg-surface card-ledge py-3.5 px-2 text-center"
               >
                 <p
                   className="font-display font-extrabold text-[26px] tnum leading-none"
@@ -649,12 +781,18 @@ function SummaryView({
                 >
                   {stat.value}
                 </p>
-                <p className="text-[11px] font-bold text-text-subtle mt-1.5 uppercase tracking-wider">
+                <p className="text-[11px] font-bold text-text-subtle mt-1.5 uppercase tracking-wider leading-tight">
                   {stat.label}
                 </p>
               </div>
             ))}
           </div>
+
+          <p className="text-[13px] text-text-muted leading-relaxed font-medium text-center">
+            {putBack === 0
+              ? `You cleared every card first time — nothing went back in the stack.`
+              : `${putBack} time${putBack === 1 ? "" : "s"} a card went back in the stack for another go, and you cleared them all in the end.`}
+          </p>
 
           <div className="space-y-3 pt-1">
             <button
@@ -695,9 +833,10 @@ function PracticePageInner() {
 
   const [view, setView] = useState<View>(autoType ? "loading" : "selection");
   const [items, setItems] = useState<PracticeItem[]>([]);
-  const [results, setResults] = useState<{ correct: number; total: number; best: number }>({
-    correct: 0,
-    total: 0,
+  const [results, setResults] = useState<SessionResults>({
+    size: 0,
+    firstTry: 0,
+    putBack: 0,
     best: 0,
   });
 
@@ -706,11 +845,13 @@ function PracticePageInner() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/practice?types=${autoType}`);
+        // Jumping straight in from the dashboard gets the default stack size;
+        // the picker on the selection screen is for anything else.
+        const res = await fetch(`/api/practice?types=${autoType}&limit=${DEFAULT_COUNT}`);
         if (!res.ok) throw new Error("Failed to load practice items");
         const data = await res.json();
         if (!cancelled) {
-          setItems(data.items as PracticeItem[]);
+          setItems((data.items as PracticeItem[]).slice(0, DEFAULT_COUNT));
           setView("practice");
         }
       } catch {
@@ -729,8 +870,8 @@ function PracticePageInner() {
     setView("practice");
   }
 
-  function handleFinish(correct: number, total: number, best: number) {
-    setResults({ correct, total, best });
+  function handleFinish(sessionResults: SessionResults) {
+    setResults(sessionResults);
     setView("summary");
   }
 
@@ -748,14 +889,7 @@ function PracticePageInner() {
   }
 
   if (view === "summary") {
-    return (
-      <SummaryView
-        correct={results.correct}
-        total={results.total}
-        best={results.best}
-        onPracticeAgain={handlePracticeAgain}
-      />
-    );
+    return <SummaryView results={results} onPracticeAgain={handlePracticeAgain} />;
   }
 
   return <SelectionView onStart={handleStart} />;
