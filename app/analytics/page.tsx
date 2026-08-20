@@ -18,7 +18,7 @@ import {
   VolumeX,
   type LucideIcon,
 } from "lucide-react";
-import { hasMasteredAllKana } from "@/lib/progression";
+import { hasAnyUnlockedKanji } from "@/lib/progression";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { Card, ProgressBar, Ring, SectionLabel, TopBar } from "@/app/components/ui";
 
@@ -72,12 +72,12 @@ export default async function AnalyticsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [profile, stats, progress, lessonsCompleted, kanaMastered] = await Promise.all([
+  const [profile, stats, progress, lessonsCompleted, kanjiUnlocked] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: user.id } }),
     prisma.userStatistics.findUnique({ where: { userId: user.id } }),
     prisma.userProgress.findMany({ where: { userId: user.id } }),
     prisma.lesson.count({ where: { userId: user.id, completedAt: { not: null } } }),
-    hasMasteredAllKana(user.id),
+    hasAnyUnlockedKanji(user.id),
   ]);
 
   if (!profile) redirect("/onboarding");
@@ -89,12 +89,12 @@ export default async function AnalyticsPage() {
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
 
-  // The kanji row is swapped for a padlock until every kana is mastered, so
-  // the glyph itself stays hidden here too.
+  // The kanji row shows a padlock until at least one kanji is readable, so the
+  // glyph itself stays hidden until the learner can actually meet it.
   const progressItems = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", locked: false },
     { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", locked: false },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", locked: !kanaMastered },
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", locked: !kanjiUnlocked },
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", locked: false },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", locked: false },
   ];

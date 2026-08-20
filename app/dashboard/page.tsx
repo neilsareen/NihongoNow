@@ -5,7 +5,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowRight, ChevronRight, Flame, Lock } from "lucide-react";
 import { getStartOfDayInTimezone, getAvatar } from "@/lib/utils";
-import { hasMasteredAllKana, KANA_TYPES } from "@/lib/progression";
+import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji } from "@/lib/progression";
 import { Avatar, Card, ProgressBar, Ring, SectionLabel, buttonStyles } from "@/app/components/ui";
 
 const LESSON_TYPE_SYMBOL: Record<string, string> = {
@@ -19,20 +19,19 @@ const LESSON_TYPE_SYMBOL: Record<string, string> = {
 async function getDashboardData(userId: string, timeZone: string) {
   const todayStart = getStartOfDayInTimezone(timeZone);
 
-  // Resolved first so the review queries below can be scoped to it: while kana
-  // is unmastered, lessons only serve kana, so counting locked kanji reviews
-  // as "due" would promise work the learner can't actually be given.
-  const kanaMastered = await hasMasteredAllKana(userId);
-  const lockedTypeFilter = kanaMastered ? {} : { contentType: { in: KANA_TYPES } };
+  // Resolved first so the due-review list can be filtered against it: a lesson
+  // only serves content the learner can read, so counting locked items as
+  // "due" would promise work they can't actually be given.
+  const masteredKana = await getMasteredKana(userId);
 
-  const [profile, stats, progress, dueReviewsByType, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
+  const [profile, stats, progress, fetchedDueReviews, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
-    prisma.review.groupBy({
-      by: ["contentType"],
-      where: { userId, nextReviewAt: { lte: new Date() }, srsLevel: { not: "MASTERED" }, ...lockedTypeFilter },
-      _count: { _all: true },
+    prisma.review.findMany({
+      where: { userId, nextReviewAt: { lte: new Date() }, srsLevel: { not: "MASTERED" } },
+      select: { contentType: true, contentId: true },
+      take: 100,
     }),
     prisma.lesson.findFirst({
       where: { userId, completedAt: null },
@@ -45,8 +44,16 @@ async function getDashboardData(userId: string, timeZone: string) {
     }),
     prisma.lesson.count({ where: { userId, completedAt: { gte: todayStart } } }),
   ]);
-  const reviewsDue = dueReviewsByType.reduce((sum, r) => sum + r._count._all, 0);
-  return { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons, kanaMastered };
+
+  const unlockedDue = await filterUnlockedReviews(fetchedDueReviews, masteredKana);
+  const dueCountsByType: Record<string, number> = {};
+  for (const r of unlockedDue) {
+    dueCountsByType[r.contentType] = (dueCountsByType[r.contentType] ?? 0) + 1;
+  }
+  const reviewsDue = unlockedDue.length;
+  const kanjiUnlocked = (await getUnlockedKanji(masteredKana)).length > 0;
+
+  return { profile, stats, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked };
 }
 
 // What symbol best represents the makeup of a lesson: for an in-progress
@@ -85,7 +92,7 @@ export default async function DashboardPage() {
   if (authError || !user) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons, kanaMastered } = await getDashboardData(user.id, timeZone);
+  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked } = await getDashboardData(user.id, timeZone);
   if (!profile) redirect("/onboarding");
 
   const avatar = getAvatar(profile.avatarUrl);
@@ -144,21 +151,20 @@ export default async function DashboardPage() {
     : reviewLabel;
 
   // Which content type a lesson is "mostly" made of, to pick its icon glyph.
-  // While kana is locked the lesson can only contain kana, so the icon must
-  // never fall back to 漢 (or a word type, which is also written in kanji).
-  const fallbackStage = !kanaMastered
-    ? (masteredByStage("HIRAGANA", 71) <= masteredByStage("KATAKANA", 69) ? "HIRAGANA" : "KATAKANA")
-    : masteredByStage("HIRAGANA", 71) < 0.9 ? "HIRAGANA" :
-      masteredByStage("KATAKANA", 69) < 0.9 ? "KATAKANA" :
-      masteredByStage("ESSENTIAL_KANJI", 1500) < 0.9 ? "KANJI" :
-      masteredByStage("CORE_VOCAB", 2000) < 0.9 ? "VOCABULARY" :
-      "PHRASE";
+  // 漢 is only ever a valid fallback once some kanji is actually unlocked,
+  // otherwise the icon would advertise content the lesson can't contain.
+  const fallbackStage =
+    masteredByStage("HIRAGANA", 71) < 0.9 ? "HIRAGANA" :
+    masteredByStage("KATAKANA", 69) < 0.9 ? "KATAKANA" :
+    (kanjiUnlocked && masteredByStage("ESSENTIAL_KANJI", 1500) < 0.9) ? "KANJI" :
+    masteredByStage("CORE_VOCAB", 2000) < 0.9 ? "VOCABULARY" :
+    "PHRASE";
   const lessonTypeCounts: Partial<Record<string, number>> = inProgressLesson
     ? inProgressLesson.items.reduce((acc, i) => {
         acc[i.contentType] = (acc[i.contentType] ?? 0) + 1;
         return acc;
       }, {} as Partial<Record<string, number>>)
-    : Object.fromEntries(dueReviewsByType.map((r) => [r.contentType, r._count._all]));
+    : dueCountsByType;
   const lessonSymbol = dominantLessonSymbol(lessonTypeCounts, fallbackStage);
 
   return (
@@ -236,9 +242,9 @@ export default async function DashboardPage() {
             const mastered = progressMap[track.stage]?.masteredItems ?? 0;
             const pct = Math.min(100, Math.round((mastered / track.total) * 100));
 
-            // Kanji stays sealed until every kana is mastered — including its
-            // glyph, so no kanji character appears on the dashboard at all.
-            const locked = track.practiceType === "KANJI" && !kanaMastered;
+            // Kanji stays sealed — including its glyph — until at least one
+            // kanji is readable, so no kanji character appears here early on.
+            const locked = track.practiceType === "KANJI" && !kanjiUnlocked;
             const href = !locked && track.practiceType ? `/practice?type=${track.practiceType}` : null;
 
             const body = (
@@ -298,7 +304,7 @@ export default async function DashboardPage() {
               <div
                 key={track.label}
                 className={rowClass}
-                title={locked ? "Master all hiragana and katakana to unlock kanji" : undefined}
+                title={locked ? "Master the kana used in a kanji\u2019s reading to unlock it" : undefined}
               >
                 {body}
               </div>

@@ -170,14 +170,14 @@ function SelectionView({
   const [error, setError] = useState<string | null>(null);
   // Assume locked until told otherwise, so kanji is never offered on a slow
   // or failed response.
-  const [kanaMastered, setKanaMastered] = useState(false);
+  const [kanjiUnlocked, setKanjiUnlocked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/progression")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("failed"))))
       .then((d) => {
-        if (!cancelled) setKanaMastered(!!d.kanaMastered);
+        if (!cancelled) setKanjiUnlocked(!!d.kanjiUnlocked);
       })
       .catch(() => {});
     return () => {
@@ -186,7 +186,7 @@ function SelectionView({
   }, []);
 
   function toggle(type: TypeKey) {
-    if (type === "KANJI" && !kanaMastered) return;
+    if (type === "KANJI" && !kanjiUnlocked) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -232,7 +232,7 @@ function SelectionView({
             Include
           </legend>
           {TYPES.map(({ key, label, glyph, tone }) => {
-            const locked = key === "KANJI" && !kanaMastered;
+            const locked = key === "KANJI" && !kanjiUnlocked;
             const isOn = selected.has(key);
             return (
               <button
@@ -240,7 +240,7 @@ function SelectionView({
                 onClick={() => toggle(key)}
                 disabled={locked}
                 aria-pressed={isOn}
-                title={locked ? "Master all hiragana and katakana to unlock kanji" : undefined}
+                title={locked ? "Master the kana used in a kanji\u2019s reading to unlock it" : undefined}
                 className={cn(
                   "w-full flex items-center gap-3 p-3.5 rounded-xl border text-left",
                   "transition-colors duration-150 ease-swift",
@@ -276,7 +276,7 @@ function SelectionView({
                   </span>
                   {locked && (
                     <span className="block text-xs text-text-subtle mt-0.5">
-                      Unlocks once all kana is mastered
+                      Unlocks as you master the kana in its readings
                     </span>
                   )}
                 </span>
