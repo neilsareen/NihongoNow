@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
-import { hasMasteredAllKana } from "@/lib/progression";
+import { getMasteredKana, getUnlockedKanji } from "@/lib/progression";
 import { ContentType } from "@prisma/client";
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -74,14 +74,16 @@ export async function GET(request: Request) {
   const charTypes = requestedTypes.filter(
     (t) => t === ContentType.HIRAGANA || t === ContentType.KATAKANA
   );
-  // Kanji stays locked until every kana is mastered. Enforced here rather than
-  // only in the UI, since the type comes straight off the query string.
-  const kanaMastered = await hasMasteredAllKana(user.id);
-  const includeKanji = requestedTypes.includes(ContentType.KANJI) && kanaMastered;
+  // Only kanji the learner can already read is practisable. Enforced here
+  // rather than only in the UI, since the type comes off the query string.
+  const wantsKanji = requestedTypes.includes(ContentType.KANJI);
+  const masteredKana = wantsKanji ? await getMasteredKana(user.id) : null;
+  const unlockedKanji = masteredKana ? await getUnlockedKanji(masteredKana) : [];
+  const includeKanji = wantsKanji && unlockedKanji.length > 0;
 
   if (charTypes.length === 0 && !includeKanji) {
     return NextResponse.json(
-      { error: "Master all hiragana and katakana to unlock kanji.", kanaLocked: true },
+      { error: "Master the kana used in a kanji's reading to unlock it.", kanjiLocked: true },
       { status: 403 }
     );
   }
@@ -123,19 +125,7 @@ export async function GET(request: Request) {
   }
 
   if (includeKanji) {
-    const kanjiList = await prisma.kanji.findMany({
-      select: {
-        id: true,
-        character: true,
-        onyomi: true,
-        kunyomi: true,
-        meanings: true,
-        exampleWords: true,
-        mnemonicHint: true,
-      },
-    });
-
-    for (const k of kanjiList) {
+    for (const k of unlockedKanji) {
       items.push({
         id: k.id,
         contentType: ContentType.KANJI,

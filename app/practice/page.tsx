@@ -147,14 +147,14 @@ function SelectionView({
   const [error, setError] = useState<string | null>(null);
   // Assume locked until told otherwise, so kanji is never offered on a slow
   // or failed response.
-  const [kanaMastered, setKanaMastered] = useState(false);
+  const [kanjiUnlocked, setKanjiUnlocked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/progression")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("failed"))))
       .then((d) => {
-        if (!cancelled) setKanaMastered(!!d.kanaMastered);
+        if (!cancelled) setKanjiUnlocked(!!d.kanjiUnlocked);
       })
       .catch(() => {});
     return () => {
@@ -163,7 +163,7 @@ function SelectionView({
   }, []);
 
   function toggle(type: TypeKey) {
-    if (type === "KANJI" && !kanaMastered) return;
+    if (type === "KANJI" && !kanjiUnlocked) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -217,13 +217,13 @@ function SelectionView({
 
           <div className="flex gap-3 justify-center">
             {(["HIRAGANA", "KATAKANA", "KANJI"] as TypeKey[]).map((type) => {
-              const locked = type === "KANJI" && !kanaMastered;
+              const locked = type === "KANJI" && !kanjiUnlocked;
               return (
                 <button
                   key={type}
                   onClick={() => toggle(type)}
                   disabled={locked}
-                  title={locked ? "Master all hiragana and katakana to unlock kanji" : undefined}
+                  title={locked ? "Master the kana used in a kanji\u2019s reading to unlock it" : undefined}
                   className={`flex-1 py-3 px-2 rounded-2xl border text-sm font-medium transition-all ${
                     locked
                       ? "bg-transparent text-gray-700 border-white/5 cursor-not-allowed"

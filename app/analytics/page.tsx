@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { hasMasteredAllKana } from "@/lib/progression";
+import { hasAnyUnlockedKanji } from "@/lib/progression";
 
 const CULTURAL_NORMS = [
   {
@@ -52,12 +52,12 @@ export default async function AnalyticsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const [profile, stats, progress, lessonsCompleted, kanaMastered] = await Promise.all([
+  const [profile, stats, progress, lessonsCompleted, kanjiUnlocked] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: user.id } }),
     prisma.userStatistics.findUnique({ where: { userId: user.id } }),
     prisma.userProgress.findMany({ where: { userId: user.id } }),
     prisma.lesson.count({ where: { userId: user.id, completedAt: { not: null } } }),
-    hasMasteredAllKana(user.id),
+    hasAnyUnlockedKanji(user.id),
   ]);
 
   if (!profile) redirect("/onboarding");
@@ -69,12 +69,12 @@ export default async function AnalyticsPage() {
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
 
-  // The kanji row is swapped for a padlock until every kana is mastered, so
-  // the glyph itself stays hidden here too.
+  // The kanji row shows a padlock until at least one kanji is readable, so the
+  // glyph itself stays hidden until the learner can actually meet it.
   const progressItems = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, emoji: "あ" },
     { label: "Katakana", stage: "KATAKANA", total: 69, emoji: "ア" },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, emoji: kanaMastered ? "漢" : "🔒" },
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, emoji: kanjiUnlocked ? "漢" : "🔒" },
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, emoji: "📖" },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬" },
   ];

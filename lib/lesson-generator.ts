@@ -2,7 +2,14 @@ import { prisma } from "./prisma";
 import { ContentType, ExerciseType } from "@prisma/client";
 import { getRandomCulturalTip } from "./cultural-tips";
 import { SCRIPT_INTROS } from "./script-intros";
-import { hasMasteredAllKana, KANA_TYPES } from "./progression";
+import {
+  getMasteredKana,
+  filterUnlockedReviews,
+  getUnlockedKanji,
+  getUnlockedVocabulary,
+  getUnlockedPhrases,
+  type MasteredKana,
+} from "./progression";
 
 // Hiragana/katakana displayOrder >= this value are dakuten/handakuten (modified) kana
 const DAKUTEN_DISPLAY_ORDER_START = 47;
@@ -13,6 +20,13 @@ interface LessonConfig {
 }
 
 const TARGET_LESSON_SECONDS = 600; // 10 minutes
+
+type NewContentItem = {
+  contentType: ContentType;
+  contentId: string;
+  romaji?: string;
+  displayOrder?: number;
+};
 
 // Estimated seconds a learner spends on each exercise type (think + reveal + self-assess)
 const SECONDS_PER_EXERCISE: Record<ExerciseType, number> = {
@@ -55,22 +69,18 @@ export async function generateDailyLesson(config: LessonConfig) {
   const effectiveBudget = TARGET_LESSON_SECONDS - culturalTipSeconds;
   const reviewBudget = Math.floor(effectiveBudget * 0.7);
 
-  const kanaMastered = await hasMasteredAllKana(userId);
+  const masteredKana = await getMasteredKana(userId);
 
-  // Fetch more than we'll use; trim by time budget. While kana is unmastered
-  // the review queue is restricted to kana too: a learner who studied kanji
-  // before this gate existed still has those reviews on file, and without
-  // this filter they would keep resurfacing in every lesson.
-  const allDueReviews = await prisma.review.findMany({
-    where: {
-      userId,
-      nextReviewAt: { lte: now },
-      srsLevel: { not: "MASTERED" },
-      ...(kanaMastered ? {} : { contentType: { in: KANA_TYPES } }),
-    },
+  // Fetch more than we'll use; trim by time budget. Reviews are then filtered
+  // to content the learner can actually read: someone who studied kanji before
+  // this gate existed still has those reviews on file, and they must not keep
+  // resurfacing while their readings use kana that isn't mastered yet.
+  const fetchedReviews = await prisma.review.findMany({
+    where: { userId, nextReviewAt: { lte: now }, srsLevel: { not: "MASTERED" } },
     orderBy: [{ srsLevel: "asc" }, { nextReviewAt: "asc" }],
     take: 60,
   });
+  const allDueReviews = await filterUnlockedReviews(fetchedReviews, masteredKana);
 
   let reviewSeconds = 0;
   const dueReviews: typeof allDueReviews = [];
@@ -88,7 +98,7 @@ export async function generateDailyLesson(config: LessonConfig) {
 
   const weakTypes = await getWeakContentTypes(userId);
   const { items: newItems, hasLearnedHiragana, hasLearnedKatakana, hasLearnedDakuten } =
-    await getNewContent(userId, newItemBudget, weakTypes, kanaMastered);
+    await getNewContent(userId, newItemBudget, weakTypes, masteredKana);
   const spreadNewItems = spreadByFamily(newItems);
 
   const reviewItems = dueReviews.map((review) => ({
@@ -235,7 +245,7 @@ async function getNewContent(
   userId: string,
   budget: number,
   weakTypes: ContentType[],
-  kanaMastered: boolean
+  masteredKana: MasteredKana
 ) {
   const existing = await prisma.review.findMany({ where: { userId }, select: { contentId: true, contentType: true } });
   const learnedByType: Record<string, Set<string>> = {};
@@ -249,35 +259,40 @@ async function getNewContent(
   ];
   const perType = Math.max(1, Math.floor(budget / 4));
   const boost = (type: ContentType) => weakTypes.includes(type) ? perType * 2 : perType;
-  // Until every hiragana and katakana character is mastered, keep the whole new-item
-  // budget on kana and hold off introducing any words (vocab, kanji, phrases).
-  const kanaPerType = Math.max(1, Math.floor(budget / 2));
-  const kanaTake = (type: ContentType) => kanaMastered
-    ? boost(type)
-    : (weakTypes.includes(type) ? kanaPerType * 2 : kanaPerType);
-  const wordTake = (type: ContentType) => kanaMastered ? boost(type) : 0;
-  const results: { contentType: ContentType; contentId: string; romaji?: string; displayOrder?: number }[] = [];
-  const [newHiragana, newKatakana, newVocab, newKanji, newPhrases, learnedDakuten] = await Promise.all([
-    prisma.japaneseCharacter.findMany({ where: { type: ContentType.HIRAGANA, id: { notIn: [...(learnedByType[ContentType.HIRAGANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: kanaTake(ContentType.HIRAGANA) }),
-    prisma.japaneseCharacter.findMany({ where: { type: ContentType.KATAKANA, id: { notIn: [...(learnedByType[ContentType.KATAKANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: kanaTake(ContentType.KATAKANA) }),
-    wordTake(ContentType.VOCABULARY) > 0
-      ? prisma.vocabulary.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.VOCABULARY] ?? [])] } }, orderBy: { frequency: "desc" }, take: wordTake(ContentType.VOCABULARY) })
-      : Promise.resolve([]),
-    wordTake(ContentType.KANJI) > 0
-      ? prisma.kanji.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.KANJI] ?? [])] } }, orderBy: { frequency: "desc" }, take: wordTake(ContentType.KANJI) })
-      : Promise.resolve([]),
-    wordTake(ContentType.PHRASE) > 0
-      ? prisma.phrase.findMany({ where: { id: { notIn: [...(learnedByType[ContentType.PHRASE] ?? [])] } }, orderBy: { difficulty: "asc" }, take: wordTake(ContentType.PHRASE) })
-      : Promise.resolve([]),
+
+  const [newHiragana, newKatakana, unlockedVocab, unlockedKanji, unlockedPhrases, learnedDakuten] = await Promise.all([
+    prisma.japaneseCharacter.findMany({ where: { type: ContentType.HIRAGANA, id: { notIn: [...(learnedByType[ContentType.HIRAGANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: boost(ContentType.HIRAGANA) * 2 }),
+    prisma.japaneseCharacter.findMany({ where: { type: ContentType.KATAKANA, id: { notIn: [...(learnedByType[ContentType.KATAKANA] ?? [])] } }, orderBy: { displayOrder: "asc" }, take: boost(ContentType.KATAKANA) * 2 }),
+    // Words and kanji are offered only once every kana in their reading is
+    // mastered, so the learner can always sound out what they're shown.
+    getUnlockedVocabulary(masteredKana, [...(learnedByType[ContentType.VOCABULARY] ?? [])]),
+    getUnlockedKanji(masteredKana, [...(learnedByType[ContentType.KANJI] ?? [])]),
+    getUnlockedPhrases(masteredKana, [...(learnedByType[ContentType.PHRASE] ?? [])]),
     learnedKanaIds.length
       ? prisma.japaneseCharacter.findMany({ where: { id: { in: learnedKanaIds }, displayOrder: { gte: DAKUTEN_DISPLAY_ORDER_START } }, select: { id: true }, take: 1 })
       : Promise.resolve([]),
   ]);
-  results.push(...newHiragana.map((i) => ({ contentType: ContentType.HIRAGANA, contentId: i.id, romaji: i.romaji, displayOrder: i.displayOrder })));
-  results.push(...newKatakana.map((i) => ({ contentType: ContentType.KATAKANA, contentId: i.id, romaji: i.romaji, displayOrder: i.displayOrder })));
-  results.push(...newVocab.map((i) => ({ contentType: ContentType.VOCABULARY, contentId: i.id })));
-  results.push(...newKanji.map((i) => ({ contentType: ContentType.KANJI, contentId: i.id })));
-  results.push(...newPhrases.map((i) => ({ contentType: ContentType.PHRASE, contentId: i.id })));
+
+  const kanaItems: NewContentItem[] = [
+    ...newHiragana.map((i) => ({ contentType: ContentType.HIRAGANA, contentId: i.id, romaji: i.romaji, displayOrder: i.displayOrder })),
+    ...newKatakana.map((i) => ({ contentType: ContentType.KATAKANA, contentId: i.id, romaji: i.romaji, displayOrder: i.displayOrder })),
+  ];
+  const wordItems: NewContentItem[] = [
+    ...unlockedVocab.slice(0, boost(ContentType.VOCABULARY)).map((i) => ({ contentType: ContentType.VOCABULARY, contentId: i.id })),
+    ...unlockedKanji.slice(0, boost(ContentType.KANJI)).map((i) => ({ contentType: ContentType.KANJI, contentId: i.id })),
+    ...unlockedPhrases.slice(0, boost(ContentType.PHRASE)).map((i) => ({ contentType: ContentType.PHRASE, contentId: i.id })),
+  ];
+
+  // Learning the rest of the alphabet stays the priority while any kana is
+  // still unseen, but readable words are mixed in so mastered kana gets used
+  // for something rather than sitting idle until the whole set is finished.
+  const kanaShare = kanaItems.length > 0 ? Math.max(1, Math.ceil(budget * 0.6)) : 0;
+  const results: NewContentItem[] = kanaItems.slice(0, kanaShare);
+  results.push(...wordItems.slice(0, Math.max(0, budget - results.length)));
+  if (results.length < budget) {
+    results.push(...kanaItems.slice(kanaShare, kanaShare + (budget - results.length)));
+  }
+
   return {
     items: results.slice(0, budget),
     hasLearnedHiragana: (learnedByType[ContentType.HIRAGANA]?.size ?? 0) > 0,
