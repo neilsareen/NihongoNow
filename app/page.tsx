@@ -109,7 +109,7 @@ export default async function HomePage() {
             <div
               key={s.label}
               className="rounded-card p-4 text-on-light card-ledge"
-              style={{ background: `hsl(${s.tone})`, ["--ledge" as string]: "hsl(var(--ink-deep))" }}
+              style={{ background: `hsl(${s.tone})`, ["--ledge" as string]: "hsl(var(--ledge-base))" }}
             >
               <div className="jp text-[2.75rem] leading-none font-bold mb-2">{s.glyph}</div>
               <div className="font-display text-[13px] font-bold">{s.label}</div>
@@ -142,7 +142,7 @@ export default async function HomePage() {
         <section className="mt-14">
           <div
             className="relative rounded-card overflow-hidden card-ledge text-on-light p-7 text-center"
-            style={{ background: "hsl(var(--coral))", ["--ledge" as string]: "hsl(var(--ink-deep))" }}
+            style={{ background: "hsl(var(--coral))", ["--ledge" as string]: "hsl(var(--ledge-base))" }}
           >
             <span
               className="jp absolute -right-6 -bottom-12 text-[12rem] leading-none font-bold select-none pointer-events-none"
@@ -159,7 +159,7 @@ export default async function HomePage() {
               <Link
                 href="/signup"
                 className="inline-flex items-center gap-2 h-14 px-7 rounded-full font-display font-bold text-[16px] bg-on-light text-coral ledge"
-                style={{ ["--ledge" as string]: "hsl(var(--ink-deep))" }}
+                style={{ ["--ledge" as string]: "hsl(var(--ledge-base))" }}
               >
                 Start free
                 <ArrowRight className="w-[18px] h-[18px]" strokeWidth={3} />

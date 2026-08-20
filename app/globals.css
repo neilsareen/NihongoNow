@@ -15,9 +15,16 @@
    2. Depth comes from solid ledges, never from blurred coloured glow.
 
    Values are raw HSL triples so Tailwind can compose them with alpha.
+
+   There are two grounds — dark (the default) and light, selected by a `light`
+   class on <html>. Every screen is built from these tokens alone, so the whole
+   interface re-themes from this one block; see the light section for the two
+   places where a theme needs more than swapped lightness values.
    =========================================================================== */
 
 @layer base {
+  /* --- Dark (default) ---------------------------------------------------
+     A deep violet-ink ground carrying the six-hue cast at full chroma. */
   :root {
     /* Ground — violet ink, deliberately warm. A neutral slate here is what
        made the last pass feel like a dashboard for accountants. */
@@ -25,6 +32,14 @@
     --ink-deep: 266 52% 5%;
     --surface: 264 34% 14%;
     --surface-raised: 263 30% 20%;
+
+    /* The block that sits under a coloured card. On the dark ground the
+       deepest ink reads as a shadow; the light theme needs a real mid-tone
+       for the same effect, which is why this is its own token. */
+    --ledge-base: 266 52% 5%;
+
+    /* Backdrop behind modals. */
+    --scrim: 266 52% 5%;
 
     /* 2px borders, not hairlines — the chunk is the point. */
     --line: 263 26% 26%;
@@ -55,6 +70,11 @@
     --on-light: 266 60% 10%;
     --on-dark: 0 0% 100%;
 
+    /* Text on a plate whose colour is fixed rather than themed — the avatar
+       tones in lib/utils.ts are always bright, in either theme, so their
+       glyph is always dark ink. */
+    --on-bright: 266 60% 10%;
+
     /* Track hues, aliased so screens name the content, not the colour. */
     --track-hiragana: var(--blossom);
     --track-katakana: var(--sky);
@@ -63,6 +83,59 @@
     --track-phrase: var(--lime);
 
     color-scheme: dark;
+  }
+
+  /* --- Light -------------------------------------------------------------
+     Not an inversion. Two things have to change beyond the ground:
+
+     1. The cast darkens. Every hue here is also used as *text* and as icon
+        colour (`text-lime`, `hsl(var(--sky))` on a tab label), and the dark
+        theme's 55–70% lightness is unreadable on paper — lime on white is
+        about 1.9:1. Dropping each hue into the high-30s/40s keeps every one
+        of them legible while staying recognisably the same colour.
+     2. Because the fills are now dark, `--on-light` — the text that sits on
+        a saturated fill — flips to white. That one token flip is what keeps
+        every filled button and colour card correct without touching a
+        component.
+
+     Depth still comes from solid ledges, so `--ledge-base` is a real
+     mid-tone grey-violet rather than the near-white ground.
+     ----------------------------------------------------------------------- */
+  :root.light {
+    --ink: 268 44% 97%;
+    --ink-deep: 267 30% 89%;
+    --surface: 0 0% 100%;
+    --surface-raised: 267 42% 96%;
+
+    --ledge-base: 266 22% 74%;
+    --scrim: 266 32% 26%;
+
+    --line: 265 24% 86%;
+    --line-strong: 265 20% 60%;
+
+    --text: 266 45% 12%;
+    --text-muted: 266 20% 35%;
+    --text-subtle: 266 15% 46%;
+
+    --coral: 12 84% 45%;
+    --coral-deep: 10 80% 33%;
+    --lime: 86 74% 27%;
+    --lime-deep: 88 76% 19%;
+    --sun: 36 96% 34%;
+    --sun-deep: 32 94% 26%;
+    --sky: 203 92% 35%;
+    --sky-deep: 206 88% 26%;
+    --grape: 271 64% 48%;
+    --grape-deep: 270 66% 36%;
+    --blossom: 332 74% 44%;
+    --blossom-deep: 332 74% 33%;
+    --rose: 351 76% 43%;
+    --rose-deep: 350 74% 32%;
+
+    --on-light: 0 0% 100%;
+    --on-dark: 0 0% 100%;
+
+    color-scheme: light;
   }
 }
 
@@ -155,6 +228,25 @@
    stacked, physical quality. */
 .card-ledge {
   box-shadow: 0 4px 0 0 hsl(var(--ledge, var(--line)));
+}
+
+/* ---------------------------------------------------------------------------
+   Theme cross-fade.
+   ---------------------------------------------------------------------------
+   Applied for a beat while the theme flips, so switching in Settings reads as
+   the room's lights changing rather than as a page reload. It is deliberately
+   temporary: leaving a colour transition on every element permanently would
+   make hover and press states feel laggy.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  .theme-switching,
+  .theme-switching *,
+  .theme-switching *::before,
+  .theme-switching *::after {
+    transition: background-color 220ms ease, border-color 220ms ease,
+      color 220ms ease, box-shadow 220ms ease, fill 220ms ease,
+      stroke 220ms ease !important;
+  }
 }
 
 /* ---------------------------------------------------------------------------

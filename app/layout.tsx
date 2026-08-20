@@ -3,6 +3,8 @@ import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { PWAUpdateBanner } from "@/app/components/pwa-update-banner";
+import { ThemeSync } from "@/app/components/theme";
+import { THEME_COLOR, THEME_INIT_SCRIPT } from "@/lib/theme";
 
 // Two faces with a clear division of labour. Outfit is geometric and gets
 // heavy fast, so it carries headlines and big numerals where personality
@@ -40,7 +42,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#130C1F",
+  // Two entries so the browser chrome is right before any script runs; an
+  // explicit choice in Settings then overwrites both (see `applyTheme`).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: THEME_COLOR.light },
+    { media: "(prefers-color-scheme: dark)", color: THEME_COLOR.dark },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -49,7 +56,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Blocking, before first paint: sets the theme class on <html> so a
+            light-theme learner never sees a flash of the dark ground. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className={`${sans.variable} ${display.variable} ${sans.className} min-h-screen bg-ink text-text antialiased`}>
+        <ThemeSync />
         {children}
         <PWAUpdateBanner />
         <Script id="sw-register" strategy="afterInteractive">{`

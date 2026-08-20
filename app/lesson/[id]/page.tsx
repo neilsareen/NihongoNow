@@ -731,7 +731,7 @@ export default function LessonPage() {
           {/* Score as a block of colour with the number at poster size. */}
           <div
             className="relative rounded-card overflow-hidden card-ledge text-on-light animate-pop-in"
-            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ink-deep))" }}
+            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ledge-base))" }}
           >
             <span
               className="jp absolute -right-7 -bottom-14 text-[9rem] leading-none font-bold select-none pointer-events-none"
@@ -834,7 +834,7 @@ export default function LessonPage() {
     <div className="min-h-screen flex flex-col">
       {showDoneDialog && (
         <div
-          className="fixed inset-0 z-50 grid place-items-center px-4 bg-ink-deep/80 backdrop-blur-sm animate-fade"
+          className="fixed inset-0 z-50 grid place-items-center px-4 bg-scrim/70 backdrop-blur-sm animate-fade"
           role="dialog"
           aria-modal="true"
           aria-labelledby="stop-title"

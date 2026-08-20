@@ -6,6 +6,7 @@ import { LogOut } from "lucide-react";
 import { AVATAR_OPTIONS, cn, getAvatar } from "@/lib/utils";
 import { Avatar, Card, SectionLabel, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 import { BottomNav } from "@/app/components/bottom-nav";
+import { ThemeToggle } from "@/app/components/theme";
 
 const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
 
@@ -139,6 +140,16 @@ export default function SettingsPage() {
               );
             })}
           </div>
+        </section>
+
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <SectionLabel>Appearance</SectionLabel>
+            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+              Dark for evening drills, light for a bright train platform.
+            </p>
+          </div>
+          <ThemeToggle />
         </section>
 
         <section className="space-y-3">

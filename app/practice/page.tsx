@@ -606,7 +606,7 @@ function SummaryView({
         <div className="space-y-5">
           <div
             className="relative rounded-card overflow-hidden card-ledge text-on-light animate-pop-in"
-            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ink-deep))" }}
+            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ledge-base))" }}
           >
             <span
               className="jp absolute -right-7 -bottom-14 text-[9rem] leading-none font-bold select-none pointer-events-none"

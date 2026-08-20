@@ -25,8 +25,11 @@ type ButtonSize = "sm" | "md" | "lg";
 
 /**
  * Filled variants carry their own ledge colour via the `--ledge` custom
- * property, which `.ledge` in globals.css reads. Bright fills take ink text
- * rather than white: white on lime or sun fails contrast badly.
+ * property, which `.ledge` in globals.css reads. Label colour is a token
+ * rather than a literal — `--on-light` is ink on the dark theme's bright
+ * lime/sun fills and white on the light theme's darkened ones — so these
+ * variants stay legible in both themes without a `dark:`/`light:` variant
+ * anywhere in the app.
  */
 const VARIANT: Record<ButtonVariant, { className: string; style?: CSSProperties }> = {
   primary: {
@@ -135,9 +138,9 @@ export function ColorCard({
   /** HSL triple or var() reference for the fill. */
   hue: string;
   /**
-   * The block beneath the card. Defaults to the deepest ink, which reads as a
-   * shadow under any fill — pass a hue's own `-deep` token for a tighter,
-   * more saturated stack.
+   * The block beneath the card. Defaults to `--ledge-base`, the current
+   * theme's shadow tone under any fill — pass a hue's own `-deep` token for a
+   * tighter, more saturated stack.
    */
   ledgeHue?: string;
   children: ReactNode;
@@ -146,7 +149,7 @@ export function ColorCard({
 }) {
   const style = {
     background: `hsl(${hue})`,
-    ["--ledge" as string]: ledgeHue ?? "var(--ink-deep)",
+    ["--ledge" as string]: ledgeHue ?? "var(--ledge-base)",
   } as CSSProperties;
 
   const cls = cn(
@@ -367,7 +370,10 @@ export function Avatar({
         width: size,
         height: size,
         background: `hsl(${avatar.tone})`,
-        color: "hsl(var(--on-light))",
+        // Avatar tones are fixed rather than themed, and always bright, so the
+        // glyph is always dark ink — `--on-light` flips to white in the light
+        // theme and would disappear here.
+        color: "hsl(var(--on-bright))",
         ["--ledge" as string]: `hsl(${avatar.tone} / 0.45)`,
       }}
       aria-hidden="true"

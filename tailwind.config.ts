@@ -30,6 +30,9 @@ const config: Config = {
           DEFAULT: token("line"),
           strong: token("line-strong"),
         },
+        // The backdrop behind a modal. Its own token because the light theme
+        // still wants a dark scrim, so it cannot just be the deepest ground.
+        scrim: token("scrim"),
         text: {
           DEFAULT: token("text"),
           muted: token("text-muted"),
@@ -48,6 +51,7 @@ const config: Config = {
         on: {
           light: token("on-light"),
           dark: token("on-dark"),
+          bright: token("on-bright"),
         },
       },
       borderRadius: {
