@@ -102,8 +102,8 @@ function AudioButton({
   lang?: string;
   size?: "sm" | "md" | "lg";
 }) {
-  const dims = size === "lg" ? "w-16 h-16" : size === "md" ? "w-11 h-11" : "w-8 h-8";
-  const icon = size === "lg" ? "w-6 h-6" : size === "md" ? "w-[18px] h-[18px]" : "w-3.5 h-3.5";
+  const dims = size === "lg" ? "w-16 h-16" : size === "md" ? "w-12 h-12" : "w-9 h-9";
+  const icon = size === "lg" ? "w-6 h-6" : size === "md" ? "w-5 h-5" : "w-4 h-4";
   return (
     <button
       onClick={(e) => {
@@ -111,10 +111,14 @@ function AudioButton({
         speak(text, lang);
       }}
       className={cn(
-        "rounded-full shrink-0 grid place-items-center transition-colors",
+        "relative rounded-full shrink-0 grid place-items-center transition-colors touch-manipulation",
         size === "sm"
           ? "bg-surface-raised text-sky hover:brightness-125"
           : "ledge-sm text-on-light",
+        // 36px still reads under the thumb as small, so the compact size keeps its
+        // look and grows the tap area to 44px with an invisible overlay.
+        size === "sm" &&
+          "before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:h-11 before:w-11 before:content-['']",
         dims
       )}
       style={
