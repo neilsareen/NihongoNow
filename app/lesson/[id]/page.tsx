@@ -564,6 +564,19 @@ export default function LessonPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentItem?.id, isListeningMC]);
 
+  // Revealing a "Say it in Japanese" card plays the answer straight away. The
+  // whole point of that card is what the word sounds like, so making the learner
+  // reach for the speaker button every time puts a tap between them and the one
+  // thing they are there to hear. The speaker button stays for replays.
+  const revealSpeechText =
+    revealed && currentItem && isE2J(currentItem) ? getSpeechText(currentItem) : "";
+  useEffect(() => {
+    if (!revealSpeechText) return;
+    // A beat, so the answer is on screen before it is spoken.
+    const t = setTimeout(() => speak(revealSpeechText), 120);
+    return () => clearTimeout(t);
+  }, [revealSpeechText]);
+
   function submitReview(item: LessonItem, quality: 1 | 5) {
     if (isCulturalTipItem(item) || isScriptIntroItem(item)) return;
     fetch("/api/review", {
