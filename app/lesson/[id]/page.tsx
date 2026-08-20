@@ -5,7 +5,9 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Flame, Lightbulb, RotateCcw, Volume2, X } from "lucide-react";
 import { readingSpeechText, speak, speechText } from "@/lib/speech";
+import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
+import { SpeakCard } from "@/app/components/speak-card";
 import { Card, Chip, buttonStyles, buttonVars } from "@/app/components/ui";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
@@ -192,55 +194,6 @@ function shouldShowMnemonicHint(item: LessonItem): boolean {
   return (item.review?.incorrectCount ?? 0) > 0;
 }
 
-function katakanaToHiragana(str: string): string {
-  return str.replace(/[ァ-ヶ]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 96)).replace(/-/g, "");
-}
-
-function kanaToRomaji(kana: string): string {
-  const clean = kana.replace(/-/g, "").replace(/ー/g, "");
-  // Katakana → hiragana
-  const hira = clean.replace(/[ァ-ヶ]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 96)
-  );
-  const T: Record<string, string> = {
-    "きゃ":"kya","きゅ":"kyu","きょ":"kyo","しゃ":"sha","しゅ":"shu","しょ":"sho",
-    "ちゃ":"cha","ちゅ":"chu","ちょ":"cho","にゃ":"nya","にゅ":"nyu","にょ":"nyo",
-    "ひゃ":"hya","ひゅ":"hyu","ひょ":"hyo","みゃ":"mya","みゅ":"myu","みょ":"myo",
-    "りゃ":"rya","りゅ":"ryu","りょ":"ryo","ぎゃ":"gya","ぎゅ":"gyu","ぎょ":"gyo",
-    "じゃ":"ja","じゅ":"ju","じょ":"jo","びゃ":"bya","びゅ":"byu","びょ":"byo",
-    "ぴゃ":"pya","ぴゅ":"pyu","ぴょ":"pyo",
-    "あ":"a","い":"i","う":"u","え":"e","お":"o",
-    "か":"ka","き":"ki","く":"ku","け":"ke","こ":"ko",
-    "さ":"sa","し":"shi","す":"su","せ":"se","そ":"so",
-    "た":"ta","ち":"chi","つ":"tsu","て":"te","と":"to",
-    "な":"na","に":"ni","ぬ":"nu","ね":"ne","の":"no",
-    "は":"ha","ひ":"hi","ふ":"fu","へ":"he","ほ":"ho",
-    "ま":"ma","み":"mi","む":"mu","め":"me","も":"mo",
-    "や":"ya","ゆ":"yu","よ":"yo",
-    "ら":"ra","り":"ri","る":"ru","れ":"re","ろ":"ro",
-    "わ":"wa","を":"o","ん":"n",
-    "が":"ga","ぎ":"gi","ぐ":"gu","げ":"ge","ご":"go",
-    "ざ":"za","じ":"ji","ず":"zu","ぜ":"ze","ぞ":"zo",
-    "だ":"da","ぢ":"ji","づ":"zu","で":"de","ど":"do",
-    "ば":"ba","び":"bi","ぶ":"bu","べ":"be","ぼ":"bo",
-    "ぱ":"pa","ぴ":"pi","ぷ":"pu","ぺ":"pe","ぽ":"po",
-  };
-  let result = "";
-  let i = 0;
-  while (i < hira.length) {
-    if (hira[i] === "っ") {
-      const next2 = T[hira.substring(i + 1, i + 3)] ?? T[hira[i + 1]] ?? "";
-      result += next2[0] ?? "";
-      i++; continue;
-    }
-    const two = T[hira.substring(i, i + 2)];
-    if (two) { result += two; i += 2; continue; }
-    result += T[hira[i]] ?? hira[i];
-    i++;
-  }
-  return result;
-}
-
 function kanjiReadings(onyomi: string[] = [], kunyomi: string[] = []) {
   const readings = [
     ...onyomi.map((r) => ({ label: "on" as const, kana: katakanaToHiragana(r) })),
@@ -256,6 +209,10 @@ function isE2J(item: LessonItem) {
 
 function isListening(item: LessonItem) {
   return item.exerciseType === "LISTENING";
+}
+
+function isSpeaking(item: LessonItem) {
+  return item.exerciseType === "SPEAKING";
 }
 
 // Audio always plays the kana reading, never the kanji — see lib/speech.
@@ -587,6 +544,8 @@ export default function LessonPage() {
     ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
     : false;
 
+  const isSpeakingItem = currentItem ? isSpeaking(currentItem) : false;
+
   // Must stay above the loading/empty/results early returns below: those skip
   // the rest of the render, so calling a hook after them changes the hook count
   // between renders and React throws "rendered more hooks than expected".
@@ -667,7 +626,8 @@ export default function LessonPage() {
   // Keyboard control. A review session is dozens of identical decisions in a
   // row; requiring a pointer for every one of them is the single biggest drag
   // on the desktop experience.
-  const canUseShortcuts = !loading && !finalResults && !!currentItem && !isListeningMC;
+  const canUseShortcuts =
+    !loading && !finalResults && !!currentItem && !isListeningMC && !isSpeakingItem;
   useEffect(() => {
     if (!canUseShortcuts) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -976,6 +936,27 @@ export default function LessonPage() {
                   </div>
                 )}
               </>
+            ) : isSpeakingItem ? (
+              /* Say-it-back. The card owns its own controls end to end: there
+                 is no reveal step and no self-assessment pair, because the
+                 attempt itself is the answer. */
+              <div className="flex-1 flex flex-col justify-center">
+                <SpeakCard
+                  prompt={{
+                    japanese: currentItem.content?.japanese ?? currentItem.content?.character ?? "",
+                    kana: currentItem.content?.kana,
+                    romaji: currentItem.content?.romaji,
+                    english: currentItem.content?.english,
+                  }}
+                  /* A word met for the first time is taught, then repeated
+                     back; one already in the schedule is prompted from its
+                     meaning and has to be recalled. */
+                  teachFirst={(currentItem.review?.srsLevel ?? "NEW") === "NEW"}
+                  onPass={() => handleAnswer(true)}
+                  onFail={() => handleAnswer(false)}
+                  failLabel="I can't say this one yet"
+                />
+              </div>
             ) : (
               <>
                 {/* Prompt and answer share one card, divided by a hairline.

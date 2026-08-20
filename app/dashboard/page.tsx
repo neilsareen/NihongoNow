@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { ChevronRight, Flame, Lock, Zap } from "lucide-react";
+import { ChevronRight, Flame, Lock, Mic, Zap } from "lucide-react";
 import { getStartOfDayInTimezone, getAvatar } from "@/lib/utils";
 import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji } from "@/lib/progression";
 import { Avatar, Card, Chip, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
@@ -354,13 +354,27 @@ export default async function DashboardPage() {
         </Card>
       </section>
 
-      <Link
-        href="/review/weakest"
-        className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
-        style={buttonVars("secondary")}
-      >
-        Drill my weakest items
-      </Link>
+      <div className="space-y-3">
+        {/* Speaking is its own kind of practice — reading a word and being
+            understood saying it are different skills, so it gets its own way in
+            rather than only turning up inside a lesson. */}
+        <Link
+          href="/speak"
+          className={buttonStyles({ variant: "grape", full: true, size: "lg" })}
+          style={buttonVars("grape")}
+        >
+          <Mic className="w-[18px] h-[18px]" strokeWidth={2.5} />
+          Practise saying words out loud
+        </Link>
+
+        <Link
+          href="/review/weakest"
+          className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
+          style={buttonVars("secondary")}
+        >
+          Drill my weakest items
+        </Link>
+      </div>
     </div>
   );
 }

@@ -36,6 +36,7 @@ const SECONDS_PER_EXERCISE: Record<ExerciseType, number> = {
   [ExerciseType.ENGLISH_TO_JAPANESE]:   30,
   [ExerciseType.JAPANESE_TO_ENGLISH]:   20,
   [ExerciseType.LISTENING]:             35,
+  [ExerciseType.SPEAKING]:              35,
   [ExerciseType.FILL_IN_BLANK]:         30,
   [ExerciseType.MULTIPLE_CHOICE]:       20,
   [ExerciseType.SCENARIO]:              40,
@@ -46,19 +47,22 @@ const AVG_SECONDS_BY_CONTENT: Record<ContentType, number> = {
   [ContentType.HIRAGANA]:   22, // avg of CHARACTER_RECOGNITION/CHARACTER_TO_SOUND/SOUND_TO_CHARACTER
   [ContentType.KATAKANA]:   22,
   [ContentType.KANJI]:      20, // avg of CHARACTER_RECOGNITION/JAPANESE_TO_ENGLISH/MULTIPLE_CHOICE
-  [ContentType.VOCABULARY]: 28, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING
-  [ContentType.PHRASE]:     31, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SCENARIO
+  [ContentType.VOCABULARY]: 30, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SPEAKING
+  [ContentType.PHRASE]:     32, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SPEAKING/SCENARIO
 };
 
 const AVG_SECONDS_PER_ITEM = 25;
 
-// LISTENING included for vocab/phrase — auto-plays audio, user self-assesses comprehension
+// LISTENING included for vocab/phrase — auto-plays audio, user self-assesses comprehension.
+// SPEAKING is the mirror of it: the learner says the word and the browser's
+// recogniser grades the attempt. Only vocabulary and phrases get it — a single
+// kana is one mora, too short for any recogniser to judge fairly.
 const EXERCISE_TYPES_BY_CONTENT: Record<ContentType, ExerciseType[]> = {
   HIRAGANA:   [ExerciseType.CHARACTER_RECOGNITION, ExerciseType.CHARACTER_TO_SOUND, ExerciseType.SOUND_TO_CHARACTER],
   KATAKANA:   [ExerciseType.CHARACTER_RECOGNITION, ExerciseType.CHARACTER_TO_SOUND, ExerciseType.SOUND_TO_CHARACTER],
   KANJI:      [ExerciseType.CHARACTER_RECOGNITION, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.MULTIPLE_CHOICE],
-  VOCABULARY: [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING],
-  PHRASE:     [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SCENARIO],
+  VOCABULARY: [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING],
+  PHRASE:     [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING, ExerciseType.SCENARIO],
 };
 
 export async function generateDailyLesson(config: LessonConfig) {
