@@ -48,11 +48,11 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body className="min-h-screen bg-[#0F1115] text-[#f5f6f8] antialiased">
+      <body className="min-h-screen bg-[#130C1F] text-[#F5F1FA] antialiased">
         <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 gap-6">
           <div className="text-center space-y-2 max-w-sm">
-            <h1 className="text-xl font-semibold tracking-tight">Something went wrong</h1>
-            <p className="text-[#9aa0ae] text-[13px] leading-relaxed">
+            <h1 className="text-2xl font-bold tracking-tight">Well, that went sideways</h1>
+            <p className="text-[#B2A6C4] text-[13px] leading-relaxed">
               {recovering
                 ? "Clearing cached files and reloading…"
                 : "The app hit an unexpected error. Reloading usually clears it up."}
@@ -63,13 +63,13 @@ export default function GlobalError({
             <div className="flex flex-col gap-2.5 w-full max-w-xs">
               <button
                 onClick={() => reset()}
-                className="w-full h-10 rounded-lg bg-[#5566e8] hover:bg-[#6d7bec] text-white text-sm font-medium transition-colors"
+                className="w-full h-11 rounded-full bg-[#F97A4B] hover:brightness-110 text-white text-sm font-medium transition-colors"
               >
                 Try again
               </button>
               <button
                 onClick={handleManualReset}
-                className="w-full h-10 rounded-lg border border-[#282c36] hover:border-[#3d4250] text-[#c7cbd4] text-sm font-medium transition-colors"
+                className="w-full h-11 rounded-full border-2 border-[#3B2F56] hover:border-[#584878] text-[#D6CCE6] text-sm font-medium transition-colors"
               >
                 Clear cached data and reload
               </button>
@@ -79,10 +79,10 @@ export default function GlobalError({
           {/* Surfaced so a failure on someone else's device can actually be
               diagnosed — the console isn't reachable on mobile. */}
           <details className="w-full max-w-xs text-left" open>
-            <summary className="text-[#6b7280] text-xs cursor-pointer select-none">
+            <summary className="text-[#8B7CA3] text-xs cursor-pointer select-none">
               Error details
             </summary>
-            <pre className="mt-2 p-3 bg-black/40 border border-[#282c36] rounded-lg text-[10px] font-mono text-[#e58b93] whitespace-pre-wrap break-words max-h-60 overflow-auto">
+            <pre className="mt-2 p-3 bg-black/40 border border-[#3B2F56] rounded-lg text-[10px] font-mono text-[#F4859A] whitespace-pre-wrap break-words max-h-60 overflow-auto">
               {[
                 error?.name && `${error.name}: ${error.message ?? ""}`,
                 error?.digest && `digest: ${error.digest}`,

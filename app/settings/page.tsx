@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LogOut } from "lucide-react";
 import { AVATAR_OPTIONS, cn, getAvatar } from "@/lib/utils";
-import { Avatar, Card, SectionLabel, TopBar, buttonStyles } from "@/app/components/ui";
+import { Avatar, Card, SectionLabel, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 import { BottomNav } from "@/app/components/bottom-nav";
 
 const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
@@ -59,12 +59,14 @@ export default function SettingsPage() {
     <div className="min-h-screen">
       <TopBar
         title="Settings"
-        backLabel="Dashboard"
         trailing={
           // A single quiet status slot, rather than a badge that jumps into the
           // heading row and shifts the layout as it appears.
-          <span className="text-[11px] text-text-subtle" aria-live="polite">
-            {saving ? "Saving…" : saved ? "Saved" : ""}
+          <span
+            className="font-display text-[11px] font-bold uppercase tracking-wider text-lime"
+            aria-live="polite"
+          >
+            {saving ? "…" : saved ? "Saved" : ""}
           </span>
         }
       />
@@ -72,9 +74,9 @@ export default function SettingsPage() {
       <main className="max-w-lg mx-auto px-4 py-8 space-y-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
         <section className="space-y-3">
           <div className="space-y-1">
-            <SectionLabel>Avatar</SectionLabel>
-            <p className="text-[13px] text-text-muted">
-              Pick a kanji to represent you.
+            <SectionLabel>Your mark</SectionLabel>
+            <p className="text-[14px] text-text-muted font-medium">
+              Pick a kanji. It shows up wherever you do.
             </p>
           </div>
           <Card className="p-4">
@@ -89,14 +91,19 @@ export default function SettingsPage() {
                     aria-label={`${a.label} (${a.meaning})`}
                     aria-pressed={isOn}
                     className={cn(
-                      "aspect-square rounded-xl grid place-items-center border",
-                      "transition-colors duration-150 ease-swift",
-                      isOn
-                        ? "border-accent bg-accent/[0.08]"
-                        : "border-transparent hover:bg-surface-raised"
+                      "aspect-square rounded-full grid place-items-center transition-all",
+                      // Unselected marks stay in full colour — dimming them to
+                      // near-invisible turned the palette to mud. Selection is
+                      // carried by a ring in the mark's own hue instead.
+                      isOn ? "scale-105" : "opacity-80 hover:opacity-100"
                     )}
+                    style={
+                      isOn
+                        ? { boxShadow: `0 0 0 3px hsl(${a.tone}), 0 0 0 6px hsl(var(--ink))` }
+                        : undefined
+                    }
                   >
-                    <Avatar avatar={a} size={38} />
+                    <Avatar avatar={a} size={44} className="rounded-full" />
                   </button>
                 );
               })}
@@ -106,10 +113,9 @@ export default function SettingsPage() {
 
         <section className="space-y-3">
           <div className="space-y-1">
-            <SectionLabel>Daily study goal</SectionLabel>
-            <p className="text-[13px] text-text-muted leading-relaxed">
-              A target to track the habit against. Lessons are roughly ten minutes
-              each, so the goal sets how many to aim for.
+            <SectionLabel>Daily goal</SectionLabel>
+            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+              Lessons run about ten minutes, so this sets how many to aim for.
             </p>
           </div>
           <div className="grid grid-cols-3 gap-2">
@@ -121,10 +127,10 @@ export default function SettingsPage() {
                   onClick={() => handleGoalChange(min)}
                   aria-pressed={isOn}
                   className={cn(
-                    "h-11 rounded-lg border text-sm font-medium tnum",
-                    "transition-colors duration-150 ease-swift",
+                    "h-14 rounded-tile border-2 font-display font-bold text-[15px] tnum card-ledge",
+                    "transition-colors duration-150",
                     isOn
-                      ? "border-accent bg-accent text-accent-fg"
+                      ? "border-lime bg-lime text-on-light"
                       : "border-line bg-surface text-text-muted hover:border-line-strong hover:text-text"
                   )}
                 >
@@ -137,8 +143,12 @@ export default function SettingsPage() {
 
         <section className="space-y-3">
           <SectionLabel>Account</SectionLabel>
-          <a href="/api/auth/signout" className={buttonStyles({ variant: "danger", full: true })}>
-            <LogOut className="w-4 h-4" strokeWidth={1.75} />
+          <a
+            href="/api/auth/signout"
+            className={buttonStyles({ variant: "secondary", full: true, size: "lg", className: "text-rose" })}
+            style={buttonVars("secondary")}
+          >
+            <LogOut className="w-[18px] h-[18px]" strokeWidth={2.5} />
             Sign out
           </a>
         </section>

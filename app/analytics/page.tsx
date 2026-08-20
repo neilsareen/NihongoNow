@@ -20,10 +20,19 @@ import {
 } from "lucide-react";
 import { hasAnyUnlockedKanji } from "@/lib/progression";
 import { BottomNav } from "@/app/components/bottom-nav";
-import { Card, ProgressBar, Ring, SectionLabel, TopBar } from "@/app/components/ui";
+import { Card, ColorCard, ProgressBar, Ring, SectionLabel, TopBar } from "@/app/components/ui";
 
 // Culture notes carry line icons rather than emoji: at this size emoji render
 // differently on every platform and pull the page toward looking like a chat.
+const CULTURE_TONES = [
+  "var(--lime)",
+  "var(--sky)",
+  "var(--sun)",
+  "var(--grape)",
+  "var(--coral)",
+  "var(--blossom)",
+];
+
 const CULTURAL_NORMS: { title: string; detail: string; icon: LucideIcon }[] = [
   {
     title: "No tipping",
@@ -113,21 +122,21 @@ export default async function AnalyticsPage() {
   const travelScore = Math.round(hirPct * 25 + katPct * 20 + vocPct * 30 + phrPct * 20 + kanPct * 5);
 
   const travelLevel =
-    travelScore >= 90 ? { name: "Near-native traveller", tone: "45 60% 58%" } :
-    travelScore >= 70 ? { name: "Seasoned traveller", tone: "152 45% 50%" } :
-    travelScore >= 50 ? { name: "Confident explorer", tone: "205 60% 58%" } :
-    travelScore >= 30 ? { name: "Tourist ready", tone: "268 46% 65%" } :
-    travelScore >= 15 ? { name: "Survival traveller", tone: "28 62% 58%" } :
-    travelScore >= 5  ? { name: "Phonetic foundation", tone: "342 48% 62%" } :
-                        { name: "Complete beginner", tone: "220 9% 55%" };
+    travelScore >= 90 ? { name: "Near-native", tone: "var(--sun)", glyph: "極" } :
+    travelScore >= 70 ? { name: "Seasoned traveller", tone: "var(--lime)", glyph: "達" } :
+    travelScore >= 50 ? { name: "Confident explorer", tone: "var(--sky)", glyph: "旅" } :
+    travelScore >= 30 ? { name: "Tourist ready", tone: "var(--grape)", glyph: "観" } :
+    travelScore >= 15 ? { name: "Survival traveller", tone: "var(--coral)", glyph: "歩" } :
+    travelScore >= 5  ? { name: "Phonetic foundation", tone: "var(--blossom)", glyph: "音" } :
+                        { name: "Complete beginner", tone: "var(--text-subtle)", glyph: "初" };
 
   // Build a breakdown of what the user still needs
   const readinessBreakdown = [
-    { label: "Hiragana", pct: Math.round(hirPct * 100), weight: 25, done: hirPct >= 0.9 },
-    { label: "Katakana", pct: Math.round(katPct * 100), weight: 20, done: katPct >= 0.9 },
-    { label: "Core vocabulary", pct: Math.round(vocPct * 100), weight: 30, done: vocPct >= 0.5 },
-    { label: "Phrases", pct: Math.round(phrPct * 100), weight: 20, done: phrPct >= 0.5 },
-    { label: "Kanji", pct: Math.round(kanPct * 100), weight: 5, done: kanPct >= 0.3 },
+    { label: "Hiragana", pct: Math.round(hirPct * 100), weight: 25, done: hirPct >= 0.9, tone: "var(--track-hiragana)" },
+    { label: "Katakana", pct: Math.round(katPct * 100), weight: 20, done: katPct >= 0.9, tone: "var(--track-katakana)" },
+    { label: "Core vocabulary", pct: Math.round(vocPct * 100), weight: 30, done: vocPct >= 0.5, tone: "var(--track-vocab)" },
+    { label: "Phrases", pct: Math.round(phrPct * 100), weight: 20, done: phrPct >= 0.5, tone: "var(--track-phrase)" },
+    { label: "Kanji", pct: Math.round(kanPct * 100), weight: 5, done: kanPct >= 0.3, tone: "var(--track-kanji)" },
   ];
 
   const guidance =
@@ -138,53 +147,75 @@ export default async function AnalyticsPage() {
     travelScore < 90 ? "You move through Japan with ease. What's left is nuance — native materials, regional accents and unspoken social cues." :
                        "You're operating at a near-native level for travel. Japan feels like a second home.";
 
-  const summaryStats: { label: string; value: string | number; icon: LucideIcon }[] = [
-    { label: "Accuracy", value: `${accuracy}%`, icon: Target },
-    { label: "Lessons", value: lessonsCompleted, icon: BookOpen },
-    { label: "Study time", value: `${studyHours}h`, icon: Clock },
-    { label: "Reviews", value: (stats?.totalReviews ?? 0).toLocaleString(), icon: CheckCircle2 },
-    { label: "Correct", value: (stats?.correctReviews ?? 0).toLocaleString(), icon: CheckCircle2 },
-    { label: "Streak", value: `${profile.currentStreak}d`, icon: Flame },
+  // Each stat gets its own hue so the grid reads as a set of six things rather
+  // than one grey block of numbers.
+  const summaryStats: { label: string; value: string | number; icon: LucideIcon; tone: string }[] = [
+    { label: "Accuracy", value: `${accuracy}%`, icon: Target, tone: "var(--lime)" },
+    { label: "Day streak", value: profile.currentStreak, icon: Flame, tone: "var(--sun)" },
+    { label: "Lessons", value: lessonsCompleted, icon: BookOpen, tone: "var(--sky)" },
+    { label: "Hours", value: studyHours, icon: Clock, tone: "var(--grape)" },
+    { label: "Reviews", value: (stats?.totalReviews ?? 0).toLocaleString(), icon: CheckCircle2, tone: "var(--blossom)" },
+    { label: "Correct", value: (stats?.correctReviews ?? 0).toLocaleString(), icon: CheckCircle2, tone: "var(--coral)" },
   ];
 
   return (
     <div className="min-h-screen">
-      <TopBar title="Progress" backLabel="Dashboard" />
+      <TopBar title="Progress" />
 
       <main className="max-w-lg mx-auto px-4 py-6 space-y-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
-        {/* Headline: readiness is the number that matters, so it leads. */}
+        {/* Readiness leads, as a block of its own colour. */}
         <section className="space-y-3">
-          <SectionLabel>Travel readiness</SectionLabel>
-          <Card className="p-5 space-y-4">
-            <div className="flex items-center gap-4">
-              <Ring value={travelScore} size={64} thickness={5} color={`hsl(${travelLevel.tone})`}>
-                <span className="text-base font-semibold tnum leading-none">{travelScore}</span>
-              </Ring>
-              <div className="min-w-0">
-                <p className="text-lg font-semibold tracking-tight" style={{ color: `hsl(${travelLevel.tone})` }}>
-                  {travelLevel.name}
-                </p>
-                <p className="text-[13px] text-text-muted mt-0.5">
-                  {travelScore}% of the way to travelling unaided
+          <ColorCard hue={travelLevel.tone} className="relative">
+            <span
+              className="jp absolute -right-3 -bottom-10 text-[10rem] leading-none font-bold select-none pointer-events-none"
+              style={{ color: "hsl(var(--on-light) / 0.13)" }}
+              aria-hidden="true"
+            >
+              {travelLevel.glyph}
+            </span>
+            <div className="relative p-5">
+              <p className="font-display font-bold text-[12px] uppercase tracking-[0.12em] opacity-75">
+                Travel readiness
+              </p>
+              <div className="flex items-end gap-3 mt-1">
+                <p className="font-display font-extrabold text-mega tnum leading-none">
+                  {travelScore}
+                  <span className="text-3xl align-top">%</span>
                 </p>
               </div>
+              <p className="font-display font-extrabold text-[21px] tracking-tight mt-1">
+                {travelLevel.name}
+              </p>
+              <p className="text-[14px] font-medium mt-2 opacity-85 leading-relaxed max-w-[36ch]">
+                {guidance}
+              </p>
             </div>
-
-            <p className="text-[13px] text-text-muted leading-relaxed border-t border-line pt-4">
-              {guidance}
-            </p>
-          </Card>
+          </ColorCard>
         </section>
 
-        {/* Summary stats */}
+        {/* Six stats, six colours */}
         <section className="space-y-3">
-          <SectionLabel>At a glance</SectionLabel>
-          <div className="grid grid-cols-3 gap-px bg-line border border-line rounded-xl overflow-hidden">
+          <SectionLabel>By the numbers</SectionLabel>
+          <div className="grid grid-cols-3 gap-2.5 stagger">
             {summaryStats.map((s) => (
-              <div key={s.label} className="bg-surface px-3 py-4">
-                <s.icon className="w-4 h-4 text-text-subtle mb-2.5" strokeWidth={1.75} />
-                <p className="text-lg font-semibold tnum leading-none">{s.value}</p>
-                <p className="text-[11px] text-text-subtle mt-1.5">{s.label}</p>
+              <div
+                key={s.label}
+                className="rounded-tile border-2 border-line bg-surface card-ledge p-3.5"
+              >
+                <s.icon
+                  className="w-[18px] h-[18px] mb-2.5"
+                  strokeWidth={2.5}
+                  style={{ color: `hsl(${s.tone})` }}
+                />
+                <p
+                  className="font-display font-extrabold text-[22px] tnum leading-none"
+                  style={{ color: `hsl(${s.tone})` }}
+                >
+                  {s.value}
+                </p>
+                <p className="text-[11px] font-bold text-text-subtle mt-1.5 leading-tight">
+                  {s.label}
+                </p>
               </div>
             ))}
           </div>
@@ -193,80 +224,80 @@ export default async function AnalyticsPage() {
         {/* Mastery per track */}
         <section className="space-y-3">
           <SectionLabel>Mastery by track</SectionLabel>
-          <Card className="divide-y divide-line">
+          <div className="space-y-2.5 stagger">
             {progressItems.map((item) => {
               const mastered = progressMap[item.stage]?.masteredItems ?? 0;
               const pct = Math.min(100, Math.round((mastered / item.total) * 100));
               return (
-                <div key={item.label} className="flex items-center gap-3 p-3.5">
+                <div
+                  key={item.label}
+                  className="flex items-center gap-4 p-3.5 rounded-card border-2 border-line bg-surface card-ledge"
+                >
                   <span
-                    className="w-9 h-9 rounded-lg grid place-items-center shrink-0 border"
+                    className="w-14 h-14 rounded-tile grid place-items-center shrink-0"
                     style={
                       item.locked
-                        ? { background: "hsl(var(--surface-raised))", borderColor: "hsl(var(--line))" }
-                        : {
-                            background: `hsl(${item.tone} / 0.12)`,
-                            borderColor: `hsl(${item.tone} / 0.28)`,
-                            color: `hsl(${item.tone})`,
-                          }
+                        ? { background: "hsl(var(--ink-deep))" }
+                        : { background: `hsl(${item.tone})`, color: "hsl(var(--on-light))" }
                     }
                   >
                     {item.locked ? (
-                      <Lock className="w-4 h-4 text-text-subtle" strokeWidth={1.75} />
+                      <Lock className="w-5 h-5 text-text-subtle" strokeWidth={2.5} />
                     ) : (
-                      <span className="jp text-base font-medium leading-none">{item.glyph}</span>
+                      <span className="jp text-2xl font-bold leading-none">{item.glyph}</span>
                     )}
                   </span>
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                      <span className={`text-sm font-medium ${item.locked ? "text-text-subtle" : ""}`}>
+                    <div className="flex items-baseline justify-between gap-3 mb-2">
+                      <span
+                        className={`font-display font-bold text-[16px] tracking-tight ${item.locked ? "text-text-subtle" : ""}`}
+                      >
                         {item.label}
                       </span>
-                      <span className="text-[12px] text-text-subtle tnum shrink-0">
+                      <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
                         {item.locked
-                          ? "Locked"
+                          ? "LOCKED"
                           : `${mastered.toLocaleString()} / ${item.total.toLocaleString()}`}
                       </span>
                     </div>
                     <ProgressBar
                       value={item.locked ? 0 : pct}
-                      className="h-1"
-                      barStyle={item.locked ? undefined : { background: `hsl(${item.tone})` }}
+                      hue={item.locked ? "var(--line)" : item.tone}
                     />
                   </div>
                 </div>
               );
             })}
-          </Card>
+          </div>
         </section>
 
         {/* How the readiness score is composed */}
         <section className="space-y-3">
-          <SectionLabel>What makes up the score</SectionLabel>
+          <SectionLabel>What builds the score</SectionLabel>
           <Card className="p-5 space-y-4">
             {readinessBreakdown.map((item) => (
               <div key={item.label}>
-                <div className="flex items-baseline justify-between gap-3 mb-1.5">
-                  <span className="text-[13px] flex items-center gap-2">
-                    <span
-                      className="w-1.5 h-1.5 rounded-full shrink-0"
-                      style={{
-                        background: item.done ? "hsl(var(--success))" : "hsl(var(--line-strong))",
-                      }}
-                    />
-                    <span className={item.done ? "text-text" : "text-text-muted"}>{item.label}</span>
+                <div className="flex items-baseline justify-between gap-3 mb-2">
+                  <span className="text-[14px] font-semibold flex items-center gap-2">
+                    {item.done && (
+                      <CheckCircle2
+                        className="w-4 h-4 shrink-0 text-lime"
+                        strokeWidth={2.5}
+                      />
+                    )}
+                    <span className={item.done ? "text-text" : "text-text-muted"}>
+                      {item.label}
+                    </span>
                   </span>
-                  <span className="text-[12px] text-text-subtle tnum shrink-0">
+                  <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
                     {item.pct}% · {item.weight} pts
                   </span>
                 </div>
                 <ProgressBar
                   value={item.pct}
-                  className="h-1"
-                  barStyle={{
-                    background: item.done ? "hsl(var(--success))" : "hsl(var(--line-strong))",
-                  }}
+                  hue={item.done ? item.tone : `${item.tone} / 0.5`}
+                  className="h-2.5"
                 />
               </div>
             ))}
@@ -276,25 +307,40 @@ export default async function AnalyticsPage() {
         {/* Cultural guide */}
         <section className="space-y-3">
           <div className="space-y-1.5">
-            <SectionLabel>Japan cultural guide</SectionLabel>
-            <p className="text-[13px] text-text-muted leading-relaxed">
-              The things that most often catch first-time visitors out.
+            <SectionLabel>Don&apos;t be that tourist</SectionLabel>
+            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+              Eight things that catch first-timers out.
             </p>
           </div>
-          <Card className="divide-y divide-line">
-            {CULTURAL_NORMS.map(({ title, detail, icon: Icon }) => (
-              <div key={title} className="flex gap-3 p-4">
-                <span className="w-8 h-8 rounded-lg bg-surface-raised border border-line grid place-items-center shrink-0 mt-0.5">
-                  <Icon className="w-4 h-4 text-text-muted" strokeWidth={1.75} />
-                </span>
-                <div className="min-w-0">
-                  <h3 className="text-sm font-medium mb-1">{title}</h3>
-                  <p className="text-[13px] text-text-muted leading-relaxed">{detail}</p>
+          <div className="space-y-2.5">
+            {CULTURAL_NORMS.map(({ title, detail, icon: Icon }, i) => {
+              // Cycling the cast keeps a long list from turning into a wall.
+              const tone = CULTURE_TONES[i % CULTURE_TONES.length];
+              return (
+                <div
+                  key={title}
+                  className="flex gap-3.5 p-4 rounded-card border-2 border-line bg-surface card-ledge"
+                >
+                  <span
+                    className="w-11 h-11 rounded-tile grid place-items-center shrink-0 text-on-light"
+                    style={{ background: `hsl(${tone})` }}
+                  >
+                    <Icon className="w-5 h-5" strokeWidth={2.5} />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="font-display font-bold text-[16px] tracking-tight mb-1">
+                      {title}
+                    </h3>
+                    <p className="text-[13px] text-text-muted leading-relaxed font-medium">
+                      {detail}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </Card>
+              );
+            })}
+          </div>
         </section>
+
       </main>
 
       <BottomNav />

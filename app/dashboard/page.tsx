@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { ArrowRight, ChevronRight, Flame, Lock } from "lucide-react";
+import { ChevronRight, Flame, Lock, Zap } from "lucide-react";
 import { getStartOfDayInTimezone, getAvatar } from "@/lib/utils";
 import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji } from "@/lib/progression";
-import { Avatar, Card, ProgressBar, Ring, SectionLabel, buttonStyles } from "@/app/components/ui";
+import { Avatar, Card, Chip, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
 
 const LESSON_TYPE_SYMBOL: Record<string, string> = {
   HIRAGANA: "あ",
@@ -132,13 +132,13 @@ export default async function DashboardPage() {
   );
 
   const travelLevel =
-    travelScore >= 90 ? { name: "Near-native traveller", tone: "45 60% 58%", description: "Japan is practically a second home. You can handle any situation, read most signs, and connect deeply with locals." } :
-    travelScore >= 70 ? { name: "Seasoned traveller", tone: "152 45% 50%", description: "You'll move through Japan with ease — trains, restaurants, shops and conversations hold no mystery." } :
-    travelScore >= 50 ? { name: "Confident explorer", tone: "205 60% 58%", description: "You can navigate most everyday situations. Getting around, ordering food and asking for help are all within reach." } :
-    travelScore >= 30 ? { name: "Tourist ready", tone: "268 46% 65%", description: "You're prepared for a comfortable trip: reading menus, asking directions and handling common tourist situations." } :
-    travelScore >= 15 ? { name: "Survival traveller", tone: "28 62% 58%", description: "You can decode hiragana and katakana signs and manage basic exchanges. Tourist hotspots will be manageable." } :
-    travelScore >= 5  ? { name: "Phonetic foundation", tone: "342 48% 62%", description: "You know some characters and basics. Japan is exciting, but you'll lean on translation apps for most things." } :
-                        { name: "Complete beginner", tone: "220 9% 55%", description: "Your journey is just starting. Even a little Japanese goes a long way when visiting Japan." };
+    travelScore >= 90 ? { name: "Near-native", tone: "var(--sun)", description: "Japan is practically a second home. Any situation, most signs, real conversations." } :
+    travelScore >= 70 ? { name: "Seasoned traveller", tone: "var(--lime)", description: "Trains, restaurants, shops and conversations hold no mystery for you." } :
+    travelScore >= 50 ? { name: "Confident explorer", tone: "var(--sky)", description: "Getting around, ordering food and asking for help are all within reach." } :
+    travelScore >= 30 ? { name: "Tourist ready", tone: "var(--grape)", description: "Menus, directions and the usual tourist situations — you've got these." } :
+    travelScore >= 15 ? { name: "Survival traveller", tone: "var(--coral)", description: "You can decode kana signs and manage basic exchanges. Hotspots are manageable." } :
+    travelScore >= 5  ? { name: "Phonetic foundation", tone: "var(--blossom)", description: "Some characters, some basics. Translation apps are still doing the heavy lifting." } :
+                        { name: "Complete beginner", tone: "var(--text-subtle)", description: "Day one. Even a little Japanese goes a long way in Japan." };
 
   const reviewLabel = reviewsDue > 0
     ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due · plus new material`
@@ -168,76 +168,95 @@ export default async function DashboardPage() {
   const lessonSymbol = dominantLessonSymbol(lessonTypeCounts, fallbackStage);
 
   return (
-    <div className="space-y-6">
-      {/* Header. The old build carried a bell icon that opened nothing; a
-          control that does nothing is worse than no control. */}
+    <div className="space-y-7">
+      {/* Header */}
       <header className="flex items-center justify-between gap-3">
         <Link href="/settings" className="flex items-center gap-3 min-w-0 group">
-          <Avatar avatar={avatar} size={40} />
+          <Avatar avatar={avatar} size={46} />
           <span className="min-w-0">
-            <span className="block text-xs text-text-subtle">{getGreeting()}</span>
-            <span className="block text-[15px] font-semibold truncate group-hover:text-text transition-colors">
+            <span className="block text-[13px] text-text-subtle font-medium">{getGreeting()}</span>
+            <span className="block font-display font-bold text-[19px] tracking-tight truncate">
               {profile.displayName || "Learner"}
             </span>
           </span>
         </Link>
-        <div
-          className="flex items-center gap-1.5 h-8 px-3 rounded-full border border-line bg-surface shrink-0"
-          title={`${profile.currentStreak}-day streak`}
-        >
-          <Flame className="w-3.5 h-3.5 text-warning" strokeWidth={2} />
-          <span className="text-[13px] font-semibold tnum">{profile.currentStreak}</span>
-        </div>
+
+        {/* Streak. A number worth looking at, so it gets the sun and a size. */}
+        <Chip hue="var(--sun)" className="h-10 px-3.5 text-[15px]" >
+          <Flame className="w-4 h-4" strokeWidth={2.5} fill="currentColor" />
+          <span className="tnum">{profile.currentStreak}</span>
+        </Chip>
       </header>
 
-      {/* Primary action. Exactly one accent-filled element on the screen, so
-          "what do I do next" needs no thought. */}
-      <Link
-        href={lessonHref}
-        className="group flex items-center gap-4 rounded-xl border border-accent/30 bg-accent/[0.07] p-4 hover:bg-accent/[0.11] hover:border-accent/45 transition-colors duration-150 ease-swift"
-      >
-        <span className="w-12 h-12 rounded-lg bg-accent grid place-items-center shrink-0">
-          <span className="jp text-2xl font-medium text-accent-fg leading-none">{lessonSymbol}</span>
+      {/* The one thing to do next, as a block of colour you cannot miss. */}
+      <ColorCard hue="var(--coral)" ledgeHue="var(--coral-deep)" href={lessonHref} className="relative">
+        {/* Oversized glyph bleeding off the edge — the app's own alphabet as
+            ornament, instead of a stock illustration. */}
+        <span
+          className="jp absolute -right-3 -bottom-8 text-[9rem] leading-none font-bold pointer-events-none select-none"
+          style={{ color: "hsl(var(--on-light) / 0.13)" }}
+          aria-hidden="true"
+        >
+          {lessonSymbol}
         </span>
-        <span className="flex-1 min-w-0">
-          <span className="block text-[15px] font-semibold truncate">{lessonTitle}</span>
-          <span className="block text-[13px] text-text-muted truncate mt-0.5">{lessonSubtitle}</span>
-        </span>
-        <ArrowRight
-          className="w-[18px] h-[18px] text-accent shrink-0 transition-transform duration-150 ease-swift group-hover:translate-x-0.5"
-          strokeWidth={2}
-        />
-      </Link>
+
+        <div className="relative p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Zap className="w-4 h-4" strokeWidth={2.5} fill="currentColor" />
+            <span className="font-display font-bold text-[13px] uppercase tracking-[0.1em]">
+              {showContinue ? "Pick up where you left off" : "Ready when you are"}
+            </span>
+          </div>
+          <p className="font-display font-extrabold text-[26px] leading-tight tracking-tight max-w-[15ch]">
+            {lessonTitle}
+          </p>
+          <p className="text-[14px] font-medium mt-1.5 opacity-80">{lessonSubtitle}</p>
+
+          <span
+            className="mt-4 inline-flex items-center gap-2 h-11 px-5 rounded-full font-display font-bold text-[15px] bg-on-light text-coral"
+          >
+            {showContinue ? "Keep going" : "Start"}
+            <ChevronRight className="w-4 h-4" strokeWidth={3} />
+          </span>
+        </div>
+      </ColorCard>
 
       {/* Today */}
-      <Card className="p-4 flex items-center gap-4">
-        <Ring value={goalPct} size={56} thickness={4}>
-          <span className="text-[15px] font-semibold tnum leading-none">{todayMinutes}</span>
+      <Card className="p-5 flex items-center gap-5">
+        <Ring value={goalPct} size={78} thickness={10} hue="var(--lime)">
+          <span className="text-center leading-none">
+            <span className="block font-display font-extrabold text-[22px] tnum">{todayMinutes}</span>
+            <span className="block text-[10px] font-bold text-text-subtle uppercase tracking-wider mt-0.5">min</span>
+          </span>
         </Ring>
         <div className="flex-1 min-w-0">
           <SectionLabel>Today</SectionLabel>
-          <p className="text-sm mt-1.5">
-            <span className="font-semibold tnum">{todayMinutes}</span>
-            <span className="text-text-muted"> of {goalMinutes} min goal</span>
+          <p className="text-[14px] text-text-muted mt-1.5 font-medium">
+            {goalPct >= 100
+              ? "Goal smashed. Anything more is a bonus."
+              : `${goalMinutes - todayMinutes} min to hit your goal`}
           </p>
-          <p className="text-[13px] text-text-subtle mt-0.5">
+          <p className="text-[13px] text-text-subtle mt-1 font-medium">
             {reviewsDue > 0
               ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} waiting`
-              : "No reviews due — you're caught up"}
+              : "All caught up on reviews"}
           </p>
         </div>
       </Card>
 
-      {/* Tracks */}
-      <section className="space-y-2.5">
-        <div className="flex items-center justify-between px-0.5">
+      {/* Tracks. Each owns a hue and keeps it everywhere in the app. */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between px-1">
           <SectionLabel>Your tracks</SectionLabel>
-          <Link href="/analytics" className="text-[12px] text-text-subtle hover:text-text-muted transition-colors">
-            Details
+          <Link
+            href="/analytics"
+            className="font-display font-bold text-[13px] text-text-subtle hover:text-text transition-colors"
+          >
+            See all
           </Link>
         </div>
 
-        <Card className="divide-y divide-line">
+        <div className="space-y-2.5 stagger">
           {tracks.map((track) => {
             const mastered = progressMap[track.stage]?.masteredItems ?? 0;
             const pct = Math.min(100, Math.round((mastered / track.total) * 100));
@@ -250,53 +269,47 @@ export default async function DashboardPage() {
             const body = (
               <>
                 <span
-                  className="w-9 h-9 rounded-lg grid place-items-center shrink-0 border"
+                  className="w-14 h-14 rounded-tile grid place-items-center shrink-0"
                   style={
                     locked
-                      ? { background: "hsl(var(--surface-raised))", borderColor: "hsl(var(--line))" }
-                      : {
-                          background: `hsl(${track.tone} / 0.12)`,
-                          borderColor: `hsl(${track.tone} / 0.28)`,
-                          color: `hsl(${track.tone})`,
-                        }
+                      ? { background: "hsl(var(--ink-deep))" }
+                      : { background: `hsl(${track.tone})`, color: "hsl(var(--on-light))" }
                   }
                 >
                   {locked ? (
-                    <Lock className="w-4 h-4 text-text-subtle" strokeWidth={1.75} />
+                    <Lock className="w-5 h-5 text-text-subtle" strokeWidth={2.5} />
                   ) : (
-                    <span className="jp text-base font-medium leading-none">{track.glyph}</span>
+                    <span className="jp text-2xl font-bold leading-none">{track.glyph}</span>
                   )}
                 </span>
 
                 <span className="flex-1 min-w-0">
-                  <span className="flex items-baseline justify-between gap-3 mb-1.5">
-                    <span className={`text-sm font-medium ${locked ? "text-text-subtle" : ""}`}>
+                  <span className="flex items-baseline justify-between gap-3 mb-2">
+                    <span
+                      className={`font-display font-bold text-[16px] tracking-tight ${locked ? "text-text-subtle" : ""}`}
+                    >
                       {track.label}
                     </span>
-                    <span className="text-[12px] text-text-subtle tnum shrink-0">
-                      {locked ? "Locked" : `${mastered.toLocaleString()} / ${track.total.toLocaleString()}`}
+                    <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
+                      {locked ? "LOCKED" : `${mastered.toLocaleString()} / ${track.total.toLocaleString()}`}
                     </span>
                   </span>
                   <ProgressBar
                     value={locked ? 0 : pct}
-                    className="h-1"
-                    barStyle={locked ? undefined : { background: `hsl(${track.tone})` }}
+                    hue={locked ? "var(--line)" : track.tone}
                   />
                 </span>
-
-                {href && (
-                  <ChevronRight className="w-4 h-4 text-text-subtle shrink-0 self-center" strokeWidth={1.75} />
-                )}
               </>
             );
 
-            const rowClass = "flex items-center gap-3 p-3.5 first:rounded-t-xl last:rounded-b-xl";
+            const rowClass =
+              "flex items-center gap-4 p-3.5 rounded-card border-2 border-line bg-surface card-ledge";
 
             return href ? (
               <Link
                 key={track.label}
                 href={href}
-                className={`${rowClass} hover:bg-surface-raised transition-colors duration-150 ease-swift`}
+                className={`${rowClass} hover:border-line-strong transition-colors`}
               >
                 {body}
               </Link>
@@ -310,30 +323,43 @@ export default async function DashboardPage() {
               </div>
             );
           })}
-        </Card>
+        </div>
       </section>
 
-      {/* Travel readiness */}
-      <section className="space-y-2.5">
-        <SectionLabel className="px-0.5">Travel readiness</SectionLabel>
-        <Card className="p-4 space-y-3">
-          <div className="flex items-baseline justify-between gap-3">
-            <span className="text-[15px] font-semibold" style={{ color: `hsl(${travelLevel.tone})` }}>
-              {travelLevel.name}
-            </span>
-            <span className="text-sm text-text-muted tnum shrink-0">{travelScore}%</span>
+      {/* Travel readiness — the headline number, sized like one. */}
+      <section className="space-y-3">
+        <SectionLabel className="px-1">Travel readiness</SectionLabel>
+        <Card className="p-5">
+          <div className="flex items-end justify-between gap-4 mb-4">
+            <div className="min-w-0">
+              <p
+                className="font-display font-extrabold text-[19px] tracking-tight"
+                style={{ color: `hsl(${travelLevel.tone})` }}
+              >
+                {travelLevel.name}
+              </p>
+              <p className="text-[13px] text-text-muted mt-1.5 leading-relaxed font-medium">
+                {travelLevel.description}
+              </p>
+            </div>
+            <p
+              className="font-display font-extrabold text-hero tnum leading-none shrink-0"
+              style={{ color: `hsl(${travelLevel.tone})` }}
+            >
+              {travelScore}
+              <span className="text-[22px] align-top">%</span>
+            </p>
           </div>
-          <ProgressBar
-            value={travelScore}
-            className="h-1.5"
-            barStyle={{ background: `hsl(${travelLevel.tone})` }}
-          />
-          <p className="text-[13px] text-text-muted leading-relaxed">{travelLevel.description}</p>
+          <ProgressBar value={travelScore} hue={travelLevel.tone} className="h-4" />
         </Card>
       </section>
 
-      <Link href="/review/weakest" className={buttonStyles({ variant: "secondary", full: true })}>
-        Review my weakest items
+      <Link
+        href="/review/weakest"
+        className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
+        style={buttonVars("secondary")}
+      >
+        Drill my weakest items
       </Link>
     </div>
   );

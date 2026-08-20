@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Share, X } from "lucide-react";
-import { buttonStyles } from "@/app/components/ui";
+import { buttonStyles, buttonVars } from "@/app/components/ui";
 
 const DISMISSED_KEY = "pwa-install-dismissed";
 
@@ -44,9 +44,9 @@ export function PWAInstallBanner() {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-4">
-      <div className="bg-surface border border-line rounded-xl p-3.5 flex items-start gap-3">
+      <div className="bg-surface border-2 border-line rounded-card card-ledge p-4 flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-medium">Add Ikou to your home screen</p>
+          <p className="font-display font-bold text-[14px]">Put Ikou on your home screen</p>
           {prompt ? (
             <p className="text-xs text-text-subtle mt-0.5">Opens full screen and works offline.</p>
           ) : (
@@ -65,7 +65,8 @@ export function PWAInstallBanner() {
               (prompt as any).prompt?.();
               setPrompt(null);
             }}
-            className={buttonStyles({ variant: "secondary", size: "sm" })}
+            className={buttonStyles({ variant: "primary", size: "sm" })}
+            style={buttonVars("primary")}
           >
             Install
           </button>

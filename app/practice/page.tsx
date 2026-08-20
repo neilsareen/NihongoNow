@@ -4,10 +4,10 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
-import { Check, Lightbulb, Lock, RotateCcw, Volume2 } from "lucide-react";
+import { Check, Flame, Lightbulb, Lock, RotateCcw, Volume2 } from "lucide-react";
 import { speak, speechText } from "@/lib/speech";
 import { cn } from "@/lib/utils";
-import { Card, TopBar, buttonStyles } from "@/app/components/ui";
+import { Card, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,16 +51,22 @@ function AudioButton({
         speak(text, lang);
       }}
       className={cn(
-        "rounded-full border border-line bg-surface-raised text-text-muted shrink-0",
-        "hover:text-text hover:border-line-strong transition-colors duration-150 ease-swift",
-        "grid place-items-center active:translate-y-px",
-        size === "md" ? "w-9 h-9" : "w-7 h-7"
+        "rounded-full shrink-0 grid place-items-center transition-colors",
+        size === "sm"
+          ? "bg-surface-raised text-sky hover:brightness-125"
+          : "ledge-sm text-on-light",
+        size === "md" ? "w-11 h-11" : "w-8 h-8"
       )}
+      style={
+        size === "sm"
+          ? undefined
+          : { background: "hsl(var(--sky))", ["--ledge" as string]: "var(--sky-deep)" }
+      }
       aria-label="Play pronunciation"
       title="Play pronunciation"
       type="button"
     >
-      <Volume2 className={size === "md" ? "w-4 h-4" : "w-3.5 h-3.5"} strokeWidth={1.75} />
+      <Volume2 className={size === "md" ? "w-[18px] h-[18px]" : "w-3.5 h-3.5"} strokeWidth={2.5} />
     </button>
   );
 }
@@ -134,7 +140,7 @@ function parseExampleWords(raw: unknown): ExampleWord[] {
 
 function DetailLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-subtle">
+    <p className="font-display text-[11px] font-bold uppercase tracking-[0.12em] text-text-subtle">
       {children}
     </p>
   );
@@ -142,7 +148,7 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
 
 function Key({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="hidden sm:inline-grid place-items-center min-w-[1.15rem] h-[1.15rem] px-1 rounded border border-current/25 text-[10px] font-sans font-medium opacity-70">
+    <kbd className="hidden sm:inline-grid place-items-center min-w-[1.25rem] h-[1.25rem] px-1.5 rounded-md bg-black/15 text-[10px] font-sans font-bold opacity-80">
       {children}
     </kbd>
   );
@@ -216,20 +222,20 @@ function SelectionView({
 
   return (
     <div className="min-h-screen">
-      <TopBar title="Practice" backLabel="Dashboard" />
+      <TopBar title="Practice" />
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-6">
-        <div className="space-y-1.5">
-          <h1 className="text-2xl font-semibold tracking-tight">Character practice</h1>
-          <p className="text-sm text-text-muted leading-relaxed">
-            Free-form flashcards. Nothing here affects your review schedule — use it
-            to warm up or drill a script on its own.
+        <div className="space-y-2">
+          <h1 className="text-hero leading-none">Drill<br />mode</h1>
+          <p className="text-[15px] text-text-muted leading-relaxed font-medium max-w-[32ch]">
+            Free-form flashcards. Nothing here touches your review schedule — warm up,
+            or hammer one script until it sticks.
           </p>
         </div>
 
         <fieldset className="space-y-2.5">
-          <legend className="text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle mb-2.5">
-            Include
+          <legend className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-text-subtle mb-3">
+            What are we drilling?
           </legend>
           {TYPES.map(({ key, label, glyph, tone }) => {
             const locked = key === "KANJI" && !kanjiUnlocked;
@@ -242,40 +248,42 @@ function SelectionView({
                 aria-pressed={isOn}
                 title={locked ? "Master the kana used in a kanji\u2019s reading to unlock it" : undefined}
                 className={cn(
-                  "w-full flex items-center gap-3 p-3.5 rounded-xl border text-left",
-                  "transition-colors duration-150 ease-swift",
+                  "w-full flex items-center gap-4 p-4 rounded-card border-2 text-left card-ledge",
+                  "transition-colors duration-150",
                   locked
                     ? "border-line bg-surface/50 cursor-not-allowed"
                     : isOn
-                      ? "border-accent/45 bg-accent/[0.07]"
+                      ? "bg-surface"
                       : "border-line bg-surface hover:border-line-strong"
                 )}
+                style={!locked && isOn ? { borderColor: `hsl(${tone})` } : undefined}
               >
                 <span
-                  className="w-9 h-9 rounded-lg grid place-items-center shrink-0 border"
+                  className="w-14 h-14 rounded-tile grid place-items-center shrink-0"
                   style={
                     locked
-                      ? { background: "hsl(var(--surface-raised))", borderColor: "hsl(var(--line))" }
-                      : {
-                          background: `hsl(${tone} / 0.12)`,
-                          borderColor: `hsl(${tone} / 0.28)`,
-                          color: `hsl(${tone})`,
-                        }
+                      ? { background: "hsl(var(--ink-deep))" }
+                      : { background: `hsl(${tone})`, color: "hsl(var(--on-light))" }
                   }
                 >
                   {locked ? (
-                    <Lock className="w-4 h-4 text-text-subtle" strokeWidth={1.75} />
+                    <Lock className="w-5 h-5 text-text-subtle" strokeWidth={2.5} />
                   ) : (
-                    <span className="jp text-base font-medium leading-none">{glyph}</span>
+                    <span className="jp text-2xl font-bold leading-none">{glyph}</span>
                   )}
                 </span>
 
                 <span className="flex-1 min-w-0">
-                  <span className={cn("block text-sm font-medium", locked && "text-text-subtle")}>
+                  <span
+                    className={cn(
+                      "block font-display font-bold text-[17px] tracking-tight",
+                      locked && "text-text-subtle"
+                    )}
+                  >
                     {label}
                   </span>
                   {locked && (
-                    <span className="block text-xs text-text-subtle mt-0.5">
+                    <span className="block text-[13px] text-text-subtle mt-0.5 font-medium">
                       Unlocks as you master the kana in its readings
                     </span>
                   )}
@@ -284,11 +292,12 @@ function SelectionView({
                 {!locked && (
                   <span
                     className={cn(
-                      "w-5 h-5 rounded-md border grid place-items-center shrink-0 transition-colors",
-                      isOn ? "bg-accent border-accent text-accent-fg" : "border-line-strong"
+                      "w-7 h-7 rounded-full grid place-items-center shrink-0 transition-colors border-2",
+                      isOn ? "text-on-light" : "border-line-strong"
                     )}
+                    style={isOn ? { background: `hsl(${tone})`, borderColor: `hsl(${tone})` } : undefined}
                   >
-                    {isOn && <Check className="w-3 h-3" strokeWidth={3} />}
+                    {isOn && <Check className="w-4 h-4" strokeWidth={3.5} />}
                   </span>
                 )}
               </button>
@@ -297,15 +306,16 @@ function SelectionView({
         </fieldset>
 
         {error && (
-          <p className="text-[13px] text-danger" role="alert">{error}</p>
+          <p className="text-[14px] text-rose font-semibold" role="alert">{error}</p>
         )}
 
         <button
           onClick={startPractice}
           disabled={loading}
           className={buttonStyles({ size: "lg", full: true })}
+          style={buttonVars("primary")}
         >
-          {loading ? "Loading…" : "Start practice"}
+          {loading ? "Loading…" : "Let's go"}
         </button>
       </main>
     </div>
@@ -319,14 +329,18 @@ function MnemonicButton({ hint }: { hint: string }) {
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
-        className={buttonStyles({ variant: "ghost", size: "sm", className: "text-warning hover:text-warning" })}
+        className={buttonStyles({ variant: "sun", size: "sm" })}
+        style={buttonVars("sun")}
         title="Tap for a memory hook"
       >
-        <Lightbulb className="w-3.5 h-3.5" strokeWidth={1.75} />
+        <Lightbulb className="w-4 h-4" strokeWidth={2.5} fill="currentColor" />
         {show ? "Hide hint" : "Need a hint?"}
       </button>
       {show && (
-        <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs animate-fade">
+        <p
+          className="text-[14px] leading-relaxed text-center max-w-xs animate-pop-in rounded-tile px-4 py-3 font-medium"
+          style={{ background: "hsl(var(--sun) / 0.14)", color: "hsl(var(--sun))" }}
+        >
           {hint}
         </p>
       )}
@@ -337,8 +351,8 @@ function MnemonicButton({ hint }: { hint: string }) {
 function LoadingView() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-      <div className="w-6 h-6 border-2 border-line-strong border-t-accent rounded-full animate-spin" />
-      <p className="text-[13px] text-text-subtle">Loading…</p>
+      <div className="w-8 h-8 border-4 border-surface-raised border-t-coral rounded-full animate-spin" />
+      <p className="text-[14px] text-text-subtle font-medium">Loading…</p>
     </div>
   );
 }
@@ -352,11 +366,15 @@ function PracticeView({
   onFinish,
 }: {
   items: PracticeItem[];
-  onFinish: (correct: number, total: number) => void;
+  onFinish: (correct: number, total: number, best: number) => void;
 }) {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  // Run of consecutive hits, shown from three up — the same mechanic the
+  // lesson player uses, so the two flows reward you the same way.
+  const [streak, setStreak] = useState(0);
+  const [best, setBest] = useState(0);
 
   const item = items[index];
   const total = items.length;
@@ -367,15 +385,19 @@ function PracticeView({
   const advance = useCallback(
     (wasCorrect: boolean) => {
       const newCorrect = wasCorrect ? correctCount + 1 : correctCount;
+      const newStreak = wasCorrect ? streak + 1 : 0;
+      const newBest = Math.max(best, newStreak);
       if (index + 1 >= total) {
-        onFinish(newCorrect, total);
+        onFinish(newCorrect, total, newBest);
       } else {
         setCorrectCount(newCorrect);
+        setStreak(newStreak);
+        setBest(newBest);
         setIndex(index + 1);
         setFlipped(false);
       }
     },
-    [correctCount, index, total, onFinish]
+    [correctCount, streak, best, index, total, onFinish]
   );
 
   // Same shortcuts as the lesson player, so the two flows feel like one app.
@@ -404,54 +426,70 @@ function PracticeView({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-xl border-b border-line">
-        <div className="max-w-md mx-auto h-14 px-4 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 bg-ink/90 backdrop-blur-xl">
+        <div className="max-w-md mx-auto h-16 px-4 flex items-center gap-3">
           <Link
             href="/dashboard"
-            className="text-[13px] text-text-muted hover:text-text transition-colors -ml-1 px-1 py-1 rounded"
+            aria-label="Back to dashboard"
+            className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border-2 border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
           >
-            ← Dashboard
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2.2"
+                strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
           </Link>
-          <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle">
-            Practice
-          </span>
-          <span className="text-[13px] text-text-muted tnum min-w-[3rem] text-right">
-            {index + 1}/{total}
-          </span>
-        </div>
-        <div className="h-px bg-line">
-          <div
-            className="h-px bg-accent transition-[width] duration-300 ease-swift"
-            style={{ width: `${((index + 1) / total) * 100}%` }}
-          />
+
+          <div className="flex-1">
+            <div className="h-3.5 rounded-full bg-surface-raised overflow-hidden">
+              <div
+                className="h-full rounded-full bg-lime transition-[width] duration-500 ease-bounce"
+                style={{
+                  width: `${((index + 1) / total) * 100}%`,
+                  boxShadow: "inset 0 2px 0 0 rgb(255 255 255 / 0.3)",
+                }}
+              />
+            </div>
+          </div>
+
+          {streak >= 3 ? (
+            <Chip hue="var(--sun)" className="shrink-0 animate-pop" key={streak}>
+              <Flame className="w-3.5 h-3.5" strokeWidth={2.5} fill="currentColor" />
+              <span className="tnum">{streak}</span>
+            </Chip>
+          ) : (
+            <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0 min-w-[3rem] text-right">
+              {index + 1}/{total}
+            </span>
+          )}
         </div>
       </header>
 
       <main className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-4">
-        <div key={index} className="flex-1 w-full flex flex-col gap-4 animate-enter">
+        <div key={index} className="flex-1 w-full flex flex-col gap-4 animate-pop-in">
           <div className="flex-1 flex flex-col justify-center gap-4">
           <Card className="overflow-hidden">
-            <div className="p-8 flex items-center justify-center min-h-[11rem]">
-              <span className={cn("jp leading-none font-medium", isKanji ? "text-[5rem]" : "text-[5.5rem]")}>
+            <div className="p-8 flex items-center justify-center min-h-[12rem]">
+              <span className={cn("jp leading-none font-bold", isKanji ? "text-[5rem]" : "text-mega")}>
                 {item.character}
               </span>
             </div>
 
-            <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-surface-sunken/40">
+            <div className="border-t-2 border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
               {!flipped ? (
                 <button
                   onClick={() => setFlipped(true)}
-                  className="text-[13px] text-text-subtle hover:text-text-muted transition-colors"
+                  className="jp text-[2rem] text-text-subtle/35 tracking-[0.3em] select-none hover:text-text-subtle/60 transition-colors"
+                  aria-label="Reveal the answer"
                 >
-                  Answer hidden — tap Reveal
+                  ？？？
                 </button>
               ) : (
-                <div className="w-full flex flex-col items-center gap-4 animate-fade">
+                <div className="w-full flex flex-col items-center gap-4 animate-pop-in">
                   {isKanji ? (
                     <>
                       <div className="flex items-center gap-2.5">
                         {item.meanings && item.meanings.length > 0 && (
-                          <p className="text-lg font-semibold tracking-tight">
+                          <p className="font-display text-2xl font-extrabold tracking-tight">
                             {item.meanings.join(", ")}
                           </p>
                         )}
@@ -466,7 +504,7 @@ function PracticeView({
                               <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
                                 <span className="jp text-[15px]">{r.kana}</span>
                                 <span className="text-[13px] text-text-muted">{kanaToRomaji(r.kana)}</span>
-                                <span className="text-[10px] uppercase tracking-wider text-text-subtle border border-line rounded px-1 py-px">
+                                <span className="font-display text-[10px] font-bold uppercase tracking-wider text-text-subtle bg-ink-deep rounded-full px-2 py-0.5">
                                   {r.label}
                                 </span>
                               </div>
@@ -492,7 +530,7 @@ function PracticeView({
                     </>
                   ) : (
                     <div className="flex items-center gap-2.5">
-                      <p className="text-2xl font-semibold tracking-tight">{item.romaji}</p>
+                      <p className="font-display text-[2rem] font-extrabold tracking-tight">{item.romaji}</p>
                       <AudioButton text={speechText(item.contentType, item)} size="md" />
                     </div>
                   )}
@@ -505,7 +543,11 @@ function PracticeView({
           </div>
 
           {!flipped ? (
-            <button onClick={() => setFlipped(true)} className={buttonStyles({ size: "lg", full: true })}>
+            <button
+              onClick={() => setFlipped(true)}
+              className={buttonStyles({ size: "lg", full: true })}
+              style={buttonVars("primary")}
+            >
               Reveal
               <Key>space</Key>
             </button>
@@ -513,17 +555,19 @@ function PracticeView({
             <div className="flex gap-2.5">
               <button
                 onClick={() => advance(false)}
-                className={buttonStyles({ variant: "danger", size: "lg", full: true })}
+                className={buttonStyles({ variant: "reject", size: "lg", full: true })}
+                style={buttonVars("reject")}
               >
-                <RotateCcw className="w-4 h-4" strokeWidth={1.75} />
+                <RotateCcw className="w-[18px] h-[18px]" strokeWidth={2.5} />
                 Again
                 <Key>1</Key>
               </button>
               <button
                 onClick={() => advance(true)}
-                className={buttonStyles({ variant: "success", size: "lg", full: true })}
+                className={buttonStyles({ variant: "affirm", size: "lg", full: true })}
+                style={buttonVars("affirm")}
               >
-                <Check className="w-4 h-4" strokeWidth={2} />
+                <Check className="w-[18px] h-[18px]" strokeWidth={3} />
                 Got it
                 <Key>2</Key>
               </button>
@@ -542,62 +586,89 @@ function PracticeView({
 function SummaryView({
   correct,
   total,
+  best,
   onPracticeAgain,
 }: {
   correct: number;
   total: number;
+  best: number;
   onPracticeAgain: () => void;
 }) {
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
+  const great = accuracy >= 80;
+  const hue = great ? "var(--lime)" : accuracy >= 50 ? "var(--sun)" : "var(--coral)";
 
   return (
     <div className="min-h-screen flex flex-col">
-      <TopBar title="Results" backLabel="Dashboard" />
+      <TopBar title="Results" />
 
-      <main className="flex-1 max-w-md mx-auto w-full px-4 py-10 flex flex-col justify-center">
-        <div className="space-y-6 animate-enter">
-          <div className="text-center space-y-1.5">
-            <h1 className="text-2xl font-semibold tracking-tight">Session complete</h1>
-            <p className="text-[13px] text-text-muted">
-              {accuracy >= 80
-                ? "That set is well in hand."
-                : accuracy >= 50
-                  ? "Coming along — another pass will help."
-                  : "Worth running these again shortly."}
-            </p>
+      <main className="flex-1 max-w-sm mx-auto w-full px-4 py-6 flex flex-col justify-center">
+        <div className="space-y-5">
+          <div
+            className="relative rounded-card overflow-hidden card-ledge text-on-light animate-pop-in"
+            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ink-deep))" }}
+          >
+            <span
+              className="jp absolute -right-7 -bottom-14 text-[9rem] leading-none font-bold select-none pointer-events-none"
+              style={{ color: "hsl(var(--on-light) / 0.1)" }}
+              aria-hidden="true"
+            >
+              {great ? "祝" : "続"}
+            </span>
+            <div className="relative p-6 text-center">
+              <p className="font-display font-bold text-[13px] uppercase tracking-[0.12em] opacity-75">
+                Session complete
+              </p>
+              <p className="font-display font-extrabold text-mega tnum mt-2">
+                {accuracy}
+                <span className="text-3xl align-top">%</span>
+              </p>
+              <p className="font-display font-bold text-[17px] mt-1">
+                {great
+                  ? "That set is well in hand."
+                  : accuracy >= 50
+                    ? "Coming along nicely."
+                    : "Worth another run shortly."}
+              </p>
+            </div>
           </div>
 
-          <Card className="p-6 space-y-5">
-            <div className="text-center">
-              <p className="text-[3.25rem] leading-none font-semibold tracking-[-0.03em] tnum">
-                {accuracy}
-                <span className="text-2xl text-text-muted font-medium">%</span>
-              </p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle mt-2">
-                Accuracy
-              </p>
-            </div>
-            <div className="grid grid-cols-3 divide-x divide-line border-t border-line pt-4">
-              {[
-                { label: "Correct", value: correct, tone: "var(--success)" },
-                { label: "Missed", value: total - correct, tone: "var(--danger)" },
-                { label: "Total", value: total, tone: "var(--text)" },
-              ].map((s) => (
-                <div key={s.label} className="text-center px-2">
-                  <p className="text-xl font-semibold tnum" style={{ color: `hsl(${s.tone})` }}>
-                    {s.value}
-                  </p>
-                  <p className="text-[11px] text-text-subtle mt-0.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
+          <div className="grid grid-cols-3 gap-2.5 stagger">
+            {[
+              { label: "Correct", value: correct, tone: "var(--lime)" },
+              { label: "Missed", value: total - correct, tone: "var(--rose)" },
+              { label: "Best run", value: best, tone: "var(--sun)" },
+            ].map((stat) => (
+              <div
+                key={stat.label}
+                className="rounded-tile border-2 border-line bg-surface card-ledge py-3.5 text-center"
+              >
+                <p
+                  className="font-display font-extrabold text-[26px] tnum leading-none"
+                  style={{ color: `hsl(${stat.tone})` }}
+                >
+                  {stat.value}
+                </p>
+                <p className="text-[11px] font-bold text-text-subtle mt-1.5 uppercase tracking-wider">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
 
-          <div className="space-y-2.5">
-            <button onClick={onPracticeAgain} className={buttonStyles({ size: "lg", full: true })}>
-              Practice again
+          <div className="space-y-3 pt-1">
+            <button
+              onClick={onPracticeAgain}
+              className={buttonStyles({ size: "lg", full: true })}
+              style={buttonVars("primary")}
+            >
+              Go again
             </button>
-            <Link href="/dashboard" className={buttonStyles({ variant: "secondary", size: "lg", full: true })}>
+            <Link
+              href="/dashboard"
+              className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
+              style={buttonVars("secondary")}
+            >
               Back to dashboard
             </Link>
           </div>
@@ -624,9 +695,10 @@ function PracticePageInner() {
 
   const [view, setView] = useState<View>(autoType ? "loading" : "selection");
   const [items, setItems] = useState<PracticeItem[]>([]);
-  const [results, setResults] = useState<{ correct: number; total: number }>({
+  const [results, setResults] = useState<{ correct: number; total: number; best: number }>({
     correct: 0,
     total: 0,
+    best: 0,
   });
 
   useEffect(() => {
@@ -657,8 +729,8 @@ function PracticePageInner() {
     setView("practice");
   }
 
-  function handleFinish(correct: number, total: number) {
-    setResults({ correct, total });
+  function handleFinish(correct: number, total: number, best: number) {
+    setResults({ correct, total, best });
     setView("summary");
   }
 
@@ -680,6 +752,7 @@ function PracticePageInner() {
       <SummaryView
         correct={results.correct}
         total={results.total}
+        best={results.best}
         onPracticeAgain={handlePracticeAgain}
       />
     );

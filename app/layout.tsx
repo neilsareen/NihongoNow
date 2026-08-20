@@ -1,14 +1,24 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { PWAUpdateBanner } from "@/app/components/pwa-update-banner";
 
-// One typeface for the whole product. The previous build paired Inter with a
-// rounded display face, which is what made headings read as a children's app;
-// hierarchy here comes from weight, size and tracking instead.
-const inter = Inter({
+// Two faces with a clear division of labour. Outfit is geometric and gets
+// heavy fast, so it carries headlines and big numerals where personality
+// belongs; Plus Jakarta Sans is warm but quiet enough to read a paragraph in.
+// The display face never runs at body size — that was what tipped the first
+// build from friendly into childish.
+const display = Outfit({
   subsets: ["latin"],
+  weight: ["600", "700", "800"],
+  display: "swap",
+  variable: "--font-display",
+});
+
+const sans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   display: "swap",
   variable: "--font-sans",
 });
@@ -30,7 +40,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0F1115",
+  themeColor: "#130C1F",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -39,7 +49,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} ${inter.className} min-h-screen bg-canvas text-text antialiased`}>
+      <body className={`${sans.variable} ${display.variable} ${sans.className} min-h-screen bg-ink text-text antialiased`}>
         {children}
         <PWAUpdateBanner />
         <Script id="sw-register" strategy="afterInteractive">{`

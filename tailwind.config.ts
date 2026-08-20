@@ -1,11 +1,10 @@
 import type { Config } from "tailwindcss";
 
 /**
- * The palette is defined once in `app/globals.css` as raw HSL triples and
- * surfaced here through a helper so every colour supports Tailwind's alpha
- * syntax (`bg-surface/60`, `text-accent/70`). Nothing hard-codes a hex value
- * outside the token block, which keeps the whole interface re-themable from
- * one place.
+ * Colours live once in `app/globals.css` as raw HSL triples and are surfaced
+ * here through a helper, so each one supports Tailwind's alpha syntax
+ * (`bg-coral/15`, `text-lime/70`) and the whole interface stays re-themable
+ * from a single block.
  */
 const token = (name: string) => `hsl(var(--${name}) / <alpha-value>)`;
 
@@ -19,11 +18,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: token("canvas"),
+        ink: {
+          DEFAULT: token("ink"),
+          deep: token("ink-deep"),
+        },
         surface: {
           DEFAULT: token("surface"),
           raised: token("surface-raised"),
-          sunken: token("surface-sunken"),
         },
         line: {
           DEFAULT: token("line"),
@@ -34,45 +35,38 @@ const config: Config = {
           muted: token("text-muted"),
           subtle: token("text-subtle"),
         },
-        accent: {
-          DEFAULT: token("accent"),
-          hover: token("accent-hover"),
-          fg: token("accent-fg"),
-        },
-        success: token("success"),
-        danger: token("danger"),
-        warning: token("warning"),
-        track: {
-          hiragana: token("track-hiragana"),
-          katakana: token("track-katakana"),
-          kanji: token("track-kanji"),
-          vocab: token("track-vocab"),
-          phrase: token("track-phrase"),
+
+        // The cast. `-deep` variants are ledge colours, not fills.
+        coral: { DEFAULT: token("coral"), deep: token("coral-deep") },
+        lime: { DEFAULT: token("lime"), deep: token("lime-deep") },
+        sun: { DEFAULT: token("sun"), deep: token("sun-deep") },
+        sky: { DEFAULT: token("sky"), deep: token("sky-deep") },
+        grape: { DEFAULT: token("grape"), deep: token("grape-deep") },
+        blossom: { DEFAULT: token("blossom"), deep: token("blossom-deep") },
+        rose: { DEFAULT: token("rose"), deep: token("rose-deep") },
+
+        on: {
+          light: token("on-light"),
+          dark: token("on-dark"),
         },
       },
       borderRadius: {
-        sm: "calc(var(--radius) - 4px)",
-        md: "calc(var(--radius) - 2px)",
-        lg: "var(--radius)",
-        xl: "calc(var(--radius) + 4px)",
-        "2xl": "calc(var(--radius) + 10px)",
+        tile: "1.125rem",
+        card: "1.5rem",
+        blob: "2rem",
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "system-ui", "sans-serif"],
       },
       fontSize: {
-        // A display step for the few places that need real presence — hero
-        // headline, score readouts — without reaching for arbitrary values.
-        display: ["2.5rem", { lineHeight: "1.1", letterSpacing: "-0.03em" }],
-      },
-      boxShadow: {
-        // Neutral, low-spread elevation. No coloured glows: they were the
-        // single largest source of the old "toy" impression.
-        subtle: "0 1px 2px 0 rgb(0 0 0 / 0.35)",
-        card: "0 1px 2px 0 rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6)",
-        lifted: "0 2px 4px 0 rgb(0 0 0 / 0.3), 0 16px 40px -16px rgb(0 0 0 / 0.7)",
+        // Oversized numerals and headlines carry a lot of this design, so the
+        // big end of the scale is named rather than written as arbitrary values.
+        hero: ["3.25rem", { lineHeight: "1.02", letterSpacing: "-0.035em" }],
+        mega: ["4.5rem", { lineHeight: "0.95", letterSpacing: "-0.04em" }],
       },
       transitionTimingFunction: {
-        // Fast out, settled in — matches the platform curves users already
-        // read as "responsive" rather than "springy".
-        swift: "cubic-bezier(0.2, 0, 0, 1)",
+        bounce: "cubic-bezier(0.2, 0.9, 0.3, 1.2)",
       },
     },
   },

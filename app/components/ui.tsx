@@ -5,33 +5,63 @@ import { cn } from "@/lib/utils";
 /* ===========================================================================
    Shared interface primitives.
    ---------------------------------------------------------------------------
-   Every screen composes from this file rather than restating paddings, radii
-   and states inline. These are all presentational (no hooks, no handlers), so
-   server and client pages can both import them.
+   Presentational only (no hooks, no handlers), so server and client pages can
+   both import them. Everything chunky in this app comes from here, which is
+   what keeps "playful" from drifting into "inconsistent".
    =========================================================================== */
 
 /* --- Buttons -------------------------------------------------------------- */
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "success";
+type ButtonVariant =
+  | "primary"   // coral — the one main action on a screen
+  | "affirm"    // lime — "I knew it"
+  | "reject"    // rose — "show me again"
+  | "sun"
+  | "grape"
+  | "secondary" // raised surface, for anything supporting
+  | "ghost";
+
 type ButtonSize = "sm" | "md" | "lg";
 
-const VARIANT: Record<ButtonVariant, string> = {
-  primary:
-    "bg-accent text-accent-fg hover:bg-accent-hover shadow-subtle disabled:hover:bg-accent",
-  secondary:
-    "bg-surface-raised text-text border border-line hover:border-line-strong hover:bg-surface-raised/70",
-  ghost:
-    "text-text-muted hover:text-text hover:bg-surface-raised",
-  danger:
-    "bg-danger/10 text-danger border border-danger/25 hover:bg-danger/16 hover:border-danger/40",
-  success:
-    "bg-success/10 text-success border border-success/25 hover:bg-success/16 hover:border-success/40",
+/**
+ * Filled variants carry their own ledge colour via the `--ledge` custom
+ * property, which `.ledge` in globals.css reads. Bright fills take ink text
+ * rather than white: white on lime or sun fails contrast badly.
+ */
+const VARIANT: Record<ButtonVariant, { className: string; style?: CSSProperties }> = {
+  primary: {
+    className: "bg-coral text-on-dark hover:brightness-110",
+    style: { ["--ledge" as string]: "var(--coral-deep)" },
+  },
+  affirm: {
+    className: "bg-lime text-on-light hover:brightness-110",
+    style: { ["--ledge" as string]: "var(--lime-deep)" },
+  },
+  reject: {
+    className: "bg-rose text-on-dark hover:brightness-110",
+    style: { ["--ledge" as string]: "var(--rose-deep)" },
+  },
+  sun: {
+    className: "bg-sun text-on-light hover:brightness-110",
+    style: { ["--ledge" as string]: "var(--sun-deep)" },
+  },
+  grape: {
+    className: "bg-grape text-on-light hover:brightness-110",
+    style: { ["--ledge" as string]: "var(--grape-deep)" },
+  },
+  secondary: {
+    className: "bg-surface-raised text-text border-2 border-line hover:border-line-strong",
+    style: { ["--ledge" as string]: "var(--line)" },
+  },
+  ghost: {
+    className: "text-text-muted hover:text-text hover:bg-surface-raised",
+  },
 };
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: "h-8 px-3 text-[13px] rounded-md gap-1.5",
-  md: "h-10 px-4 text-sm rounded-lg gap-2",
-  lg: "h-12 px-5 text-[15px] rounded-lg gap-2",
+  sm: "h-9 px-4 text-[13px] gap-1.5",
+  md: "h-12 px-6 text-[15px] gap-2",
+  lg: "h-14 px-7 text-base gap-2.5",
 };
 
 export function buttonStyles({
@@ -45,17 +75,23 @@ export function buttonStyles({
   full?: boolean;
   className?: string;
 } = {}) {
+  const v = VARIANT[variant];
   return cn(
-    "inline-flex items-center justify-center font-medium select-none",
-    "transition-colors duration-150 ease-swift",
-    // A 1px press translation reads as a physical button without the cartoon
-    // scale-bounce the old design used.
-    "active:translate-y-px disabled:opacity-45 disabled:pointer-events-none",
-    VARIANT[variant],
+    "inline-flex items-center justify-center rounded-full select-none",
+    "font-display font-bold tracking-tight",
+    "transition-[filter,background-color,border-color] duration-100",
+    "disabled:opacity-40 disabled:pointer-events-none",
+    variant !== "ghost" && (size === "sm" ? "ledge-sm" : "ledge"),
+    v.className,
     SIZE[size],
     full && "w-full",
     className
   );
+}
+
+/** Paired with `buttonStyles` — supplies the ledge colour for filled variants. */
+export function buttonVars(variant: ButtonVariant = "primary"): CSSProperties {
+  return VARIANT[variant].style ?? {};
 }
 
 /* --- Surfaces ------------------------------------------------------------- */
@@ -63,20 +99,70 @@ export function buttonStyles({
 export function Card({
   children,
   className,
+  ledge = true,
   as: As = "div",
 }: {
   children: ReactNode;
   className?: string;
+  /** The solid block beneath the card. Off for nested or inline panels. */
+  ledge?: boolean;
   as?: "div" | "section" | "article";
 }) {
   return (
-    <As className={cn("bg-surface border border-line rounded-xl shadow-subtle", className)}>
+    <As
+      className={cn(
+        "bg-surface border-2 border-line rounded-card",
+        ledge && "card-ledge",
+        className
+      )}
+    >
       {children}
     </As>
   );
 }
 
-/** Small uppercase caption that opens a section. Sets rhythm across screens. */
+/**
+ * A card that IS a colour — the Headspace move. Used sparingly, for the one
+ * thing on a screen that should be impossible to miss.
+ */
+export function ColorCard({
+  hue,
+  ledgeHue,
+  children,
+  className,
+  href,
+}: {
+  /** HSL triple or var() reference for the fill. */
+  hue: string;
+  /**
+   * The block beneath the card. Defaults to the deepest ink, which reads as a
+   * shadow under any fill — pass a hue's own `-deep` token for a tighter,
+   * more saturated stack.
+   */
+  ledgeHue?: string;
+  children: ReactNode;
+  className?: string;
+  href?: string;
+}) {
+  const style = {
+    background: `hsl(${hue})`,
+    ["--ledge" as string]: ledgeHue ?? "var(--ink-deep)",
+  } as CSSProperties;
+
+  const cls = cn(
+    "block rounded-card text-on-light overflow-hidden",
+    href ? "ledge" : "card-ledge",
+    className
+  );
+
+  return href ? (
+    <Link href={href} className={cls} style={style}>{children}</Link>
+  ) : (
+    <div className={cls} style={style}>{children}</div>
+  );
+}
+
+/** Section heading. Big and confident rather than a whispered caption. */
 export function SectionLabel({
   children,
   className,
@@ -85,14 +171,43 @@ export function SectionLabel({
   className?: string;
 }) {
   return (
-    <h2
-      className={cn(
-        "text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle",
-        className
-      )}
-    >
+    <h2 className={cn("font-display font-bold text-[17px] tracking-tight", className)}>
       {children}
     </h2>
+  );
+}
+
+/** Rounded pill for counts and statuses. */
+export function Chip({
+  children,
+  hue,
+  className,
+}: {
+  children: ReactNode;
+  /** HSL triple or var() reference; omit for a neutral chip. */
+  hue?: string;
+  className?: string;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 h-8 px-3 rounded-full",
+        "font-display font-bold text-[13px] border-2",
+        !hue && "bg-surface-raised border-line text-text",
+        className
+      )}
+      style={
+        hue
+          ? {
+              background: `hsl(${hue} / 0.18)`,
+              borderColor: `hsl(${hue} / 0.45)`,
+              color: `hsl(${hue})`,
+            }
+          : undefined
+      }
+    >
+      {children}
+    </span>
   );
 }
 
@@ -100,47 +215,48 @@ export function SectionLabel({
 
 export function ProgressBar({
   value,
+  hue,
   className,
-  barClassName,
   trackClassName,
-  barStyle,
 }: {
   /** 0–100 */
   value: number;
+  /** HSL triple or var() reference. Defaults to lime. */
+  hue?: string;
   className?: string;
-  barClassName?: string;
   trackClassName?: string;
-  /** For per-track hues that come from data rather than a fixed class. */
-  barStyle?: CSSProperties;
 }) {
   const pct = Math.max(0, Math.min(100, value));
   return (
     <div
-      className={cn("h-1.5 rounded-full overflow-hidden bg-surface-raised", trackClassName, className)}
+      className={cn("h-3 rounded-full overflow-hidden bg-ink-deep", trackClassName, className)}
       role="progressbar"
       aria-valuenow={Math.round(pct)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
       <div
-        className={cn("h-full rounded-full bg-accent transition-[width] duration-500 ease-swift", barClassName)}
-        style={{ width: `${pct}%`, ...barStyle }}
+        className="h-full rounded-full transition-[width] duration-700 ease-bounce"
+        style={{
+          width: `${pct}%`,
+          background: `hsl(${hue ?? "var(--lime)"})`,
+          // A light top edge reads as a rounded surface rather than a flat bar.
+          boxShadow: "inset 0 2px 0 0 rgb(255 255 255 / 0.28)",
+        }}
       />
     </div>
   );
 }
 
 /**
- * A stroked SVG ring. The old build drew these with `conic-gradient`, which
- * aliases badly on the arc edge and cannot round its cap; a stroked circle is
- * crisp at any size and animates cleanly.
+ * Thick stroked ring, in the spirit of the Fitness rings: heavy stroke, round
+ * caps, a track dark enough that the arc reads as a solid object.
  */
 export function Ring({
   value,
-  size = 56,
-  thickness = 4,
-  color = "hsl(var(--accent))",
-  trackColor = "hsl(var(--line))",
+  size = 64,
+  thickness = 8,
+  hue = "var(--lime)",
   children,
   className,
 }: {
@@ -148,8 +264,7 @@ export function Ring({
   value: number;
   size?: number;
   thickness?: number;
-  color?: string;
-  trackColor?: string;
+  hue?: string;
   children?: ReactNode;
   className?: string;
 }) {
@@ -163,25 +278,16 @@ export function Ring({
       style={{ width: size, height: size }}
     >
       <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke="hsl(var(--ink-deep))" strokeWidth={thickness} />
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={trackColor}
-          strokeWidth={thickness}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={color}
+          cx={size / 2} cy={size / 2} r={r} fill="none"
+          stroke={`hsl(${hue})`}
           strokeWidth={thickness}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - pct / 100)}
-          className="transition-[stroke-dashoffset] duration-700 ease-swift"
+          className="transition-[stroke-dashoffset] duration-1000 ease-bounce"
         />
       </svg>
       {children != null && (
@@ -193,62 +299,61 @@ export function Ring({
 
 /* --- Navigation ----------------------------------------------------------- */
 
-/**
- * Sticky page header used by every full-screen route outside the tab bar.
- * Keeps the back affordance, title and optional trailing slot in one place so
- * headers don't drift apart screen to screen.
- */
 export function TopBar({
   title,
   backHref = "/dashboard",
-  backLabel = "Back",
   trailing,
 }: {
   title?: string;
   backHref?: string;
-  backLabel?: string;
   trailing?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-canvas/85 backdrop-blur-xl">
-      <div className="max-w-lg mx-auto h-14 px-4 flex items-center gap-3">
+    <header className="sticky top-0 z-40 bg-ink/90 backdrop-blur-xl">
+      <div className="max-w-lg mx-auto h-16 px-4 flex items-center gap-3">
         <Link
           href={backHref}
-          className="text-[13px] text-text-muted hover:text-text transition-colors -ml-1 px-1 py-1 rounded"
+          aria-label="Back"
+          className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border-2 border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
         >
-          ← {backLabel}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2.2"
+              strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </Link>
         {title && (
-          <span className="flex-1 text-center text-[13px] font-medium text-text">
+          <span className="flex-1 text-center font-display font-bold text-[17px] tracking-tight">
             {title}
           </span>
         )}
-        <div className="min-w-[3.5rem] flex justify-end items-center">{trailing}</div>
+        <div className="w-10 flex justify-end items-center shrink-0">{trailing}</div>
       </div>
     </header>
   );
 }
 
-/** The 行 wordmark, used on auth and marketing screens. */
+/** The 行 wordmark. */
 export function Wordmark({ className }: { className?: string }) {
   return (
-    <span className={cn("inline-flex items-center gap-2", className)}>
-      <span className="w-8 h-8 rounded-lg bg-accent/12 border border-accent/25 grid place-items-center">
-        <span className="jp text-accent text-[15px] font-semibold leading-none">行</span>
+    <span className={cn("inline-flex items-center gap-2.5", className)}>
+      <span
+        className="w-9 h-9 rounded-tile grid place-items-center card-ledge"
+        style={{ background: "hsl(var(--coral))", ["--ledge" as string]: "var(--coral-deep)" }}
+      >
+        <span className="jp text-on-dark text-[17px] font-bold leading-none">行</span>
       </span>
-      <span className="font-semibold tracking-tight">Ikou</span>
+      <span className="font-display font-extrabold tracking-tight text-[19px]">Ikou</span>
     </span>
   );
 }
 
 /**
- * Profile avatar: a single kanji set on a tinted plate. Each option carries its
- * own hue so the mark stays recognisable at tab-bar size, where an illustration
- * would just be mud.
+ * Profile avatar: a kanji on a colour plate. Reads as a considered mark at
+ * every size, where a cartoon illustration turns to mud in a tab bar.
  */
 export function Avatar({
   avatar,
-  size = 40,
+  size = 48,
   className,
 }: {
   avatar: { glyph: string; label: string; tone: string };
@@ -257,20 +362,17 @@ export function Avatar({
 }) {
   return (
     <span
-      className={cn(
-        "inline-grid place-items-center rounded-full border shrink-0 select-none",
-        className
-      )}
+      className={cn("inline-grid place-items-center rounded-tile shrink-0 select-none card-ledge", className)}
       style={{
         width: size,
         height: size,
-        background: `hsl(${avatar.tone} / 0.14)`,
-        borderColor: `hsl(${avatar.tone} / 0.32)`,
-        color: `hsl(${avatar.tone})`,
+        background: `hsl(${avatar.tone})`,
+        color: "hsl(var(--on-light))",
+        ["--ledge" as string]: `hsl(${avatar.tone} / 0.45)`,
       }}
       aria-hidden="true"
     >
-      <span className="jp font-medium leading-none" style={{ fontSize: size * 0.46 }}>
+      <span className="jp font-bold leading-none" style={{ fontSize: size * 0.46 }}>
         {avatar.glyph}
       </span>
     </span>

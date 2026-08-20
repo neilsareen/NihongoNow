@@ -5,49 +5,62 @@
 /* ===========================================================================
    Design tokens
    ---------------------------------------------------------------------------
-   One dark theme, built on a near-neutral slate ground with a single indigo
-   accent. Colour is spent deliberately: the accent marks the one action worth
-   taking on a screen, semantic hues mark correctness, and everything else is
-   neutral. Values are raw HSL triples so Tailwind can compose them with an
-   alpha channel (e.g. `bg-accent/12`).
+   A deep violet-ink ground carrying a cast of six high-chroma flat colours.
+   Two rules keep this energetic rather than cheap:
+
+   1. Colour is FLAT and it MEANS something. Every content track owns one hue
+      and keeps it on every screen, so colour is navigation, not decoration.
+      (The build before last smeared one orange-pink gradient over every
+      surface — that is what read as a toy.)
+   2. Depth comes from solid ledges, never from blurred coloured glow.
+
+   Values are raw HSL triples so Tailwind can compose them with alpha.
    =========================================================================== */
 
 @layer base {
   :root {
-    /* Surfaces — each step is a real elevation level, not a decoration. */
-    --canvas: 225 16% 7%;
-    --surface: 225 14% 10%;
-    --surface-raised: 225 13% 13%;
-    --surface-sunken: 225 18% 5%;
+    /* Ground — violet ink, deliberately warm. A neutral slate here is what
+       made the last pass feel like a dashboard for accountants. */
+    --ink: 265 45% 8%;
+    --ink-deep: 266 52% 5%;
+    --surface: 264 34% 14%;
+    --surface-raised: 263 30% 20%;
 
-    /* Hairlines. `line` is the default; `line-strong` marks hover/focus. */
-    --line: 225 12% 18%;
-    --line-strong: 225 12% 28%;
+    /* 2px borders, not hairlines — the chunk is the point. */
+    --line: 263 26% 26%;
+    --line-strong: 263 26% 38%;
 
-    /* Text — three levels only, so hierarchy stays readable. */
-    --text: 220 22% 97%;
-    --text-muted: 220 10% 63%;
-    --text-subtle: 220 9% 44%;
+    --text: 270 30% 97%;
+    --text-muted: 268 18% 74%;
+    --text-subtle: 266 14% 56%;
 
-    /* Accent: ai-iro, the indigo of traditional Japanese dye. */
-    --accent: 232 72% 63%;
-    --accent-hover: 232 76% 69%;
-    --accent-fg: 0 0% 100%;
+    /* The cast. Each is usable as a fill with `--on-<x>` as its text colour. */
+    --coral: 16 92% 61%;          /* primary action */
+    --coral-deep: 12 78% 46%;     /* its pressed ledge */
+    --lime: 82 78% 55%;           /* affirmative, correct */
+    --lime-deep: 84 70% 38%;
+    --sun: 44 98% 58%;            /* streaks, kanji */
+    --sun-deep: 38 90% 44%;
+    --sky: 196 90% 56%;           /* katakana */
+    --sky-deep: 200 82% 40%;
+    --grape: 272 82% 70%;         /* vocabulary */
+    --grape-deep: 270 68% 50%;
+    --blossom: 330 86% 68%;       /* hiragana */
+    --blossom-deep: 332 70% 48%;
+    --rose: 352 85% 63%;          /* incorrect */
+    --rose-deep: 350 72% 44%;
 
-    /* Semantic */
-    --success: 152 48% 45%;
-    --danger: 357 64% 60%;
-    --warning: 38 78% 56%;
+    /* Text that sits ON a saturated fill. Bright fills take ink, not white:
+       white on lime or sun fails contrast and looks washed out. */
+    --on-light: 266 60% 10%;
+    --on-dark: 0 0% 100%;
 
-    /* Category hues for the five content tracks. Deliberately desaturated —
-       they need to sit side by side in charts without shouting. */
-    --track-hiragana: 232 66% 64%;
-    --track-katakana: 174 48% 45%;
-    --track-kanji: 36 62% 55%;
-    --track-vocab: 268 46% 63%;
-    --track-phrase: 342 48% 60%;
-
-    --radius: 0.625rem;
+    /* Track hues, aliased so screens name the content, not the colour. */
+    --track-hiragana: var(--blossom);
+    --track-katakana: var(--sky);
+    --track-kanji: var(--sun);
+    --track-vocab: var(--grape);
+    --track-phrase: var(--lime);
 
     color-scheme: dark;
   }
@@ -63,38 +76,38 @@
   }
 
   body {
-    @apply bg-canvas text-text antialiased;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    @apply bg-ink text-text antialiased;
   }
 
-  /* Headings carry slightly negative tracking; at display sizes Inter's
-     default spacing reads loose and unresolved. */
-  h1, h2, h3, h4 {
-    @apply tracking-tight;
+  /* Display face for headings; the UI face carries everything else. */
+  h1, h2, h3 {
+    font-family: var(--font-display), system-ui, sans-serif;
+    @apply font-bold tracking-tight;
   }
 
-  /* A visible, consistent focus ring everywhere — keyboard users get the same
-     affordance mouse users get from hover. */
   :focus-visible {
-    outline: 2px solid hsl(var(--accent));
-    outline-offset: 2px;
-    border-radius: 4px;
+    outline: 3px solid hsl(var(--sun));
+    outline-offset: 3px;
+    border-radius: 8px;
   }
 
   ::selection {
-    background: hsl(var(--accent) / 0.35);
+    background: hsl(var(--coral) / 0.4);
   }
 
-  /* Numerals in stats must not reflow as values change. */
   .tnum {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
+
+  .font-display {
+    font-family: var(--font-display), system-ui, sans-serif;
+  }
 }
 
 /* ---------------------------------------------------------------------------
-   Japanese glyphs. Kana and kanji need a face designed for them; Inter falls
-   back to whatever the OS picks, which varies wildly in weight and metrics.
+   Japanese glyphs — the app's real graphic language. Kana and kanji get a face
+   designed for them; Inter-class fallbacks vary wildly between platforms.
    --------------------------------------------------------------------------- */
 .jp {
   font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
@@ -102,7 +115,6 @@
   font-feature-settings: "palt";
 }
 
-/* Legacy alias — kept so any straggling markup keeps its Japanese face. */
 .jp-char {
   @apply jp;
 }
@@ -111,55 +123,107 @@
   padding-top: max(1rem, env(safe-area-inset-top));
 }
 
-.safe-bottom {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+/* ---------------------------------------------------------------------------
+   The pressable ledge.
+   ---------------------------------------------------------------------------
+   A solid block of colour below the button that compresses when pressed. It is
+   the single detail that makes an interface feel like a thing you touch rather
+   than a page you click, and it costs one box-shadow. Set --ledge to the
+   darker shade of whatever fill the element carries.
+   --------------------------------------------------------------------------- */
+.ledge {
+  box-shadow: 0 4px 0 0 hsl(var(--ledge, var(--line-strong)));
+  transition: box-shadow 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.ledge:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 0 hsl(var(--ledge, var(--line-strong)));
+}
+
+.ledge-sm {
+  box-shadow: 0 3px 0 0 hsl(var(--ledge, var(--line-strong)));
+  transition: box-shadow 0.1s ease-out, transform 0.1s ease-out;
+}
+
+.ledge-sm:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 0 0 0 hsl(var(--ledge, var(--line-strong)));
+}
+
+/* Cards get the same treatment at rest, which is what gives the interface its
+   stacked, physical quality. */
+.card-ledge {
+  box-shadow: 0 4px 0 0 hsl(var(--ledge, var(--line)));
 }
 
 /* ---------------------------------------------------------------------------
-   Motion. Short, single-direction, no overshoot: the interface should feel
-   quick rather than playful.
+   Motion — all of it reactive.
+   ---------------------------------------------------------------------------
+   Every animation here fires in response to something the learner did. The
+   old build looped float/wiggle/bounce forever on idle elements, which reads
+   as a screensaver rather than as feedback.
    --------------------------------------------------------------------------- */
-@keyframes enter-up {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: none; }
+@keyframes pop-in {
+  0% { opacity: 0; transform: scale(0.94) translateY(10px); }
+  60% { opacity: 1; transform: scale(1.01) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
 }
 
-@keyframes enter-fade {
+@keyframes pop {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-7px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes fade {
   from { opacity: 0; }
-  to   { opacity: 1; }
+  to { opacity: 1; }
 }
 
-@keyframes flag {
-  0%   { transform: translateX(0); }
-  25%  { transform: translateX(-3px); }
-  75%  { transform: translateX(3px); }
-  100% { transform: translateX(0); }
+@keyframes burst {
+  0% { opacity: 1; transform: scale(0.3); }
+  100% { opacity: 0; transform: scale(2.4); }
 }
 
-.animate-enter {
-  animation: enter-up 0.22s cubic-bezier(0.2, 0, 0, 1) both;
-}
+.animate-pop-in { animation: pop-in 0.32s cubic-bezier(0.2, 0.9, 0.3, 1.2) both; }
+.animate-pop { animation: pop 0.34s cubic-bezier(0.3, 1.4, 0.5, 1); }
+.animate-shake { animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+.animate-rise { animation: rise 0.36s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.animate-fade { animation: fade 0.2s ease-out both; }
+.animate-burst { animation: burst 0.5s ease-out forwards; }
 
-.animate-fade {
-  animation: enter-fade 0.18s ease-out both;
-}
-
-.animate-flag {
-  animation: flag 0.24s ease-in-out;
-}
+/* Staggered entrance for lists, so a screen assembles instead of appearing. */
+.stagger > * { animation: rise 0.36s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+.stagger > *:nth-child(1) { animation-delay: 0.02s; }
+.stagger > *:nth-child(2) { animation-delay: 0.06s; }
+.stagger > *:nth-child(3) { animation-delay: 0.1s; }
+.stagger > *:nth-child(4) { animation-delay: 0.14s; }
+.stagger > *:nth-child(5) { animation-delay: 0.18s; }
+.stagger > *:nth-child(6) { animation-delay: 0.22s; }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
   }
+  .ledge:active:not(:disabled),
+  .ledge-sm:active:not(:disabled) { transform: none; }
 }
 
-/* Hides scrollbars on horizontally scrollable strips without disabling the
-   scroll itself. */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }

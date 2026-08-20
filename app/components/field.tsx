@@ -15,16 +15,19 @@ export function Field({
 }: { label: string } & InputHTMLAttributes<HTMLInputElement>) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={id} className="block text-[13px] font-medium text-text-muted">
+      <label
+        htmlFor={id}
+        className="block font-display text-[12px] font-bold uppercase tracking-[0.08em] text-text-subtle"
+      >
         {label}
       </label>
       <input
         id={id}
         className={cn(
-          "w-full h-10 px-3 rounded-lg text-sm",
-          "bg-surface-sunken border border-line text-text placeholder:text-text-subtle",
-          "transition-colors duration-150 ease-swift",
-          "hover:border-line-strong focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent",
+          "w-full h-12 px-4 rounded-tile text-[15px] font-medium",
+          "bg-ink-deep border-2 border-line text-text placeholder:text-text-subtle",
+          "transition-colors duration-150",
+          "hover:border-line-strong focus:border-coral focus:outline-none",
           className
         )}
         {...props}

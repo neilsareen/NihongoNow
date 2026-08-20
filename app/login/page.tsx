@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { Field } from "@/app/components/field";
 import { GoogleMark } from "@/app/components/google-mark";
-import { Card, Wordmark, buttonStyles } from "@/app/components/ui";
+import { Card, Wordmark, buttonStyles, buttonVars } from "@/app/components/ui";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -40,19 +40,19 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-3">
           <Link href="/" className="inline-block">
-            <Wordmark className="text-base" />
+            <Wordmark />
           </Link>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight">Welcome back</h1>
-            <p className="text-[13px] text-text-muted">Pick up where you left off.</p>
+            <h1 className="text-[28px]">Welcome back</h1>
+            <p className="text-[15px] text-text-muted font-medium">Pick up where you left off.</p>
           </div>
         </div>
 
-        <Card className="p-6 space-y-5">
+        <Card className="p-6 space-y-5 animate-pop-in">
           {error && (
             <p
               role="alert"
-              className="text-[13px] text-danger bg-danger/10 border border-danger/25 rounded-lg px-3 py-2.5 leading-relaxed"
+              className="text-[14px] text-rose bg-rose/12 border-2 border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
             >
               {error}
             </p>
@@ -79,29 +79,31 @@ export default function LoginPage() {
               required
               placeholder="••••••••"
             />
-            <button type="submit" disabled={loading} className={buttonStyles({ full: true })}>
+            <button type="submit" disabled={loading} className={buttonStyles({ full: true, size: "lg" })}
+              style={buttonVars("primary")}>
               {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-line" />
+              <div className="w-full border-t-2 border-line" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-2 bg-surface text-[11px] uppercase tracking-wider text-text-subtle">or</span>
+              <span className="px-3 bg-surface font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle">or</span>
             </div>
           </div>
 
-          <button onClick={handleGoogleLogin} className={buttonStyles({ variant: "secondary", full: true })}>
+          <button onClick={handleGoogleLogin} className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
+            style={buttonVars("secondary")}>
             <GoogleMark />
             Continue with Google
           </button>
         </Card>
 
-        <p className="text-center text-[13px] text-text-subtle">
+        <p className="text-center text-[14px] text-text-subtle font-medium">
           Don&apos;t have an account?{" "}
-          <Link href="/signup" className="text-text-muted hover:text-text transition-colors font-medium">
+          <Link href="/signup" className="text-coral hover:brightness-110 transition-all font-bold">
             Sign up
           </Link>
         </p>

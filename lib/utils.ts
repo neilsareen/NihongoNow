@@ -54,22 +54,22 @@ export function pickPrimaryKanjiReading(
   return (onyomi[0] ?? kunyomi[0] ?? "").replace(/-/g, "");
 }
 
-// Selectable profile avatars, rendered as typographic kanji rather than
-// illustrations: a single well-set glyph reads as a considered mark at every
-// size, where the previous 3D cartoon PNGs pulled the whole interface toward
-// looking like a game. Keys are unchanged — they are persisted in
+// Selectable profile avatars, rendered as a kanji on a saturated colour plate
+// rather than as illustrations: a well-set glyph stays a considered mark at
+// every size, where a cartoon turns to mud in a tab bar. Tones are bright
+// enough to carry dark text on top. Keys are unchanged — they are persisted in
 // UserProfile.avatarUrl, so existing profiles keep their selection.
 export const AVATAR_OPTIONS = [
-  { key: "samurai", glyph: "侍", label: "Samurai", meaning: "Warrior",  tone: "232 66% 64%" },
-  { key: "dragon",  glyph: "龍", label: "Dragon",  meaning: "Dragon",   tone: "268 46% 63%" },
-  { key: "sakura",  glyph: "桜", label: "Sakura",  meaning: "Blossom",  tone: "342 48% 64%" },
-  { key: "koi",     glyph: "鯉", label: "Koi",     meaning: "Carp",     tone: "14 62% 58%" },
-  { key: "fuji",    glyph: "富", label: "Fuji",    meaning: "Abundance",tone: "205 55% 55%" },
-  { key: "usagi",   glyph: "兎", label: "Usagi",   meaning: "Rabbit",   tone: "174 42% 50%" },
-  { key: "neko",    glyph: "猫", label: "Neko",    meaning: "Cat",      tone: "36 58% 56%" },
-  { key: "fortune", glyph: "福", label: "Fortune", meaning: "Fortune",  tone: "45 60% 55%" },
-  { key: "wa",      glyph: "和", label: "Wa",      meaning: "Harmony",  tone: "152 40% 48%" },
-  { key: "kimono",  glyph: "着", label: "Kimono",  meaning: "To wear",  tone: "290 40% 62%" },
+  { key: "samurai", glyph: "侍", label: "Samurai", meaning: "Warrior",   tone: "196 90% 60%" },
+  { key: "dragon",  glyph: "龍", label: "Dragon",  meaning: "Dragon",    tone: "272 82% 72%" },
+  { key: "sakura",  glyph: "桜", label: "Sakura",  meaning: "Blossom",   tone: "330 86% 72%" },
+  { key: "koi",     glyph: "鯉", label: "Koi",     meaning: "Carp",      tone: "16 92% 64%" },
+  { key: "fuji",    glyph: "富", label: "Fuji",    meaning: "Abundance", tone: "168 70% 55%" },
+  { key: "usagi",   glyph: "兎", label: "Usagi",   meaning: "Rabbit",    tone: "82 78% 60%" },
+  { key: "neko",    glyph: "猫", label: "Neko",    meaning: "Cat",       tone: "44 98% 62%" },
+  { key: "fortune", glyph: "福", label: "Fortune", meaning: "Fortune",   tone: "352 85% 68%" },
+  { key: "wa",      glyph: "和", label: "Wa",      meaning: "Harmony",   tone: "150 68% 55%" },
+  { key: "kimono",  glyph: "着", label: "Kimono",  meaning: "To wear",   tone: "300 72% 70%" },
 ] as const;
 
 export type AvatarKey = (typeof AVATAR_OPTIONS)[number]["key"];

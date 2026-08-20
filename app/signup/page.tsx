@@ -6,7 +6,7 @@ import Link from "next/link";
 import { MailCheck } from "lucide-react";
 import { Field } from "@/app/components/field";
 import { GoogleMark } from "@/app/components/google-mark";
-import { Card, Wordmark, buttonStyles } from "@/app/components/ui";
+import { Card, Wordmark, buttonStyles, buttonVars } from "@/app/components/ui";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -51,18 +51,18 @@ export default function SignupPage() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
-        <Card className="w-full max-w-sm p-6 text-center space-y-3 animate-enter">
-          <span className="w-10 h-10 rounded-full bg-accent/12 border border-accent/25 grid place-items-center mx-auto">
-            <MailCheck className="w-[18px] h-[18px] text-accent" strokeWidth={1.75} />
+        <Card className="w-full max-w-sm p-6 text-center space-y-3 animate-pop-in">
+          <span className="w-14 h-14 rounded-tile bg-lime text-on-light grid place-items-center mx-auto card-ledge">
+            <MailCheck className="w-7 h-7" strokeWidth={2.5} />
           </span>
-          <h1 className="text-lg font-semibold tracking-tight">Check your email</h1>
-          <p className="text-[13px] text-text-muted leading-relaxed">
+          <h1 className="text-2xl">Check your email</h1>
+          <p className="text-[14px] text-text-muted leading-relaxed font-medium">
             We sent a confirmation link to <span className="text-text font-medium">{email}</span>.
             Open it to activate your account.
           </p>
           <Link
             href="/login"
-            className="inline-block text-[13px] text-text-subtle hover:text-text-muted transition-colors pt-1"
+            className="inline-block text-[14px] font-semibold text-text-subtle hover:text-text transition-colors pt-1"
           >
             Back to sign in
           </Link>
@@ -76,19 +76,19 @@ export default function SignupPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-3">
           <Link href="/" className="inline-block">
-            <Wordmark className="text-base" />
+            <Wordmark />
           </Link>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight">Create your account</h1>
-            <p className="text-[13px] text-text-muted">Free, and no prior Japanese needed.</p>
+            <h1 className="text-[28px]">Create your account</h1>
+            <p className="text-[15px] text-text-muted font-medium">Free, and no prior Japanese needed.</p>
           </div>
         </div>
 
-        <Card className="p-6 space-y-5">
+        <Card className="p-6 space-y-5 animate-pop-in">
           {error && (
             <p
               role="alert"
-              className="text-[13px] text-danger bg-danger/10 border border-danger/25 rounded-lg px-3 py-2.5 leading-relaxed"
+              className="text-[14px] text-rose bg-rose/12 border-2 border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
             >
               {error}
             </p>
@@ -126,29 +126,31 @@ export default function SignupPage() {
               minLength={8}
               placeholder="At least 8 characters"
             />
-            <button type="submit" disabled={loading} className={buttonStyles({ full: true })}>
+            <button type="submit" disabled={loading} className={buttonStyles({ full: true, size: "lg" })}
+              style={buttonVars("primary")}>
               {loading ? "Creating account…" : "Create account"}
             </button>
           </form>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t border-line" />
+              <div className="w-full border-t-2 border-line" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-2 bg-surface text-[11px] uppercase tracking-wider text-text-subtle">or</span>
+              <span className="px-3 bg-surface font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle">or</span>
             </div>
           </div>
 
-          <button onClick={handleGoogleSignup} className={buttonStyles({ variant: "secondary", full: true })}>
+          <button onClick={handleGoogleSignup} className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
+            style={buttonVars("secondary")}>
             <GoogleMark />
             Continue with Google
           </button>
         </Card>
 
-        <p className="text-center text-[13px] text-text-subtle">
+        <p className="text-center text-[14px] text-text-subtle font-medium">
           Already have an account?{" "}
-          <Link href="/login" className="text-text-muted hover:text-text transition-colors font-medium">
+          <Link href="/login" className="text-coral hover:brightness-110 transition-all font-bold">
             Sign in
           </Link>
         </p>
