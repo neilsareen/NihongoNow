@@ -2,111 +2,164 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===========================================================================
+   Design tokens
+   ---------------------------------------------------------------------------
+   One dark theme, built on a near-neutral slate ground with a single indigo
+   accent. Colour is spent deliberately: the accent marks the one action worth
+   taking on a screen, semantic hues mark correctness, and everything else is
+   neutral. Values are raw HSL triples so Tailwind can compose them with an
+   alpha channel (e.g. `bg-accent/12`).
+   =========================================================================== */
+
 @layer base {
-  html {
-    /* Bumps every rem-based size (text, spacing, radii) up ~12% for a
-       chunkier, friendlier feel — not just larger text in isolation. */
-    font-size: 18px;
-  }
-
   :root {
-    --background: 0 0% 100%;
-    --foreground: 224 71.4% 4.1%;
-    --card: 0 0% 100%;
-    --card-foreground: 224 71.4% 4.1%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 224 71.4% 4.1%;
-    --primary: 262.1 83.3% 57.8%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 220.9 39.3% 11%;
-    --muted: 220 14.3% 95.9%;
-    --muted-foreground: 220 8.9% 46.1%;
-    --accent: 220 14.3% 95.9%;
-    --accent-foreground: 220.9 39.3% 11%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 262.1 83.3% 57.8%;
-    --radius: 0.75rem;
-  }
+    /* Surfaces — each step is a real elevation level, not a decoration. */
+    --canvas: 225 16% 7%;
+    --surface: 225 14% 10%;
+    --surface-raised: 225 13% 13%;
+    --surface-sunken: 225 18% 5%;
 
-  .dark {
-    --background: 224 71.4% 4.1%;
-    --foreground: 210 20% 98%;
-    --card: 224 71.4% 6%;
-    --card-foreground: 210 20% 98%;
-    --popover: 224 71.4% 4.1%;
-    --popover-foreground: 210 20% 98%;
-    --primary: 263.4 70% 50.4%;
-    --primary-foreground: 210 20% 98%;
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 20% 98%;
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 217.9 10.6% 64.9%;
-    --accent: 215 27.9% 16.9%;
-    --accent-foreground: 210 20% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 20% 98%;
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 263.4 70% 50.4%;
+    /* Hairlines. `line` is the default; `line-strong` marks hover/focus. */
+    --line: 225 12% 18%;
+    --line-strong: 225 12% 28%;
+
+    /* Text — three levels only, so hierarchy stays readable. */
+    --text: 220 22% 97%;
+    --text-muted: 220 10% 63%;
+    --text-subtle: 220 9% 44%;
+
+    /* Accent: ai-iro, the indigo of traditional Japanese dye. */
+    --accent: 232 72% 63%;
+    --accent-hover: 232 76% 69%;
+    --accent-fg: 0 0% 100%;
+
+    /* Semantic */
+    --success: 152 48% 45%;
+    --danger: 357 64% 60%;
+    --warning: 38 78% 56%;
+
+    /* Category hues for the five content tracks. Deliberately desaturated —
+       they need to sit side by side in charts without shouting. */
+    --track-hiragana: 232 66% 64%;
+    --track-katakana: 174 48% 45%;
+    --track-kanji: 36 62% 55%;
+    --track-vocab: 268 46% 63%;
+    --track-phrase: 342 48% 60%;
+
+    --radius: 0.625rem;
+
+    color-scheme: dark;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-line;
   }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-canvas text-text antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Headings carry slightly negative tracking; at display sizes Inter's
+     default spacing reads loose and unresolved. */
+  h1, h2, h3, h4 {
+    @apply tracking-tight;
+  }
+
+  /* A visible, consistent focus ring everywhere — keyboard users get the same
+     affordance mouse users get from hover. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--accent));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: hsl(var(--accent) / 0.35);
+  }
+
+  /* Numerals in stats must not reflow as values change. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
   }
 }
 
+/* ---------------------------------------------------------------------------
+   Japanese glyphs. Kana and kanji need a face designed for them; Inter falls
+   back to whatever the OS picks, which varies wildly in weight and metrics.
+   --------------------------------------------------------------------------- */
+.jp {
+  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
+    "Yu Gothic", "Noto Sans JP", "Meiryo", system-ui, sans-serif;
+  font-feature-settings: "palt";
+}
+
+/* Legacy alias — kept so any straggling markup keeps its Japanese face. */
 .jp-char {
-  font-family: "Noto Sans JP", "Hiragino Kaku Gothic Pro", "Meiryo", sans-serif;
+  @apply jp;
 }
 
 .safe-top {
-  padding-top: max(1.5rem, env(safe-area-inset-top));
+  padding-top: max(1rem, env(safe-area-inset-top));
 }
 
-.font-display {
-  font-family: var(--font-display), sans-serif;
+.safe-bottom {
+  padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
 
-.text-sunset {
-  background: linear-gradient(90deg, #fbbf24, #fb923c, #f472b6);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+/* ---------------------------------------------------------------------------
+   Motion. Short, single-direction, no overshoot: the interface should feel
+   quick rather than playful.
+   --------------------------------------------------------------------------- */
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
 }
 
-.bg-sunset {
-  background: linear-gradient(135deg, #fbbf24, #fb923c, #ec4899);
+@keyframes enter-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
-.bg-sunset-soft {
-  background: linear-gradient(135deg, rgba(251, 191, 36, 0.14), rgba(236, 72, 153, 0.1));
+@keyframes flag {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-3px); }
+  75%  { transform: translateX(3px); }
+  100% { transform: translateX(0); }
 }
 
-.shadow-glow-warm {
-  box-shadow: 0 8px 30px -8px rgba(251, 146, 60, 0.45);
+.animate-enter {
+  animation: enter-up 0.22s cubic-bezier(0.2, 0, 0, 1) both;
 }
 
-.shadow-glow-green {
-  box-shadow: 0 8px 24px -8px rgba(34, 197, 94, 0.4);
+.animate-fade {
+  animation: enter-fade 0.18s ease-out both;
 }
 
-.shadow-glow-red {
-  box-shadow: 0 8px 24px -8px rgba(239, 68, 68, 0.35);
+.animate-flag {
+  animation: flag 0.24s ease-in-out;
 }
 
-/* Ambient warm glow blobs behind hero/landing content */
-.bg-ambient-glow {
-  background-image:
-    radial-gradient(circle at 15% 10%, rgba(251, 146, 60, 0.16), transparent 40%),
-    radial-gradient(circle at 85% 25%, rgba(236, 72, 153, 0.14), transparent 45%),
-    radial-gradient(circle at 50% 90%, rgba(168, 85, 247, 0.12), transparent 45%);
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
+
+/* Hides scrollbars on horizontally scrollable strips without disabling the
+   scroll itself. */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

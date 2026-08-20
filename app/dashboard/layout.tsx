@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { PWAInstallBanner } from "./pwa-banner";
 import { TimezoneSync } from "./timezone-sync";
-import { BottomNav } from "./bottom-nav";
+import { BottomNav } from "@/app/components/bottom-nav";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
@@ -10,10 +10,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!user) redirect("/login");
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-canvas text-text">
       <TimezoneSync />
       <PWAInstallBanner />
-      <main className="max-w-lg mx-auto px-4 pt-6 pb-28 safe-top">{children}</main>
+      {/* pb clears the 64px tab bar plus the home indicator inset */}
+      <main className="max-w-lg mx-auto px-4 pt-5 pb-[calc(5.5rem+env(safe-area-inset-bottom))] safe-top">
+        {children}
+      </main>
       <BottomNav />
     </div>
   );

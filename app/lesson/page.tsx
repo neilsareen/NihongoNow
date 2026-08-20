@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { buttonStyles } from "@/app/components/ui";
 
 export default function LessonPage() {
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -21,7 +21,6 @@ export default function LessonPage() {
         router.push(`/lesson/${lesson.id}`);
       } catch (e) {
         setError(e instanceof Error ? e.message : "Something went wrong");
-        setLoading(false);
       }
     }
     startLesson();
@@ -29,23 +28,22 @@ export default function LessonPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="text-red-400 font-medium">{error}</div>
-          <Link href="/dashboard" className="text-purple-400 hover:underline text-sm">
-            Back to Dashboard
-          </Link>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-6 text-center">
+        <div className="space-y-1.5">
+          <h1 className="text-lg font-semibold tracking-tight">Couldn&apos;t build a lesson</h1>
+          <p className="text-[13px] text-text-muted max-w-xs leading-relaxed">{error}</p>
         </div>
+        <Link href="/dashboard" className={buttonStyles({ variant: "secondary" })}>
+          Back to dashboard
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-      <div className="text-center space-y-4">
-        <div className="text-4xl jp-char animate-pulse">日</div>
-        <div className="text-gray-400">Preparing your lesson...</div>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="w-6 h-6 border-2 border-line-strong border-t-accent rounded-full animate-spin" />
+      <p className="text-[13px] text-text-subtle">Assembling your lesson…</p>
     </div>
   );
 }

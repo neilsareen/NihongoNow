@@ -1,15 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Baloo_2 } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { PWAUpdateBanner } from "@/app/components/pwa-update-banner";
 
-const inter = Inter({ subsets: ["latin"] });
-const baloo = Baloo_2({ subsets: ["latin"], variable: "--font-display" });
+// One typeface for the whole product. The previous build paired Inter with a
+// rounded display face, which is what made headings read as a children's app;
+// hierarchy here comes from weight, size and tracking instead.
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans",
+});
 
 export const metadata: Metadata = {
-  title: "Ikou",
-  description: "Learn Japanese for your next trip to Japan",
+  title: "Ikou — Japanese for travellers",
+  description:
+    "Learn the Japanese you'll actually use in Japan. Spaced repetition, built around real situations.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -23,7 +30,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0a0f",
+  themeColor: "#0F1115",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -32,7 +39,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} ${baloo.variable} min-h-screen bg-gray-950 text-white antialiased`}>
+      <body className={`${inter.variable} ${inter.className} min-h-screen bg-canvas text-text antialiased`}>
         {children}
         <PWAUpdateBanner />
         <Script id="sw-register" strategy="afterInteractive">{`

@@ -1,7 +1,14 @@
 import type { Config } from "tailwindcss";
 
-// Override gray with blue-navy palette — dark values are visibly blue to improve
-// focus and reduce eye strain compared to pure-black backgrounds.
+/**
+ * The palette is defined once in `app/globals.css` as raw HSL triples and
+ * surfaced here through a helper so every colour supports Tailwind's alpha
+ * syntax (`bg-surface/60`, `text-accent/70`). Nothing hard-codes a hex value
+ * outside the token block, which keeps the whole interface re-themable from
+ * one place.
+ */
+const token = (name: string) => `hsl(var(--${name}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: ["class"],
   content: [
@@ -12,97 +19,64 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Blue-navy grays: 700–950 are noticeably blue-dark (not pure black).
-        // At these hex values the blue channel is 2–4x the red channel,
-        // giving a visible navy tint even at low lightness.
-        gray: {
-          50:  "#f8fafc",
-          100: "#f1f5f9",
-          200: "#e2e8f0",
-          300: "#cbd5e1",
-          400: "#94a3b8",
-          500: "#64748b",
-          600: "#475569",
-          700: "#253548",
-          800: "#152233",
-          900: "#0c1929",
-          950: "#060e1c",
+        canvas: token("canvas"),
+        surface: {
+          DEFAULT: token("surface"),
+          raised: token("surface-raised"),
+          sunken: token("surface-sunken"),
         },
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+        line: {
+          DEFAULT: token("line"),
+          strong: token("line-strong"),
         },
-        primary: {
-          DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+        text: {
+          DEFAULT: token("text"),
+          muted: token("text-muted"),
+          subtle: token("text-subtle"),
         },
         accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
+          DEFAULT: token("accent"),
+          hover: token("accent-hover"),
+          fg: token("accent-fg"),
         },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+        success: token("success"),
+        danger: token("danger"),
+        warning: token("warning"),
+        track: {
+          hiragana: token("track-hiragana"),
+          katakana: token("track-katakana"),
+          kanji: token("track-kanji"),
+          vocab: token("track-vocab"),
+          phrase: token("track-phrase"),
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 2px)",
+        lg: "var(--radius)",
+        xl: "calc(var(--radius) + 4px)",
+        "2xl": "calc(var(--radius) + 10px)",
       },
-      fontFamily: {
-        display: ["var(--font-display)", "sans-serif"],
+      fontSize: {
+        // A display step for the few places that need real presence — hero
+        // headline, score readouts — without reaching for arbitrary values.
+        display: ["2.5rem", { lineHeight: "1.1", letterSpacing: "-0.03em" }],
       },
-      keyframes: {
-        "pop-in": {
-          "0%": { opacity: "0", transform: "scale(0.92) translateY(6px)" },
-          "100%": { opacity: "1", transform: "scale(1) translateY(0)" },
-        },
-        "bounce-soft": {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-6px)" },
-        },
-        wiggle: {
-          "0%, 100%": { transform: "rotate(-4deg)" },
-          "50%": { transform: "rotate(4deg)" },
-        },
-        "pulse-glow": {
-          "0%, 100%": { opacity: "1" },
-          "50%": { opacity: "0.6" },
-        },
-        float: {
-          "0%, 100%": { transform: "translateY(0)" },
-          "50%": { transform: "translateY(-8px)" },
-        },
-        "pop-once": {
-          "0%": { transform: "scale(1)" },
-          "40%": { transform: "scale(1.15)" },
-          "100%": { transform: "scale(1)" },
-        },
+      boxShadow: {
+        // Neutral, low-spread elevation. No coloured glows: they were the
+        // single largest source of the old "toy" impression.
+        subtle: "0 1px 2px 0 rgb(0 0 0 / 0.35)",
+        card: "0 1px 2px 0 rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6)",
+        lifted: "0 2px 4px 0 rgb(0 0 0 / 0.3), 0 16px 40px -16px rgb(0 0 0 / 0.7)",
       },
-      animation: {
-        "pop-in": "pop-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both",
-        "bounce-soft": "bounce-soft 2s ease-in-out infinite",
-        wiggle: "wiggle 1s ease-in-out infinite",
-        "pulse-glow": "pulse-glow 2s ease-in-out infinite",
-        float: "float 4s ease-in-out infinite",
-        "pop-once": "pop-once 0.35s cubic-bezier(0.34, 1.56, 0.64, 1)",
+      transitionTimingFunction: {
+        // Fast out, settled in — matches the platform curves users already
+        // read as "responsive" rather than "springy".
+        swift: "cubic-bezier(0.2, 0, 0, 1)",
       },
     },
   },
   plugins: [],
 };
+
 export default config;

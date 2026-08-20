@@ -1,16 +1,16 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { AVATAR_OPTIONS, getAvatar } from "@/lib/utils";
+import { LogOut } from "lucide-react";
+import { AVATAR_OPTIONS, cn, getAvatar } from "@/lib/utils";
+import { Avatar, Card, SectionLabel, TopBar, buttonStyles } from "@/app/components/ui";
+import { BottomNav } from "@/app/components/bottom-nav";
 
 const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
 
 export default function SettingsPage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [studyGoal, setStudyGoal] = useState<number | null>(null);
   const [avatarKey, setAvatarKey] = useState<string | null>(null);
@@ -55,80 +55,96 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2000);
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
-  }
-
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <nav className="border-b border-white/10 bg-gray-900/50 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/dashboard" className="font-display font-bold text-lg flex items-center gap-2">
-            <span className="jp-char text-orange-400 text-xl">行</span>
-            <span>Ikou</span>
-          </Link>
-        </div>
-      </nav>
-      <main className="max-w-lg mx-auto px-4 py-8 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="font-display text-2xl font-bold">Settings</h1>
-          {saving && <span className="text-xs text-gray-500">Saving…</span>}
-          {saved && <span className="text-xs text-green-400">Saved ✓</span>}
-        </div>
+    <div className="min-h-screen">
+      <TopBar
+        title="Settings"
+        backLabel="Dashboard"
+        trailing={
+          // A single quiet status slot, rather than a badge that jumps into the
+          // heading row and shifts the layout as it appears.
+          <span className="text-[11px] text-text-subtle" aria-live="polite">
+            {saving ? "Saving…" : saved ? "Saved" : ""}
+          </span>
+        }
+      />
 
-        <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-4">
-          <h2 className="font-display font-semibold text-gray-300">Avatar</h2>
-          <p className="text-sm text-gray-500">Pick the character that represents you.</p>
-          <div className="grid grid-cols-5 gap-3">
-            {AVATAR_OPTIONS.map((a) => (
-              <button
-                key={a.key}
-                onClick={() => handleAvatarChange(a.key)}
-                title={a.label}
-                className={`aspect-square rounded-full bg-gray-800 flex items-center justify-center p-1.5 transition-transform ${
-                  avatarKey === a.key ? "ring-2 ring-offset-2 ring-offset-gray-900 ring-white scale-105" : "hover:scale-105"
-                }`}
-              >
-                <img src={a.image} alt={a.label} className="w-full h-full object-contain drop-shadow-sm" />
-              </button>
-            ))}
+      <main className="max-w-lg mx-auto px-4 py-8 space-y-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <SectionLabel>Avatar</SectionLabel>
+            <p className="text-[13px] text-text-muted">
+              Pick a kanji to represent you.
+            </p>
           </div>
-        </div>
+          <Card className="p-4">
+            <div className="grid grid-cols-5 gap-3">
+              {AVATAR_OPTIONS.map((a) => {
+                const isOn = avatarKey === a.key;
+                return (
+                  <button
+                    key={a.key}
+                    onClick={() => handleAvatarChange(a.key)}
+                    title={`${a.label} — ${a.meaning}`}
+                    aria-label={`${a.label} (${a.meaning})`}
+                    aria-pressed={isOn}
+                    className={cn(
+                      "aspect-square rounded-xl grid place-items-center border",
+                      "transition-colors duration-150 ease-swift",
+                      isOn
+                        ? "border-accent bg-accent/[0.08]"
+                        : "border-transparent hover:bg-surface-raised"
+                    )}
+                  >
+                    <Avatar avatar={a} size={38} />
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+        </section>
 
-        <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-4">
-          <h2 className="font-display font-semibold text-gray-300">Daily Study Goal</h2>
-          <p className="text-sm text-gray-500">
-            Set a daily target to track your habit. Lessons are always ~10 minutes — your goal determines how many sessions to aim for.
-          </p>
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <SectionLabel>Daily study goal</SectionLabel>
+            <p className="text-[13px] text-text-muted leading-relaxed">
+              A target to track the habit against. Lessons are roughly ten minutes
+              each, so the goal sets how many to aim for.
+            </p>
+          </div>
           <div className="grid grid-cols-3 gap-2">
-            {GOAL_OPTIONS.map((min) => (
-              <button
-                key={min}
-                onClick={() => handleGoalChange(min)}
-                className={`py-2.5 rounded-xl border text-sm font-medium transition-all ${
-                  studyGoal === min
-                    ? "bg-sunset border-transparent text-white shadow-glow-warm"
-                    : "bg-white/5 border-white/10 text-gray-300 hover:bg-white/10"
-                }`}
-              >
-                {min} min/day
-              </button>
-            ))}
+            {GOAL_OPTIONS.map((min) => {
+              const isOn = studyGoal === min;
+              return (
+                <button
+                  key={min}
+                  onClick={() => handleGoalChange(min)}
+                  aria-pressed={isOn}
+                  className={cn(
+                    "h-11 rounded-lg border text-sm font-medium tnum",
+                    "transition-colors duration-150 ease-swift",
+                    isOn
+                      ? "border-accent bg-accent text-accent-fg"
+                      : "border-line bg-surface text-text-muted hover:border-line-strong hover:text-text"
+                  )}
+                >
+                  {min} min
+                </button>
+              );
+            })}
           </div>
-        </div>
+        </section>
 
-        <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 space-y-4">
-          <h2 className="font-display font-semibold text-gray-300">Account</h2>
-          <a
-            href="/api/auth/signout"
-            className="block w-full text-center bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-medium py-2.5 rounded-xl transition-colors"
-          >
-            Sign Out
+        <section className="space-y-3">
+          <SectionLabel>Account</SectionLabel>
+          <a href="/api/auth/signout" className={buttonStyles({ variant: "danger", full: true })}>
+            <LogOut className="w-4 h-4" strokeWidth={1.75} />
+            Sign out
           </a>
-        </div>
+        </section>
       </main>
+
+      <BottomNav />
     </div>
   );
 }

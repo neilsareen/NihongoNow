@@ -3,9 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { Bell, ChevronRight, Flame, Lock } from "lucide-react";
+import { ArrowRight, ChevronRight, Flame, Lock } from "lucide-react";
 import { getStartOfDayInTimezone, getAvatar } from "@/lib/utils";
 import { hasMasteredAllKana, KANA_TYPES } from "@/lib/progression";
+import { Avatar, Card, ProgressBar, Ring, SectionLabel, buttonStyles } from "@/app/components/ui";
 
 const LESSON_TYPE_SYMBOL: Record<string, string> = {
   HIRAGANA: "あ",
@@ -72,10 +73,10 @@ function getGreeting() {
 }
 
 function lessonOrdinal(n: number): string {
-  if (n === 1) return "Today's Lesson";
+  if (n === 1) return "Today's lesson";
   const s = ["th", "st", "nd", "rd"];
   const v = n % 100;
-  return `Today's ${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]} Lesson`;
+  return `Today's ${n}${s[(v - 20) % 10] ?? s[v] ?? s[0]} lesson`;
 }
 
 export default async function DashboardPage() {
@@ -84,13 +85,10 @@ export default async function DashboardPage() {
   if (authError || !user) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, stats, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons, kanaMastered } = await getDashboardData(user.id, timeZone);
+  const { profile, progress, reviewsDue, dueReviewsByType, inProgressLesson, todayStudy, todayLessons, kanaMastered } = await getDashboardData(user.id, timeZone);
   if (!profile) redirect("/onboarding");
 
   const avatar = getAvatar(profile.avatarUrl);
-
-  const accuracy = stats && stats.totalReviews > 0
-    ? Math.round((stats.correctReviews / stats.totalReviews) * 100) : 0;
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
 
@@ -102,14 +100,16 @@ export default async function DashboardPage() {
   const goalMinutes = profile.studyGoalMinutes;
   const goalPct = Math.min(100, goalMinutes > 0 ? Math.round((todayMinutes / goalMinutes) * 100) : 0);
 
-  const ringItems = [
-    { label: "Hiragana", stage: "HIRAGANA", practiceType: "HIRAGANA", total: 71, emoji: "あ", from: "#a78bfa", to: "#7c3aed" },
-    { label: "Katakana", stage: "KATAKANA", practiceType: "KATAKANA", total: 69, emoji: "ア", from: "#fbbf24", to: "#d97706" },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", practiceType: "KANJI", total: 1500, emoji: "漢", from: "#4ade80", to: "#16a34a" },
-  ];
-  const secondaryItems = [
-    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, emoji: "📖", bar: "from-sky-500 to-cyan-400" },
-    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, emoji: "💬", bar: "from-rose-500 to-pink-400" },
+  // One list for every content track, ordered the way the curriculum unlocks
+  // them. The previous dashboard split these across three gradient tiles and a
+  // separate card, which made two identical measurements look like two
+  // different kinds of thing.
+  const tracks = [
+    { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", practiceType: "HIRAGANA" },
+    { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", practiceType: "KATAKANA" },
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", practiceType: "KANJI" },
+    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", practiceType: null },
+    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: null },
   ];
 
   const masteredByStage = (stage: string, total: number) => {
@@ -125,22 +125,22 @@ export default async function DashboardPage() {
   );
 
   const travelLevel =
-    travelScore >= 90 ? { name: "Near-Native Traveler", color: "text-yellow-300", bar: "from-yellow-500 to-yellow-300", description: "Japan is practically your second home. You can handle any situation, read most signs, and connect deeply with locals." } :
-    travelScore >= 70 ? { name: "Seasoned Traveler", color: "text-green-300", bar: "from-green-500 to-green-300", description: "You'll move through Japan with ease — trains, restaurants, shops, and conversations hold no mystery." } :
-    travelScore >= 50 ? { name: "Confident Explorer", color: "text-blue-300", bar: "from-blue-500 to-blue-300", description: "You can navigate most everyday situations. Getting around, ordering food, and asking for help are all within reach." } :
-    travelScore >= 30 ? { name: "Tourist Ready", color: "text-purple-300", bar: "from-purple-500 to-purple-300", description: "You're prepared for a comfortable trip. You can read menus, ask directions, and handle common tourist situations." } :
-    travelScore >= 15 ? { name: "Survival Traveler", color: "text-orange-300", bar: "from-orange-500 to-orange-300", description: "You can decode hiragana and katakana signs and manage basic exchanges. Tourist hotspots will be manageable." } :
-    travelScore >= 5  ? { name: "Phonetic Foundation", color: "text-red-300", bar: "from-red-500 to-red-300", description: "You know some characters and basics. Japan is exciting but you'll rely on translation apps for most things." } :
-                        { name: "Complete Beginner", color: "text-gray-400", bar: "from-gray-600 to-gray-400", description: "Your journey is just starting! Keep at it — even a little Japanese goes a long way when visiting Japan." };
+    travelScore >= 90 ? { name: "Near-native traveller", tone: "45 60% 58%", description: "Japan is practically a second home. You can handle any situation, read most signs, and connect deeply with locals." } :
+    travelScore >= 70 ? { name: "Seasoned traveller", tone: "152 45% 50%", description: "You'll move through Japan with ease — trains, restaurants, shops and conversations hold no mystery." } :
+    travelScore >= 50 ? { name: "Confident explorer", tone: "205 60% 58%", description: "You can navigate most everyday situations. Getting around, ordering food and asking for help are all within reach." } :
+    travelScore >= 30 ? { name: "Tourist ready", tone: "268 46% 65%", description: "You're prepared for a comfortable trip: reading menus, asking directions and handling common tourist situations." } :
+    travelScore >= 15 ? { name: "Survival traveller", tone: "28 62% 58%", description: "You can decode hiragana and katakana signs and manage basic exchanges. Tourist hotspots will be manageable." } :
+    travelScore >= 5  ? { name: "Phonetic foundation", tone: "342 48% 62%", description: "You know some characters and basics. Japan is exciting, but you'll lean on translation apps for most things." } :
+                        { name: "Complete beginner", tone: "220 9% 55%", description: "Your journey is just starting. Even a little Japanese goes a long way when visiting Japan." };
 
   const reviewLabel = reviewsDue > 0
-    ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due + new content`
-    : "New content only";
+    ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due · plus new material`
+    : "New material";
 
   const lessonHref = showContinue && inProgressLesson ? `/lesson/${inProgressLesson.id}` : "/lesson";
-  const lessonTitle = showContinue && inProgressLesson ? "Continue Lesson" : lessonOrdinal(todayLessons + 1);
+  const lessonTitle = showContinue && inProgressLesson ? "Continue lesson" : lessonOrdinal(todayLessons + 1);
   const lessonSubtitle = showContinue && inProgressLesson
-    ? `${answeredCount} done · ${unansweredCount} remaining`
+    ? `${answeredCount} answered · ${unansweredCount} to go`
     : reviewLabel;
 
   // Which content type a lesson is "mostly" made of, to pick its icon glyph.
@@ -162,161 +162,173 @@ export default async function DashboardPage() {
   const lessonSymbol = dominantLessonSymbol(lessonTypeCounts, fallbackStage);
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link
-            href="/settings"
-            className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center shrink-0 p-1.5"
-            title="Change avatar"
-          >
-            <img src={avatar.image} alt={avatar.label} className="w-full h-full object-contain drop-shadow-sm" />
-          </Link>
-          <div>
-            <p className="text-gray-500 text-sm">{getGreeting()}</p>
-            <p className="font-display font-bold text-lg leading-tight">{profile.displayName || "Learner"}</p>
-          </div>
+    <div className="space-y-6">
+      {/* Header. The old build carried a bell icon that opened nothing; a
+          control that does nothing is worse than no control. */}
+      <header className="flex items-center justify-between gap-3">
+        <Link href="/settings" className="flex items-center gap-3 min-w-0 group">
+          <Avatar avatar={avatar} size={40} />
+          <span className="min-w-0">
+            <span className="block text-xs text-text-subtle">{getGreeting()}</span>
+            <span className="block text-[15px] font-semibold truncate group-hover:text-text transition-colors">
+              {profile.displayName || "Learner"}
+            </span>
+          </span>
+        </Link>
+        <div
+          className="flex items-center gap-1.5 h-8 px-3 rounded-full border border-line bg-surface shrink-0"
+          title={`${profile.currentStreak}-day streak`}
+        >
+          <Flame className="w-3.5 h-3.5 text-warning" strokeWidth={2} />
+          <span className="text-[13px] font-semibold tnum">{profile.currentStreak}</span>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-1 bg-gradient-to-br from-orange-500/15 to-pink-500/10 border border-orange-500/20 rounded-full pl-2.5 pr-3 h-11">
-            <Flame className="w-4 h-4 text-orange-400 animate-wiggle" fill="currentColor" />
-            <span className="font-display font-bold text-orange-400 text-sm">{profile.currentStreak}</span>
-          </div>
-          <div className="w-11 h-11 rounded-full bg-gray-900 border border-white/10 flex items-center justify-center">
-            <Bell className="w-5 h-5 text-gray-400" />
-          </div>
-        </div>
-      </div>
+      </header>
 
-      {/* Lesson CTA — the main "what to do next" action, so it leads the page */}
+      {/* Primary action. Exactly one accent-filled element on the screen, so
+          "what do I do next" needs no thought. */}
       <Link
         href={lessonHref}
-        className="flex items-center gap-4 bg-sunset shadow-glow-warm rounded-2xl p-4 hover:scale-[1.015] active:scale-[0.98] transition-transform"
+        className="group flex items-center gap-4 rounded-xl border border-accent/30 bg-accent/[0.07] p-4 hover:bg-accent/[0.11] hover:border-accent/45 transition-colors duration-150 ease-swift"
       >
-        <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center jp-char text-3xl font-bold text-white shrink-0">
-          {lessonSymbol}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="font-display font-bold text-white text-base truncate">{lessonTitle}</div>
-          <div className="text-white/80 text-xs mt-0.5 truncate">{lessonSubtitle}</div>
-        </div>
-        <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0">
-          <ChevronRight className="w-5 h-5 text-white" />
-        </div>
+        <span className="w-12 h-12 rounded-lg bg-accent grid place-items-center shrink-0">
+          <span className="jp text-2xl font-medium text-accent-fg leading-none">{lessonSymbol}</span>
+        </span>
+        <span className="flex-1 min-w-0">
+          <span className="block text-[15px] font-semibold truncate">{lessonTitle}</span>
+          <span className="block text-[13px] text-text-muted truncate mt-0.5">{lessonSubtitle}</span>
+        </span>
+        <ArrowRight
+          className="w-[18px] h-[18px] text-accent shrink-0 transition-transform duration-150 ease-swift group-hover:translate-x-0.5"
+          strokeWidth={2}
+        />
       </Link>
 
-      {/* Today's progress ring */}
-      <div className="bg-gray-900 border border-white/10 rounded-2xl p-4 flex items-center gap-4">
-        <div
-          className="relative w-16 h-16 rounded-full grid place-items-center shrink-0"
-          style={{ background: `conic-gradient(#fbbf24, #fb923c, #ec4899 ${goalPct}%, rgba(255,255,255,0.06) ${goalPct}%)` }}
-        >
-          <div className="absolute inset-1.5 rounded-full bg-gray-900 flex flex-col items-center justify-center">
-            <span className="font-display text-base font-bold">{todayMinutes}</span>
-          </div>
-        </div>
+      {/* Today */}
+      <Card className="p-4 flex items-center gap-4">
+        <Ring value={goalPct} size={56} thickness={4}>
+          <span className="text-[15px] font-semibold tnum leading-none">{todayMinutes}</span>
+        </Ring>
         <div className="flex-1 min-w-0">
-          <div className="font-display font-semibold text-gray-300 text-sm">Today&apos;s Progress</div>
-          <div className="text-gray-500 text-xs mt-0.5">{todayMinutes} of {goalMinutes} min today</div>
-          <div className="text-gray-500 text-xs mt-0.5">
-            {reviewsDue > 0 ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} due` : "All caught up ✨"}
-          </div>
+          <SectionLabel>Today</SectionLabel>
+          <p className="text-sm mt-1.5">
+            <span className="font-semibold tnum">{todayMinutes}</span>
+            <span className="text-text-muted"> of {goalMinutes} min goal</span>
+          </p>
+          <p className="text-[13px] text-text-subtle mt-0.5">
+            {reviewsDue > 0
+              ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} waiting`
+              : "No reviews due — you're caught up"}
+          </p>
         </div>
-      </div>
+      </Card>
 
-      {/* Ring stat cards */}
-      <div className="grid grid-cols-3 gap-3">
-        {ringItems.map((item) => {
-          const p = progressMap[item.stage];
-          const mastered = p?.masteredItems ?? 0;
-          const pct = Math.min(100, Math.round((mastered / item.total) * 100));
+      {/* Tracks */}
+      <section className="space-y-2.5">
+        <div className="flex items-center justify-between px-0.5">
+          <SectionLabel>Your tracks</SectionLabel>
+          <Link href="/analytics" className="text-[12px] text-text-subtle hover:text-text-muted transition-colors">
+            Details
+          </Link>
+        </div>
 
-          // Kanji stays sealed until every kana is mastered — including its
-          // glyph, so no kanji character appears on the dashboard at all.
-          if (item.practiceType === "KANJI" && !kanaMastered) {
-            return (
-              <div
-                key={item.label}
-                className="rounded-2xl p-3.5 flex flex-col items-center gap-2 bg-gray-900 border border-white/10"
-                title="Master all hiragana and katakana to unlock kanji"
+        <Card className="divide-y divide-line">
+          {tracks.map((track) => {
+            const mastered = progressMap[track.stage]?.masteredItems ?? 0;
+            const pct = Math.min(100, Math.round((mastered / track.total) * 100));
+
+            // Kanji stays sealed until every kana is mastered — including its
+            // glyph, so no kanji character appears on the dashboard at all.
+            const locked = track.practiceType === "KANJI" && !kanaMastered;
+            const href = !locked && track.practiceType ? `/practice?type=${track.practiceType}` : null;
+
+            const body = (
+              <>
+                <span
+                  className="w-9 h-9 rounded-lg grid place-items-center shrink-0 border"
+                  style={
+                    locked
+                      ? { background: "hsl(var(--surface-raised))", borderColor: "hsl(var(--line))" }
+                      : {
+                          background: `hsl(${track.tone} / 0.12)`,
+                          borderColor: `hsl(${track.tone} / 0.28)`,
+                          color: `hsl(${track.tone})`,
+                        }
+                  }
+                >
+                  {locked ? (
+                    <Lock className="w-4 h-4 text-text-subtle" strokeWidth={1.75} />
+                  ) : (
+                    <span className="jp text-base font-medium leading-none">{track.glyph}</span>
+                  )}
+                </span>
+
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-baseline justify-between gap-3 mb-1.5">
+                    <span className={`text-sm font-medium ${locked ? "text-text-subtle" : ""}`}>
+                      {track.label}
+                    </span>
+                    <span className="text-[12px] text-text-subtle tnum shrink-0">
+                      {locked ? "Locked" : `${mastered.toLocaleString()} / ${track.total.toLocaleString()}`}
+                    </span>
+                  </span>
+                  <ProgressBar
+                    value={locked ? 0 : pct}
+                    className="h-1"
+                    barStyle={locked ? undefined : { background: `hsl(${track.tone})` }}
+                  />
+                </span>
+
+                {href && (
+                  <ChevronRight className="w-4 h-4 text-text-subtle shrink-0 self-center" strokeWidth={1.75} />
+                )}
+              </>
+            );
+
+            const rowClass = "flex items-center gap-3 p-3.5 first:rounded-t-xl last:rounded-b-xl";
+
+            return href ? (
+              <Link
+                key={track.label}
+                href={href}
+                className={`${rowClass} hover:bg-surface-raised transition-colors duration-150 ease-swift`}
               >
-                <div className="relative w-14 h-14 rounded-full grid place-items-center shrink-0 bg-white/[0.04]">
-                  <Lock className="w-5 h-5 text-gray-600" />
-                </div>
-                <span className="text-gray-600 text-xs font-semibold">{item.label}</span>
+                {body}
+              </Link>
+            ) : (
+              <div
+                key={track.label}
+                className={rowClass}
+                title={locked ? "Master all hiragana and katakana to unlock kanji" : undefined}
+              >
+                {body}
               </div>
             );
-          }
+          })}
+        </Card>
+      </section>
 
-          return (
-            <Link
-              key={item.label}
-              href={`/practice?type=${item.practiceType}`}
-              className="rounded-2xl p-3.5 flex flex-col items-center gap-2 hover:scale-[1.03] active:scale-[0.98] transition-transform"
-              style={{ background: `linear-gradient(135deg, ${item.from}, ${item.to})` }}
-            >
-              <div
-                className="relative w-14 h-14 rounded-full grid place-items-center shrink-0"
-                style={{ background: `conic-gradient(rgba(255,255,255,0.95) ${pct}%, rgba(0,0,0,0.25) ${pct}%)` }}
-              >
-                <div className="absolute inset-1.5 rounded-full flex items-center justify-center text-[11px] font-display font-bold text-white" style={{ background: item.to }}>
-                  {pct}%
-                </div>
-              </div>
-              <span className="text-white text-xs font-semibold flex items-center gap-1">
-                <span className="jp-char">{item.emoji}</span> {item.label}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
+      {/* Travel readiness */}
+      <section className="space-y-2.5">
+        <SectionLabel className="px-0.5">Travel readiness</SectionLabel>
+        <Card className="p-4 space-y-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-[15px] font-semibold" style={{ color: `hsl(${travelLevel.tone})` }}>
+              {travelLevel.name}
+            </span>
+            <span className="text-sm text-text-muted tnum shrink-0">{travelScore}%</span>
+          </div>
+          <ProgressBar
+            value={travelScore}
+            className="h-1.5"
+            barStyle={{ background: `hsl(${travelLevel.tone})` }}
+          />
+          <p className="text-[13px] text-text-muted leading-relaxed">{travelLevel.description}</p>
+        </Card>
+      </section>
 
-      {/* Vocabulary + Phrases */}
-      <div className="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-4">
-        {secondaryItems.map((item) => {
-          const p = progressMap[item.stage];
-          const mastered = p?.masteredItems ?? 0;
-          const pct = Math.min(100, Math.round((mastered / item.total) * 100));
-          return (
-            <div key={item.label}>
-              <div className="flex justify-between text-sm mb-1">
-                <span className="flex items-center gap-2 text-gray-300">
-                  <span>{item.emoji}</span>
-                  {item.label}
-                </span>
-                <span className="text-gray-600">{mastered}/{item.total}</span>
-              </div>
-              <div className="h-1.5 bg-gray-800 rounded-full overflow-hidden">
-                <div className={`h-full bg-gradient-to-r ${item.bar} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Travel Readiness */}
-      <div className="bg-gray-900 border border-white/10 rounded-2xl p-5 space-y-3">
-        <h2 className="font-display font-semibold text-sm text-gray-300 tracking-wide">Travel Readiness 🗾</h2>
-        <div className="flex items-center justify-between">
-          <div className={`font-display font-semibold ${travelLevel.color}`}>{travelLevel.name}</div>
-          <div className="text-gray-600 text-xs">{travelScore}%</div>
-        </div>
-        <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-          <div className={`h-full bg-gradient-to-r ${travelLevel.bar} rounded-full transition-all duration-500`} style={{ width: `${travelScore}%` }} />
-        </div>
-        <p className="text-gray-500 text-sm leading-relaxed">{travelLevel.description}</p>
-      </div>
-
-      <WeakestReviewButton />
+      <Link href="/review/weakest" className={buttonStyles({ variant: "secondary", full: true })}>
+        Review my weakest items
+      </Link>
     </div>
-  );
-}
-
-function WeakestReviewButton() {
-  return (
-    <Link href="/review/weakest" className="block text-center w-full py-3 border border-white/10 text-gray-400 hover:text-white hover:border-white/25 hover:bg-white/[0.03] rounded-full text-sm transition-colors">
-      Review my weakest items →
-    </Link>
   );
 }

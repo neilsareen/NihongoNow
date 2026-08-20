@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Share, X } from "lucide-react";
+import { buttonStyles } from "@/app/components/ui";
 
 const DISMISSED_KEY = "pwa-install-dismissed";
 
@@ -38,56 +40,45 @@ export function PWAInstallBanner() {
   };
 
   if (dismissed) return null;
+  if (!prompt && !showIOSHint) return null;
 
-  if (prompt) {
-    return (
-      <div className="mx-4 mt-3 bg-gray-900 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-white">Add to Home Screen</p>
-          <p className="text-xs text-gray-500 mt-0.5">Install Ikou for quick access</p>
+  return (
+    <div className="max-w-lg mx-auto px-4 pt-4">
+      <div className="bg-surface border border-line rounded-xl p-3.5 flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-medium">Add Ikou to your home screen</p>
+          {prompt ? (
+            <p className="text-xs text-text-subtle mt-0.5">Opens full screen and works offline.</p>
+          ) : (
+            <p className="text-xs text-text-muted mt-1 leading-relaxed inline-flex flex-wrap items-center gap-1">
+              Tap
+              <Share className="w-3.5 h-3.5 inline text-text" strokeWidth={1.75} aria-label="Share" />
+              then <span className="text-text font-medium">Add to Home Screen</span>.
+            </p>
+          )}
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={dismiss}
-            className="text-xs text-gray-600 hover:text-gray-400 px-2 py-1"
-          >
-            Not now
-          </button>
+
+        {prompt && (
           <button
             onClick={() => {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (prompt as any).prompt?.();
               setPrompt(null);
             }}
-            className="text-xs bg-white text-gray-950 font-semibold px-3 py-1.5 rounded-lg"
+            className={buttonStyles({ variant: "secondary", size: "sm" })}
           >
             Install
           </button>
-        </div>
-      </div>
-    );
-  }
+        )}
 
-  if (showIOSHint) {
-    return (
-      <div className="mx-4 mt-3 bg-gray-900 border border-white/10 rounded-xl p-4 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-medium text-white">Add to Home Screen</p>
-          <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-            Tap the <span className="text-white font-medium">Share</span> button then{" "}
-            <span className="text-white font-medium">&ldquo;Add to Home Screen&rdquo;</span> to install.
-          </p>
-        </div>
         <button
           onClick={dismiss}
-          className="text-xs text-gray-600 hover:text-gray-400 px-2 py-1 shrink-0"
+          className="w-7 h-7 -mr-1 -mt-0.5 rounded-md grid place-items-center text-text-subtle hover:text-text hover:bg-surface-raised transition-colors shrink-0"
           aria-label="Dismiss"
         >
-          ✕
+          <X className="w-3.5 h-3.5" strokeWidth={2} />
         </button>
       </div>
-    );
-  }
-
-  return null;
+    </div>
+  );
 }

@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
+import { Check, Lightbulb, RotateCcw, Volume2, X } from "lucide-react";
 import { readingSpeechText, speak, speechText } from "@/lib/speech";
+import { cn } from "@/lib/utils";
+import { Card, buttonStyles } from "@/app/components/ui";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
 
@@ -54,23 +58,29 @@ interface FinalResult {
   accuracy: number;
 }
 
-const SRS_DISPLAY: Record<string, { label: string; color: string }> = {
-  NEW:      { label: "New",      color: "text-gray-500" },
-  LEARNING: { label: "Learning", color: "text-blue-400" },
-  FAMILIAR: { label: "Familiar", color: "text-yellow-400" },
-  STRONG:   { label: "Strong",   color: "text-green-400" },
-  MASTERED: { label: "Mastered", color: "text-purple-400" },
+// Mastery stages, expressed as an ordered scale rather than five unrelated
+// colours: the learner should read progression, not a category.
+const SRS_DISPLAY: Record<string, { label: string; tone: string; step: number }> = {
+  NEW: { label: "New", tone: "220 9% 50%", step: 0 },
+  LEARNING: { label: "Learning", tone: "205 60% 58%", step: 1 },
+  FAMILIAR: { label: "Familiar", tone: "174 45% 48%", step: 2 },
+  STRONG: { label: "Strong", tone: "152 45% 48%", step: 3 },
+  MASTERED: { label: "Mastered", tone: "45 60% 56%", step: 4 },
 };
-const SRS_PCT: Record<string, number> = { NEW: 0, LEARNING: 20, FAMILIAR: 45, STRONG: 70, MASTERED: 100 };
-const SRS_BAR: Record<string, string> = {
-  NEW: "bg-gray-600", LEARNING: "bg-blue-500", FAMILIAR: "bg-yellow-500", STRONG: "bg-green-500", MASTERED: "bg-purple-500",
+
+const CONTENT_LABEL: Record<ContentType, string> = {
+  HIRAGANA: "Hiragana",
+  KATAKANA: "Katakana",
+  KANJI: "Kanji",
+  VOCABULARY: "Vocabulary",
+  PHRASE: "Phrase",
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
-  etiquette:      "Etiquette",
-  communication:  "Communication",
-  "daily-life":   "Daily Life",
-  travel:         "Travel",
+  etiquette: "Etiquette",
+  communication: "Communication",
+  "daily-life": "Daily Life",
+  travel: "Travel",
 };
 
 function isCulturalTipItem(item: LessonItem): boolean {
@@ -81,48 +91,83 @@ function isScriptIntroItem(item: LessonItem): boolean {
   return !!item.content?.isScriptIntro;
 }
 
-function AudioButton({ text, lang = "ja-JP", size = "sm" }: { text: string; lang?: string; size?: "sm" | "md" }) {
+function AudioButton({
+  text,
+  lang = "ja-JP",
+  size = "sm",
+}: {
+  text: string;
+  lang?: string;
+  size?: "sm" | "md" | "lg";
+}) {
+  const dims = size === "lg" ? "w-14 h-14" : size === "md" ? "w-9 h-9" : "w-7 h-7";
+  const icon = size === "lg" ? "w-5 h-5" : size === "md" ? "w-4 h-4" : "w-3.5 h-3.5";
   return (
     <button
-      onClick={(e) => { e.stopPropagation(); speak(text, lang); }}
-      className={`rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center ${size === "md" ? "w-10 h-10 text-xl" : "w-8 h-8 text-base"}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        speak(text, lang);
+      }}
+      className={cn(
+        "rounded-full border border-line bg-surface-raised text-text-muted shrink-0",
+        "hover:text-text hover:border-line-strong transition-colors duration-150 ease-swift",
+        "grid place-items-center active:translate-y-px",
+        dims
+      )}
+      aria-label="Play pronunciation"
       title="Play pronunciation"
       type="button"
     >
-      ▶
+      <Volume2 className={icon} strokeWidth={1.75} />
     </button>
   );
 }
 
-function MasteryBar({ review }: { review: LessonItem["review"] }) {
+/** Five discrete pips: mastery is a stage, so it reads better than a bar. */
+function MasteryPips({ review }: { review: LessonItem["review"] }) {
   const level = review?.srsLevel ?? "NEW";
   const display = SRS_DISPLAY[level] ?? SRS_DISPLAY.NEW;
-  const pct = SRS_PCT[level] ?? 0;
-  const bar = SRS_BAR[level] ?? "bg-gray-600";
   return (
-    <div className="flex items-center gap-1.5">
-      <div className="w-14 h-1 bg-gray-800 rounded-full overflow-hidden">
-        <div className={`h-full ${bar} rounded-full transition-all`} style={{ width: `${pct}%` }} />
-      </div>
-      <span className={`text-xs ${display.color}`}>{pct}%</span>
-    </div>
+    <span
+      className="inline-flex items-center gap-2"
+      title={`Mastery: ${display.label} — New → Learning → Familiar → Strong → Mastered`}
+    >
+      <span className="text-[11px] font-medium" style={{ color: `hsl(${display.tone})` }}>
+        {display.label}
+      </span>
+      <span className="flex items-center gap-[3px]">
+        {[0, 1, 2, 3].map((i) => (
+          <span
+            key={i}
+            className="w-1 h-1 rounded-full transition-colors"
+            style={{
+              background:
+                i < display.step ? `hsl(${display.tone})` : "hsl(var(--line-strong))",
+            }}
+          />
+        ))}
+      </span>
+    </span>
   );
 }
 
 function MnemonicButton({ hint }: { hint: string }) {
   const [show, setShow] = useState(false);
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="w-full flex flex-col items-center gap-2">
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-medium transition-colors"
-        title="You've missed this one before — tap for a memory trick"
+        className={buttonStyles({ variant: "ghost", size: "sm", className: "text-warning hover:text-warning" })}
+        title="You've missed this one before — a memory hook may help"
       >
-        💡 {show ? "Hide hint" : "Need a hint?"}
+        <Lightbulb className="w-3.5 h-3.5" strokeWidth={1.75} />
+        {show ? "Hide hint" : "Need a hint?"}
       </button>
       {show && (
-        <p className="text-xs text-gray-400 italic text-center max-w-xs px-2">{hint}</p>
+        <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs animate-fade">
+          {hint}
+        </p>
       )}
     </div>
   );
@@ -206,47 +251,61 @@ function getSpeechText(item: LessonItem): string {
   return speechText(item.contentType, item.content);
 }
 
+/** Small caption above a group of secondary details on the answer side. */
+function DetailLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-subtle">
+      {children}
+    </p>
+  );
+}
+
 function CardFront({ item }: { item: LessonItem }) {
   const { content, contentType } = item;
-  if (!content) return <p className="text-gray-400">No content</p>;
+  if (!content) return <p className="text-text-muted">No content</p>;
 
   if (isListening(item)) {
     const text = getSpeechText(item);
     return (
       <div className="flex flex-col items-center gap-4">
-        <div className="text-gray-400 text-sm">Listen and identify</div>
+        <p className="text-[13px] text-text-muted">Listen and identify</p>
         <button
           onClick={() => speak(text)}
-          className="w-16 h-16 rounded-full bg-white/10 hover:bg-white/20 text-3xl flex items-center justify-center transition-colors"
+          className="w-16 h-16 rounded-full bg-accent/12 border border-accent/30 text-accent grid place-items-center hover:bg-accent/18 transition-colors duration-150 ease-swift active:translate-y-px"
+          aria-label="Play audio"
         >
-          ▶
+          <Volume2 className="w-6 h-6" strokeWidth={1.75} />
         </button>
-        <div className="text-gray-500 text-xs">Tap to play</div>
+        <p className="text-xs text-text-subtle">Tap to replay</p>
       </div>
     );
   }
 
   if (isE2J(item)) {
-    return <span className="text-4xl font-bold text-white text-center">{content.english}</span>;
+    return (
+      <span className="text-[1.75rem] font-semibold tracking-tight text-center leading-snug">
+        {content.english}
+      </span>
+    );
   }
 
   if (contentType === "HIRAGANA" || contentType === "KATAKANA" || contentType === "KANJI") {
-    return <span className="jp-char text-8xl font-bold text-white">{content.character}</span>;
+    return <span className="jp text-[5.5rem] leading-none font-medium">{content.character}</span>;
   }
 
   if (contentType === "VOCABULARY") {
     return (
       <div className="flex flex-col items-center gap-2">
-        <span className="jp-char text-6xl font-bold text-white">{content.japanese}</span>
-        <span className="jp-char text-2xl text-gray-300">{content.kana}</span>
+        <span className="jp text-[3.25rem] leading-none font-medium">{content.japanese}</span>
+        <span className="jp text-lg text-text-muted">{content.kana}</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-2">
-      <span className="jp-char text-3xl font-semibold text-white text-center">{content.japanese}</span>
-    </div>
+    <span className="jp text-[1.6rem] leading-relaxed font-medium text-center">
+      {content.japanese}
+    </span>
   );
 }
 
@@ -259,46 +318,44 @@ function CardBack({ item }: { item: LessonItem }) {
   if (isE2J(item)) {
     if (contentType === "VOCABULARY") {
       return (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex items-center gap-2">
-            <p className="jp-char text-4xl font-bold text-white">{content.japanese}</p>
-            {content.kana && <AudioButton text={readingSpeechText(content.kana)} />}
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <div className="flex items-center gap-2.5">
+            <p className="jp text-[2.25rem] leading-none font-medium">{content.japanese}</p>
+            {content.kana && <AudioButton text={readingSpeechText(content.kana)} size="md" />}
           </div>
-          {content.kana && <p className="jp-char text-xl text-gray-300">{content.kana}</p>}
-          {content.romaji && <p className="text-lg text-gray-400">{content.romaji}</p>}
+          {content.kana && <p className="jp text-base text-text-muted">{content.kana}</p>}
+          {content.romaji && <p className="text-[13px] text-text-subtle">{content.romaji}</p>}
         </div>
       );
     }
     if (contentType === "PHRASE") {
       return (
-        <div className="flex flex-col items-center gap-3 text-center">
-          <div className="flex items-center gap-2">
-            <p className="jp-char text-3xl font-semibold text-white">{content.japanese}</p>
-            {content.kana && <AudioButton text={readingSpeechText(content.kana)} />}
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <div className="flex items-center gap-2.5">
+            <p className="jp text-xl font-medium leading-snug">{content.japanese}</p>
+            {content.kana && <AudioButton text={readingSpeechText(content.kana)} size="md" />}
           </div>
-          {content.kana && <p className="jp-char text-lg text-gray-300">{content.kana}</p>}
-          {content.romaji && <p className="text-sm text-gray-500">{content.romaji}</p>}
+          {content.kana && <p className="jp text-[15px] text-text-muted">{content.kana}</p>}
+          {content.romaji && <p className="text-[13px] text-text-subtle">{content.romaji}</p>}
         </div>
       );
     }
     return (
-      <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex items-center gap-2">
-          <p className="jp-char text-6xl font-bold text-white">{content.character}</p>
-          {speechTextForItem && <AudioButton text={speechTextForItem} />}
+      <div className="flex flex-col items-center gap-2.5 text-center">
+        <div className="flex items-center gap-2.5">
+          <p className="jp text-[3.25rem] leading-none font-medium">{content.character}</p>
+          {speechTextForItem && <AudioButton text={speechTextForItem} size="md" />}
         </div>
-        {content.romaji && <p className="text-xl text-gray-300">{content.romaji}</p>}
+        {content.romaji && <p className="text-base text-text-muted">{content.romaji}</p>}
       </div>
     );
   }
 
   if (contentType === "HIRAGANA" || contentType === "KATAKANA") {
     return (
-      <div className="flex flex-col items-center gap-3">
-        <div className="flex items-center gap-2">
-          <p className="text-2xl font-semibold text-gray-200">{content.romaji}</p>
-          {speechTextForItem && <AudioButton text={speechTextForItem} />}
-        </div>
+      <div className="flex items-center gap-2.5">
+        <p className="text-2xl font-semibold tracking-tight">{content.romaji}</p>
+        {speechTextForItem && <AudioButton text={speechTextForItem} size="md" />}
       </div>
     );
   }
@@ -307,35 +364,39 @@ function CardBack({ item }: { item: LessonItem }) {
     const exampleWords = (content.exampleWords ?? []).slice(0, 3);
     const readings = kanjiReadings(content.onyomi, content.kunyomi);
     return (
-      <div className="flex flex-col items-center gap-4 text-center max-w-xs w-full">
-        <p className="text-xl font-semibold text-white">{(content.meanings ?? []).join(", ")}</p>
+      <div className="flex flex-col items-center gap-4 text-center w-full">
+        <p className="text-lg font-semibold tracking-tight">{(content.meanings ?? []).join(", ")}</p>
+
         {readings.length > 0 && (
-          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
-            {readings.map((r) => (
-              <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
-                <AudioButton text={readingSpeechText(r.kana)} />
-                <span className="jp-char text-gray-200 font-medium">{r.kana}</span>
-                <span className="text-gray-500 text-sm">{kanaToRomaji(r.kana)}</span>
-                <span className="text-gray-600 text-[10px] uppercase tracking-wide">{r.label}</span>
-              </div>
-            ))}
+          <div className="w-full space-y-2">
+            <DetailLabel>Readings</DetailLabel>
+            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+              {readings.map((r) => (
+                <div key={`${r.label}-${r.kana}`} className="flex items-center gap-2">
+                  <AudioButton text={readingSpeechText(r.kana)} />
+                  <span className="jp text-[15px] text-text">{r.kana}</span>
+                  <span className="text-[13px] text-text-muted">{kanaToRomaji(r.kana)}</span>
+                  <span className="text-[10px] uppercase tracking-wider text-text-subtle border border-line rounded px-1 py-px">
+                    {r.label}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
+
         {exampleWords.length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-gray-600 text-[10px] uppercase tracking-wide">Common words</p>
-            {exampleWords.map((w, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm">
-                <AudioButton text={w.reading || w.word || ""} />
-                <span className="jp-char text-gray-300">{w.word}</span>
-                {w.meaning && (
-                  <>
-                    <span className="text-gray-500">·</span>
-                    <span className="text-gray-400">{w.meaning}</span>
-                  </>
-                )}
-              </div>
-            ))}
+          <div className="w-full space-y-2 pt-1">
+            <DetailLabel>Common words</DetailLabel>
+            <div className="space-y-1.5">
+              {exampleWords.map((w, i) => (
+                <div key={i} className="flex items-center justify-center gap-2 text-[13px]">
+                  <AudioButton text={w.reading || w.word || ""} />
+                  <span className="jp text-text">{w.word}</span>
+                  {w.meaning && <span className="text-text-muted">{w.meaning}</span>}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -344,16 +405,18 @@ function CardBack({ item }: { item: LessonItem }) {
 
   if (contentType === "VOCABULARY") {
     return (
-      <div className="flex flex-col items-center gap-3 text-center">
-        <div className="flex items-center gap-2">
-          <p className="text-sm text-gray-400">{content.romaji}</p>
+      <div className="flex flex-col items-center gap-2.5 text-center">
+        <div className="flex items-center gap-2.5">
+          <p className="text-[13px] text-text-subtle">{content.romaji}</p>
           {speechTextForItem && <AudioButton text={speechTextForItem} />}
         </div>
-        <p className="text-xl text-white font-medium">{content.english}</p>
+        <p className="text-lg font-semibold tracking-tight">{content.english}</p>
         {content.exampleSentenceJa && (
-          <div className="mt-1 text-sm text-gray-500 max-w-xs">
-            <p className="jp-char">{content.exampleSentenceJa}</p>
-            {content.exampleSentenceEn && <p className="mt-1 text-gray-600">{content.exampleSentenceEn}</p>}
+          <div className="mt-1 pt-3 border-t border-line w-full space-y-1">
+            <p className="jp text-[13px] text-text-muted leading-relaxed">{content.exampleSentenceJa}</p>
+            {content.exampleSentenceEn && (
+              <p className="text-[13px] text-text-subtle">{content.exampleSentenceEn}</p>
+            )}
           </div>
         )}
       </div>
@@ -362,16 +425,28 @@ function CardBack({ item }: { item: LessonItem }) {
 
   // PHRASE
   return (
-    <div className="flex flex-col items-center gap-3 text-center">
-      <div className="flex items-center gap-2">
-        <p className="text-sm text-gray-400">{content.romaji}</p>
+    <div className="flex flex-col items-center gap-2.5 text-center">
+      <div className="flex items-center gap-2.5">
+        <p className="text-[13px] text-text-subtle">{content.romaji}</p>
         {speechTextForItem && <AudioButton text={speechTextForItem} />}
       </div>
-      <p className="text-xl text-white font-medium">{content.english}</p>
+      <p className="text-lg font-semibold tracking-tight">{content.english}</p>
       {content.scenario && (
-        <p className="text-xs text-gray-600 italic">{content.scenario}</p>
+        <p className="text-[13px] text-text-subtle">{content.scenario}</p>
       )}
     </div>
+  );
+}
+
+/** Editorial cards (culture tips, script intros) share one masthead treatment. */
+function Masthead({ kicker, tone }: { kicker: string; tone: string }) {
+  return (
+    <p
+      className="text-[10px] font-semibold uppercase tracking-[0.12em]"
+      style={{ color: `hsl(${tone})` }}
+    >
+      {kicker}
+    </p>
   );
 }
 
@@ -381,10 +456,8 @@ function CulturalTipQuestion({ item }: { item: LessonItem }) {
   const category = CATEGORY_LABELS[content.category ?? ""] ?? "Culture";
   return (
     <div className="flex flex-col gap-4 w-full">
-      <p className="text-xs text-amber-600 uppercase tracking-widest font-medium">
-        Japan Tip · {category}
-      </p>
-      <p className="text-white text-base leading-relaxed">{content.question}</p>
+      <Masthead kicker={`Japan tip · ${category}`} tone="var(--warning)" />
+      <p className="text-[15px] leading-relaxed">{content.question}</p>
     </div>
   );
 }
@@ -393,9 +466,9 @@ function CulturalTipAnswer({ item }: { item: LessonItem }) {
   const { content } = item;
   if (!content) return null;
   return (
-    <div className="flex flex-col gap-3 w-full">
-      <h3 className="text-base font-semibold text-white">{content.title}</h3>
-      <p className="text-gray-300 text-sm leading-relaxed">{content.body}</p>
+    <div className="flex flex-col gap-3 w-full animate-fade">
+      <h3 className="text-base font-semibold tracking-tight">{content.title}</h3>
+      <p className="text-[14px] text-text-muted leading-relaxed">{content.body}</p>
     </div>
   );
 }
@@ -404,21 +477,29 @@ function ScriptIntroCard({ item }: { item: LessonItem }) {
   const { content } = item;
   if (!content) return null;
   return (
-    <div className="flex flex-col gap-4 w-full">
-      <p className="text-xs text-sky-400 uppercase tracking-widest font-medium">
-        Before you begin
-      </p>
-      <h3 className="text-lg font-semibold text-white">{content.title}</h3>
-      <p className="text-gray-300 text-sm leading-relaxed">{content.body}</p>
+    <div className="flex flex-col gap-3 w-full">
+      <Masthead kicker="Before you begin" tone="var(--accent)" />
+      <h3 className="text-base font-semibold tracking-tight">{content.title}</h3>
+      <p className="text-[14px] text-text-muted leading-relaxed">{content.body}</p>
     </div>
   );
 }
 
-function Spinner() {
+/** Keyboard affordance shown beside the answer buttons on pointer-and-keyboard
+    devices. Study sessions are long; hands should be able to stay on the keys. */
+function Key({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-4">
-      <div className="w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-      <p className="text-gray-500 text-sm">Preparing lesson...</p>
+    <kbd className="hidden sm:inline-grid place-items-center min-w-[1.15rem] h-[1.15rem] px-1 rounded border border-current/25 text-[10px] font-sans font-medium opacity-70">
+      {children}
+    </kbd>
+  );
+}
+
+function Spinner({ label = "Preparing lesson…" }: { label?: string }) {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="w-6 h-6 border-2 border-line-strong border-t-accent rounded-full animate-spin" />
+      <p className="text-[13px] text-text-subtle">{label}</p>
     </div>
   );
 }
@@ -539,15 +620,19 @@ export default function LessonPage() {
     }
   }
 
-  function handleAnswer(correct: boolean) {
-    if (!currentItem || !lesson) return;
-    if (answeringRef.current) return;
-    answeringRef.current = true;
-    setMcChoice(null);
-    setMcCorrect(null);
-    submitReview(currentItem, correct ? 5 : 1);
-    advanceAfterAnswer(correct);
-  }
+  const handleAnswer = useCallback(
+    (correct: boolean) => {
+      if (!currentItem || !lesson) return;
+      if (answeringRef.current) return;
+      answeringRef.current = true;
+      setMcChoice(null);
+      setMcCorrect(null);
+      submitReview(currentItem, correct ? 5 : 1);
+      advanceAfterAnswer(correct);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [currentItem, lesson, correctCount, answeredCount, currentIndex, totalUnanswered]
+  );
 
   function handleEarlyExit() {
     const durationSeconds = Math.round((Date.now() - startTime.current) / 1000);
@@ -561,58 +646,126 @@ export default function LessonPage() {
     window.location.href = "/dashboard";
   }
 
+  // Keyboard control. A review session is dozens of identical decisions in a
+  // row; requiring a pointer for every one of them is the single biggest drag
+  // on the desktop experience.
+  const canUseShortcuts = !loading && !finalResults && !!currentItem && !isListeningMC;
+  useEffect(() => {
+    if (!canUseShortcuts) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+
+      if (showDoneDialog) {
+        if (e.key === "Escape") setShowDoneDialog(false);
+        return;
+      }
+      if (e.key === "Escape") {
+        setShowDoneDialog(true);
+        return;
+      }
+      if (!revealed) {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          setRevealed(true);
+        }
+        return;
+      }
+      if (e.key === "1") handleAnswer(false);
+      if (e.key === "2" || e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        handleAnswer(true);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [canUseShortcuts, revealed, showDoneDialog, handleAnswer]);
+
   if (loading) return <Spinner />;
 
   if (!lesson || unansweredItems.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-        <p className="text-gray-400 text-lg">No items found.</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center">
+        <p className="text-text-muted">Nothing left to study in this lesson.</p>
+        <Link href="/dashboard" className={buttonStyles({ variant: "secondary" })}>
+          Back to dashboard
+        </Link>
       </div>
     );
   }
 
   if (finalResults) {
+    const missed = finalResults.total - finalResults.correct;
     return (
-      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center gap-6 px-4">
-        {installPrompt && (
-          <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-xl p-4 flex items-center justify-between gap-3 text-sm">
-            <div>
-              <div className="font-medium text-white">Install Ikou</div>
-              <div className="text-gray-500 text-xs mt-0.5">Add to your home screen for quick access</div>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-6 px-4 py-12">
+        <div className="w-full max-w-sm space-y-6 animate-enter">
+          <div className="text-center space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight">Lesson complete</h1>
+            <p className="text-[13px] text-text-muted">
+              {finalResults.accuracy >= 80
+                ? "Strong session — that material is sticking."
+                : finalResults.accuracy >= 50
+                  ? "Solid work. The misses come back sooner."
+                  : "Tough set. These will resurface until they hold."}
+            </p>
+          </div>
+
+          <Card className="p-6 space-y-5">
+            <div className="text-center">
+              <p className="text-[3.25rem] leading-none font-semibold tracking-[-0.03em] tnum">
+                {finalResults.accuracy}
+                <span className="text-2xl text-text-muted font-medium">%</span>
+              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle mt-2">
+                Accuracy
+              </p>
             </div>
-            <button
-              onClick={() => {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                (installPrompt as any).prompt?.();
-                setInstallPrompt(null);
-              }}
-              className="bg-white text-gray-950 text-xs font-semibold px-3 py-1.5 rounded-lg shrink-0"
-            >
-              Install
-            </button>
+
+            <div className="grid grid-cols-3 divide-x divide-line border-t border-line pt-4">
+              {[
+                { label: "Correct", value: finalResults.correct, tone: "var(--success)" },
+                { label: "Missed", value: missed, tone: "var(--danger)" },
+                { label: "Total", value: finalResults.total, tone: "var(--text)" },
+              ].map((s) => (
+                <div key={s.label} className="text-center px-2">
+                  <p className="text-xl font-semibold tnum" style={{ color: `hsl(${s.tone})` }}>
+                    {s.value}
+                  </p>
+                  <p className="text-[11px] text-text-subtle mt-0.5">{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {installPrompt && (
+            <Card className="p-4 flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[13px] font-medium">Add Ikou to your home screen</p>
+                <p className="text-xs text-text-subtle mt-0.5">Opens full screen, works offline</p>
+              </div>
+              <button
+                onClick={() => {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (installPrompt as any).prompt?.();
+                  setInstallPrompt(null);
+                }}
+                className={buttonStyles({ variant: "secondary", size: "sm" })}
+              >
+                Install
+              </button>
+            </Card>
+          )}
+
+          <div className="space-y-2.5">
+            <Link href="/lesson" className={buttonStyles({ full: true, size: "lg" })}>
+              Start another lesson
+            </Link>
+            <Link href="/dashboard" className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}>
+              Back to dashboard
+            </Link>
           </div>
-        )}
-        <div className="text-center">
-          <div className="text-5xl mb-2 animate-bounce-soft">🎉</div>
-          <h1 className="font-display text-3xl font-bold text-white mb-1">Lesson Complete!</h1>
-          <p className="text-gray-500 text-sm">Nice work — see you next time.</p>
         </div>
-        <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center gap-4 w-full max-w-sm animate-pop-in">
-          <div className="text-center">
-            <p className="font-display text-6xl font-bold text-sunset">{finalResults.accuracy}%</p>
-            <p className="text-gray-500 mt-1 text-sm">Accuracy</p>
-          </div>
-          <div className="flex gap-6 text-sm">
-            <span className="text-green-400">✓ {finalResults.correct} correct</span>
-            <span className="text-red-400">✗ {finalResults.total - finalResults.correct} incorrect</span>
-          </div>
-        </div>
-        <a
-          href="/dashboard"
-          className="px-8 py-3 bg-sunset text-white shadow-glow-warm rounded-full font-display font-semibold hover:scale-[1.03] active:scale-[0.98] transition-transform"
-        >
-          Back to Dashboard
-        </a>
       </div>
     );
   }
@@ -620,207 +773,265 @@ export default function LessonPage() {
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
   const isScriptIntro = currentItem ? isScriptIntroItem(currentItem) : false;
+  const isEditorial = isCultural || isScriptIntro;
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col items-center px-4 pt-10 pb-8 gap-4">
+    <div className="min-h-screen flex flex-col">
       {showDoneDialog && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="bg-gray-900 border border-white/10 rounded-2xl p-6 w-full max-w-sm">
-            <h2 className="text-lg font-semibold text-white mb-2">Stop studying?</h2>
-            <p className="text-gray-400 text-sm mb-6">
-              Your progress has been saved. You can come back and continue any time.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDoneDialog(false)}
-                className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-xl text-sm font-medium transition-colors"
-              >
-                Keep going
-              </button>
-              <button
-                onClick={handleEarlyExit}
-                className="flex-1 py-3 bg-white hover:bg-gray-100 text-gray-950 rounded-xl text-sm font-semibold transition-colors"
-              >
-                Done
-              </button>
+        <div
+          className="fixed inset-0 z-50 grid place-items-center px-4 bg-canvas/70 backdrop-blur-sm animate-fade"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="stop-title"
+          onClick={() => setShowDoneDialog(false)}
+        >
+          <Card
+            className="p-5 w-full max-w-sm shadow-lifted animate-enter"
+            // Clicks inside the dialog must not fall through to the backdrop
+            // dismiss handler above.
+          >
+            <div onClick={(e) => e.stopPropagation()}>
+              <h2 id="stop-title" className="text-base font-semibold tracking-tight mb-1.5">
+                Stop studying?
+              </h2>
+              <p className="text-[13px] text-text-muted leading-relaxed mb-5">
+                Your progress is saved. This lesson will be waiting where you left it.
+              </p>
+              <div className="flex gap-2.5">
+                <button
+                  onClick={() => setShowDoneDialog(false)}
+                  className={buttonStyles({ variant: "secondary", full: true })}
+                >
+                  Keep going
+                </button>
+                <button onClick={handleEarlyExit} className={buttonStyles({ full: true })}>
+                  Finish
+                </button>
+              </div>
             </div>
-          </div>
+          </Card>
         </div>
       )}
 
-      <div className="w-full max-w-sm">
-        <div className="flex justify-between items-center mb-2 text-xs text-gray-600">
-          <span>{currentIndex + 1} / {totalUnanswered}</span>
-          <span className="capitalize">{currentItem?.contentType.toLowerCase()}</span>
+      {/* Session bar. A hairline progress track sits flush under it, so the
+          measure of the session is always in view without taking up a row. */}
+      <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-xl border-b border-line">
+        <div className="max-w-md mx-auto h-14 px-3 flex items-center gap-3">
           <button
             onClick={() => setShowDoneDialog(true)}
-            className="text-gray-600 hover:text-gray-400 transition-colors"
+            className="w-9 h-9 -ml-1 rounded-lg grid place-items-center text-text-subtle hover:text-text hover:bg-surface-raised transition-colors duration-150 ease-swift"
+            aria-label="End session"
+            title="End session (Esc)"
           >
-            Done
+            <X className="w-[18px] h-[18px]" strokeWidth={1.75} />
           </button>
+
+          <span className="flex-1 text-center text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle">
+            {currentItem ? CONTENT_LABEL[currentItem.contentType] : ""}
+          </span>
+
+          <span className="text-[13px] text-text-muted tnum tabular-nums min-w-[3rem] text-right">
+            {currentIndex + 1}/{totalUnanswered}
+          </span>
         </div>
-        <div className="w-full bg-gray-800 rounded-full h-1.5">
+        <div className="h-px bg-line">
           <div
-            className="bg-sunset h-1.5 rounded-full transition-all duration-300"
+            className="h-px bg-accent transition-[width] duration-300 ease-swift"
             style={{ width: `${progressPct}%` }}
           />
         </div>
-      </div>
+      </header>
 
-      {/* One keyed wrapper for the whole card group. Every card, hint and
-          answer control for the current item lives inside this single subtree,
-          so advancing swaps it out as one unit. Previously these were sibling
-          nodes that each carried key={currentItem.id}; duplicate keys among
-          siblings make React drop one of them from its reconciliation map, and
-          the dropped card's DOM node is never removed — that is what left a
-          previous character sitting above the current one. */}
-      {currentItem && (
-        <div key={currentItem.id} className="w-full flex flex-col items-center gap-4">
-          {isScriptIntro ? (
-            <>
-              <div className="w-full max-w-sm bg-gray-900 border border-sky-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
-                <ScriptIntroCard item={currentItem} />
-              </div>
-              <div className="w-full max-w-sm">
-                <button
-                  onClick={() => handleAnswer(true)}
-                  className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
-                >
-                  Got it, let&apos;s start →
-                </button>
-              </div>
-            </>
-          ) : isCultural ? (
-            <>
-              <div className="w-full max-w-sm bg-gray-900 border border-amber-500/20 shadow-glow-warm rounded-3xl p-8 flex flex-col items-start justify-center gap-4 min-h-56 animate-pop-in">
-                {revealed ? <CulturalTipAnswer item={currentItem} /> : <CulturalTipQuestion item={currentItem} />}
-              </div>
-              <div className="w-full max-w-sm">
-                {!revealed ? (
+      <main className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-4">
+        {/* One keyed wrapper for the whole card group. Every card, hint and
+            answer control for the current item lives inside this single subtree,
+            so advancing swaps it out as one unit. Previously these were sibling
+            nodes that each carried key={currentItem.id}; duplicate keys among
+            siblings make React drop one of them from its reconciliation map, and
+            the dropped card's DOM node is never removed — that is what left a
+            previous character sitting above the current one. */}
+        {currentItem && (
+          <div key={currentItem.id} className="flex-1 w-full flex flex-col gap-4 animate-enter">
+            {isEditorial ? (
+              <>
+                <div className="flex-1 flex flex-col justify-center">
+                  <Card className="p-6 flex flex-col justify-center min-h-[13rem]">
+                    {isScriptIntro ? (
+                      <ScriptIntroCard item={currentItem} />
+                    ) : revealed ? (
+                      <CulturalTipAnswer item={currentItem} />
+                    ) : (
+                      <CulturalTipQuestion item={currentItem} />
+                    )}
+                  </Card>
+                </div>
+
+                {isScriptIntro ? (
+                  <button
+                    onClick={() => handleAnswer(true)}
+                    className={buttonStyles({ size: "lg", full: true })}
+                  >
+                    Got it — let&apos;s start
+                  </button>
+                ) : !revealed ? (
                   <button
                     onClick={() => setRevealed(true)}
-                    className="w-full py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
+                    className={buttonStyles({ size: "lg", full: true })}
                   >
                     Reveal
+                    <Key>space</Key>
                   </button>
                 ) : (
-                  <div className="flex gap-3">
+                  <div className="flex gap-2.5">
                     <button
                       onClick={() => handleAnswer(false)}
-                      className="flex-1 py-4 bg-gray-900 hover:bg-red-950/40 border border-red-500/30 text-red-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
+                      className={buttonStyles({ variant: "danger", size: "lg", full: true })}
                     >
-                      Again ✗
+                      <RotateCcw className="w-4 h-4" strokeWidth={1.75} />
+                      Again
+                      <Key>1</Key>
                     </button>
                     <button
                       onClick={() => handleAnswer(true)}
-                      className="flex-1 py-4 bg-gray-900 hover:bg-green-950/40 border border-green-500/30 text-green-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
+                      className={buttonStyles({ variant: "success", size: "lg", full: true })}
                     >
-                      Got it ✓
+                      <Check className="w-4 h-4" strokeWidth={2} />
+                      Got it
+                      <Key>2</Key>
                     </button>
                   </div>
                 )}
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="relative w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-10 flex flex-col items-center justify-center min-h-56 gap-4 animate-pop-in">
-                <div
-                  className="absolute top-3 right-3"
-                  title="Your mastery progress for this item: New → Learning → Familiar → Strong → Mastered"
-                >
-                  <MasteryBar review={currentItem.review} />
-                </div>
-                <CardFront item={currentItem} />
-              </div>
-
-              {shouldShowMnemonicHint(currentItem) && (
-                <MnemonicButton hint={currentItem.content!.mnemonicHint!} />
-              )}
-
-              {isListeningMC ? (
-                <div className="w-full max-w-sm space-y-2">
-                  {mcChoices.map((choice) => {
-                    const isCorrectAnswer = choice === (currentItem.content?.english ?? "");
-                    const isSelected = mcChoice === choice;
-                    let btnClass = "w-full py-3 px-4 rounded-2xl text-sm font-medium text-left border transition-all ";
-                    if (!mcChoice) {
-                      btnClass += "bg-gray-900 border-white/10 text-gray-200 hover:bg-gray-800 hover:border-white/20";
-                    } else if (isSelected && mcCorrect) {
-                      btnClass += "bg-green-900/50 border-green-500/50 text-green-300 shadow-glow-green animate-pop-once";
-                    } else if (isSelected && !mcCorrect) {
-                      btnClass += "bg-red-900/50 border-red-500/50 text-red-300 shadow-glow-red";
-                    } else if (!isSelected && mcChoice && isCorrectAnswer) {
-                      btnClass += "bg-green-900/30 border-green-900/50 text-green-400";
-                    } else {
-                      btnClass += "bg-gray-900 border-white/5 text-gray-500";
-                    }
-                    return (
-                      <button
-                        key={choice}
-                        disabled={!!mcChoice}
-                        className={btnClass}
-                        onClick={() => {
-                          if (mcChoice) return;
-                          const correct = isCorrectAnswer;
-                          setMcChoice(choice);
-                          setMcCorrect(correct);
-                          if (correct) {
-                            setTimeout(() => handleAnswer(true), 800);
-                          }
-                        }}
-                      >
-                        {choice}
-                      </button>
-                    );
-                  })}
-                  {mcChoice && !mcCorrect && (
-                    <button
-                      onClick={() => handleAnswer(false)}
-                      className="w-full py-3 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-2xl text-sm font-medium transition-colors mt-1"
-                    >
-                      Continue
-                    </button>
-                  )}
-                </div>
-              ) : (
-                <>
-                  <div className="w-full max-w-sm bg-gray-900 border border-white/10 rounded-3xl p-8 flex flex-col items-center justify-center min-h-32">
-                    {revealed
-                      ? <CardBack item={currentItem} />
-                      : <span className="text-gray-800 text-sm select-none">─ ─ ─</span>
-                    }
+              </>
+            ) : (
+              <>
+                {/* Prompt and answer share one card, divided by a hairline.
+                    The old layout used two detached cards with a "─ ─ ─"
+                    placeholder in the second, which read as a rendering fault. */}
+                <div className="flex-1 flex flex-col justify-center gap-4">
+                <Card className="overflow-hidden">
+                  <div className="px-4 h-10 flex items-center justify-between border-b border-line">
+                    <span className="text-[11px] font-medium text-text-subtle">
+                      {isE2J(currentItem)
+                        ? "Say it in Japanese"
+                        : isListening(currentItem)
+                          ? "What did you hear?"
+                          : "What does this mean?"}
+                    </span>
+                    <MasteryPips review={currentItem.review} />
                   </div>
-                  <div className="flex gap-3 w-full max-w-sm">
-                    {!revealed ? (
+
+                  <div className="p-8 flex flex-col items-center justify-center min-h-[11rem]">
+                    <CardFront item={currentItem} />
+                  </div>
+
+                  {!isListeningMC && (
+                    <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-surface-sunken/40">
+                      {revealed ? (
+                        <div className="w-full flex justify-center animate-fade">
+                          <CardBack item={currentItem} />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setRevealed(true)}
+                          className="text-[13px] text-text-subtle hover:text-text-muted transition-colors"
+                        >
+                          Answer hidden — tap Reveal
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </Card>
+
+                {shouldShowMnemonicHint(currentItem) && (
+                  <MnemonicButton hint={currentItem.content!.mnemonicHint!} />
+                )}
+                </div>
+
+                {isListeningMC ? (
+                  <div className="space-y-2">
+                    {mcChoices.map((choice) => {
+                      const isCorrectAnswer = choice === (currentItem.content?.english ?? "");
+                      const isSelected = mcChoice === choice;
+
+                      let stateClass =
+                        "bg-surface border-line text-text hover:border-line-strong hover:bg-surface-raised";
+                      if (mcChoice) {
+                        if (isSelected && mcCorrect) {
+                          stateClass = "bg-success/12 border-success/45 text-success";
+                        } else if (isSelected && !mcCorrect) {
+                          stateClass = "bg-danger/12 border-danger/45 text-danger animate-flag";
+                        } else if (isCorrectAnswer) {
+                          stateClass = "bg-success/[0.06] border-success/25 text-success/80";
+                        } else {
+                          stateClass = "bg-surface border-line text-text-subtle";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={choice}
+                          disabled={!!mcChoice}
+                          className={cn(
+                            "w-full py-3 px-4 rounded-lg text-sm font-medium text-left border",
+                            "transition-colors duration-150 ease-swift disabled:cursor-default",
+                            stateClass
+                          )}
+                          onClick={() => {
+                            if (mcChoice) return;
+                            const correct = isCorrectAnswer;
+                            setMcChoice(choice);
+                            setMcCorrect(correct);
+                            if (correct) {
+                              setTimeout(() => handleAnswer(true), 700);
+                            }
+                          }}
+                        >
+                          {choice}
+                        </button>
+                      );
+                    })}
+                    {mcChoice && !mcCorrect && (
                       <button
-                        onClick={() => setRevealed(true)}
-                        className="flex-1 py-4 bg-sunset text-white shadow-glow-warm hover:scale-[1.015] active:scale-[0.98] rounded-2xl font-display font-semibold text-base transition-transform"
+                        onClick={() => handleAnswer(false)}
+                        className={buttonStyles({ variant: "secondary", full: true, className: "mt-1" })}
                       >
-                        Reveal
+                        Continue
                       </button>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => handleAnswer(false)}
-                          className="flex-1 py-4 bg-gray-900 hover:bg-red-950/40 border border-red-500/30 text-red-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
-                        >
-                          Again ✗
-                        </button>
-                        <button
-                          onClick={() => handleAnswer(true)}
-                          className="flex-1 py-4 bg-gray-900 hover:bg-green-950/40 border border-green-500/30 text-green-400 rounded-2xl font-display font-semibold text-base transition-colors active:scale-[0.98]"
-                        >
-                          Got it ✓
-                        </button>
-                      </>
                     )}
                   </div>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      )}
+                ) : !revealed ? (
+                  <button
+                    onClick={() => setRevealed(true)}
+                    className={buttonStyles({ size: "lg", full: true })}
+                  >
+                    Reveal
+                    <Key>space</Key>
+                  </button>
+                ) : (
+                  <div className="flex gap-2.5">
+                    <button
+                      onClick={() => handleAnswer(false)}
+                      className={buttonStyles({ variant: "danger", size: "lg", full: true })}
+                    >
+                      <RotateCcw className="w-4 h-4" strokeWidth={1.75} />
+                      Again
+                      <Key>1</Key>
+                    </button>
+                    <button
+                      onClick={() => handleAnswer(true)}
+                      className={buttonStyles({ variant: "success", size: "lg", full: true })}
+                    >
+                      <Check className="w-4 h-4" strokeWidth={2} />
+                      Got it
+                      <Key>2</Key>
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

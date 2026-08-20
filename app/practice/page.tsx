@@ -1,10 +1,13 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
+import { Check, Lightbulb, Lock, RotateCcw, Volume2 } from "lucide-react";
 import { speak, speechText } from "@/lib/speech";
+import { cn } from "@/lib/utils";
+import { Card, TopBar, buttonStyles } from "@/app/components/ui";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,13 +50,17 @@ function AudioButton({
         e.stopPropagation();
         speak(text, lang);
       }}
-      className={`rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center ${
-        size === "md" ? "w-10 h-10 text-xl" : "w-8 h-8 text-base"
-      }`}
+      className={cn(
+        "rounded-full border border-line bg-surface-raised text-text-muted shrink-0",
+        "hover:text-text hover:border-line-strong transition-colors duration-150 ease-swift",
+        "grid place-items-center active:translate-y-px",
+        size === "md" ? "w-9 h-9" : "w-7 h-7"
+      )}
+      aria-label="Play pronunciation"
       title="Play pronunciation"
       type="button"
     >
-      ▶
+      <Volume2 className={size === "md" ? "w-4 h-4" : "w-3.5 h-3.5"} strokeWidth={1.75} />
     </button>
   );
 }
@@ -125,17 +132,33 @@ function parseExampleWords(raw: unknown): ExampleWord[] {
   }
 }
 
+function DetailLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold uppercase tracking-[0.1em] text-text-subtle">
+      {children}
+    </p>
+  );
+}
+
+function Key({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="hidden sm:inline-grid place-items-center min-w-[1.15rem] h-[1.15rem] px-1 rounded border border-current/25 text-[10px] font-sans font-medium opacity-70">
+      {children}
+    </kbd>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Selection view
 // ---------------------------------------------------------------------------
 
 type TypeKey = "HIRAGANA" | "KATAKANA" | "KANJI";
 
-const TYPE_LABELS: Record<TypeKey, string> = {
-  HIRAGANA: "Hiragana",
-  KATAKANA: "Katakana",
-  KANJI: "Kanji",
-};
+const TYPES: { key: TypeKey; label: string; glyph: string; tone: string }[] = [
+  { key: "HIRAGANA", label: "Hiragana", glyph: "あ", tone: "var(--track-hiragana)" },
+  { key: "KATAKANA", label: "Katakana", glyph: "ア", tone: "var(--track-katakana)" },
+  { key: "KANJI", label: "Kanji", glyph: "漢", tone: "var(--track-kanji)" },
+];
 
 function SelectionView({
   onStart,
@@ -192,87 +215,120 @@ function SelectionView({
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-gray-950/90 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-          >
-            ← Dashboard
-          </Link>
-          <span className="text-sm font-medium text-white">Character Practice</span>
-          <div className="w-20" />
+    <div className="min-h-screen">
+      <TopBar title="Practice" backLabel="Dashboard" />
+
+      <main className="max-w-lg mx-auto px-4 py-8 space-y-6">
+        <div className="space-y-1.5">
+          <h1 className="text-2xl font-semibold tracking-tight">Character practice</h1>
+          <p className="text-sm text-text-muted leading-relaxed">
+            Free-form flashcards. Nothing here affects your review schedule — use it
+            to warm up or drill a script on its own.
+          </p>
         </div>
-      </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-10 pb-12">
-        <div className="bg-gray-900 border border-white/10 rounded-3xl p-6 space-y-6">
-          <div className="text-center space-y-1">
-            <div className="text-4xl mb-1">練習</div>
-            <h1 className="font-display text-2xl font-bold">Character Practice</h1>
-            <p className="text-gray-400 text-sm">Choose which characters to practice</p>
-          </div>
-
-          <div className="flex gap-3 justify-center">
-            {(["HIRAGANA", "KATAKANA", "KANJI"] as TypeKey[]).map((type) => {
-              const locked = type === "KANJI" && !kanaMastered;
-              return (
-                <button
-                  key={type}
-                  onClick={() => toggle(type)}
-                  disabled={locked}
-                  title={locked ? "Master all hiragana and katakana to unlock kanji" : undefined}
-                  className={`flex-1 py-3 px-2 rounded-2xl border text-sm font-medium transition-all ${
+        <fieldset className="space-y-2.5">
+          <legend className="text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle mb-2.5">
+            Include
+          </legend>
+          {TYPES.map(({ key, label, glyph, tone }) => {
+            const locked = key === "KANJI" && !kanaMastered;
+            const isOn = selected.has(key);
+            return (
+              <button
+                key={key}
+                onClick={() => toggle(key)}
+                disabled={locked}
+                aria-pressed={isOn}
+                title={locked ? "Master all hiragana and katakana to unlock kanji" : undefined}
+                className={cn(
+                  "w-full flex items-center gap-3 p-3.5 rounded-xl border text-left",
+                  "transition-colors duration-150 ease-swift",
+                  locked
+                    ? "border-line bg-surface/50 cursor-not-allowed"
+                    : isOn
+                      ? "border-accent/45 bg-accent/[0.07]"
+                      : "border-line bg-surface hover:border-line-strong"
+                )}
+              >
+                <span
+                  className="w-9 h-9 rounded-lg grid place-items-center shrink-0 border"
+                  style={
                     locked
-                      ? "bg-transparent text-gray-700 border-white/5 cursor-not-allowed"
-                      : selected.has(type)
-                        ? "bg-sunset text-white border-transparent shadow-glow-warm scale-[1.02]"
-                        : "bg-transparent text-gray-400 border-white/20 hover:border-white/40 hover:text-white"
-                  }`}
+                      ? { background: "hsl(var(--surface-raised))", borderColor: "hsl(var(--line))" }
+                      : {
+                          background: `hsl(${tone} / 0.12)`,
+                          borderColor: `hsl(${tone} / 0.28)`,
+                          color: `hsl(${tone})`,
+                        }
+                  }
                 >
-                  {locked ? `🔒 ${TYPE_LABELS[type]}` : TYPE_LABELS[type]}
-                </button>
-              );
-            })}
-          </div>
+                  {locked ? (
+                    <Lock className="w-4 h-4 text-text-subtle" strokeWidth={1.75} />
+                  ) : (
+                    <span className="jp text-base font-medium leading-none">{glyph}</span>
+                  )}
+                </span>
 
-          {error && (
-            <p className="text-red-400 text-sm text-center">{error}</p>
-          )}
+                <span className="flex-1 min-w-0">
+                  <span className={cn("block text-sm font-medium", locked && "text-text-subtle")}>
+                    {label}
+                  </span>
+                  {locked && (
+                    <span className="block text-xs text-text-subtle mt-0.5">
+                      Unlocks once all kana is mastered
+                    </span>
+                  )}
+                </span>
 
-          <button
-            onClick={startPractice}
-            disabled={loading}
-            className="w-full py-3 rounded-full bg-sunset text-white shadow-glow-warm font-display font-semibold text-sm hover:scale-[1.015] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? "Loading…" : "Start Practice"}
-          </button>
-        </div>
+                {!locked && (
+                  <span
+                    className={cn(
+                      "w-5 h-5 rounded-md border grid place-items-center shrink-0 transition-colors",
+                      isOn ? "bg-accent border-accent text-accent-fg" : "border-line-strong"
+                    )}
+                  >
+                    {isOn && <Check className="w-3 h-3" strokeWidth={3} />}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </fieldset>
+
+        {error && (
+          <p className="text-[13px] text-danger" role="alert">{error}</p>
+        )}
+
+        <button
+          onClick={startPractice}
+          disabled={loading}
+          className={buttonStyles({ size: "lg", full: true })}
+        >
+          {loading ? "Loading…" : "Start practice"}
+        </button>
       </main>
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Loading view — shown while auto-starting a practice session
-// ---------------------------------------------------------------------------
-
 function MnemonicButton({ hint }: { hint: string }) {
   const [show, setShow] = useState(false);
   return (
-    <div className="flex flex-col items-center gap-2">
+    <div className="w-full flex flex-col items-center gap-2">
       <button
         type="button"
         onClick={() => setShow((s) => !s)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-medium transition-colors"
-        title="Tap for a memory trick"
+        className={buttonStyles({ variant: "ghost", size: "sm", className: "text-warning hover:text-warning" })}
+        title="Tap for a memory hook"
       >
-        💡 {show ? "Hide hint" : "Need a hint?"}
+        <Lightbulb className="w-3.5 h-3.5" strokeWidth={1.75} />
+        {show ? "Hide hint" : "Need a hint?"}
       </button>
       {show && (
-        <p className="text-xs text-gray-400 italic text-center max-w-xs px-2">{hint}</p>
+        <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs animate-fade">
+          {hint}
+        </p>
       )}
     </div>
   );
@@ -280,8 +336,9 @@ function MnemonicButton({ hint }: { hint: string }) {
 
 function LoadingView() {
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
-      <p className="text-gray-400 text-sm">Loading…</p>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+      <div className="w-6 h-6 border-2 border-line-strong border-t-accent rounded-full animate-spin" />
+      <p className="text-[13px] text-text-subtle">Loading…</p>
     </div>
   );
 }
@@ -305,156 +362,174 @@ function PracticeView({
   const total = items.length;
   const isKanji = item.contentType === ContentType.KANJI;
   const exampleWords = parseExampleWords(item.exampleWords);
+  const readings = isKanji ? kanjiReadings(item.onyomi, item.kunyomi) : [];
 
-  function advance(wasCorrect: boolean) {
-    const newCorrect = wasCorrect ? correctCount + 1 : correctCount;
-    if (index + 1 >= total) {
-      onFinish(newCorrect, total);
-    } else {
-      setCorrectCount(newCorrect);
-      setIndex(index + 1);
-      setFlipped(false);
+  const advance = useCallback(
+    (wasCorrect: boolean) => {
+      const newCorrect = wasCorrect ? correctCount + 1 : correctCount;
+      if (index + 1 >= total) {
+        onFinish(newCorrect, total);
+      } else {
+        setCorrectCount(newCorrect);
+        setIndex(index + 1);
+        setFlipped(false);
+      }
+    },
+    [correctCount, index, total, onFinish]
+  );
+
+  // Same shortcuts as the lesson player, so the two flows feel like one app.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+
+      if (!flipped) {
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          setFlipped(true);
+        }
+        return;
+      }
+      if (e.key === "1") advance(false);
+      if (e.key === "2" || e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        advance(true);
+      }
     }
-  }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [flipped, advance]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-      {/* Header */}
-      <header className="border-b border-white/10 bg-gray-950/90 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
+    <div className="min-h-screen flex flex-col">
+      <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-xl border-b border-line">
+        <div className="max-w-md mx-auto h-14 px-4 flex items-center justify-between gap-3">
           <Link
             href="/dashboard"
-            className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
+            className="text-[13px] text-text-muted hover:text-text transition-colors -ml-1 px-1 py-1 rounded"
           >
             ← Dashboard
           </Link>
-          <span className="text-sm text-gray-400">
-            {index + 1} / {total}
+          <span className="text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle">
+            Practice
           </span>
-          <div className="w-20" />
+          <span className="text-[13px] text-text-muted tnum min-w-[3rem] text-right">
+            {index + 1}/{total}
+          </span>
+        </div>
+        <div className="h-px bg-line">
+          <div
+            className="h-px bg-accent transition-[width] duration-300 ease-swift"
+            style={{ width: `${((index + 1) / total) * 100}%` }}
+          />
         </div>
       </header>
 
-      {/* Progress bar */}
-      <div className="w-full h-1.5 bg-white/10">
-        <div
-          className="h-1.5 bg-sunset transition-all duration-300"
-          style={{ width: `${((index + 1) / total) * 100}%` }}
-        />
-      </div>
+      <main className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-4">
+        <div key={index} className="flex-1 w-full flex flex-col gap-4 animate-enter">
+          <div className="flex-1 flex flex-col justify-center gap-4">
+          <Card className="overflow-hidden">
+            <div className="p-8 flex items-center justify-center min-h-[11rem]">
+              <span className={cn("jp leading-none font-medium", isKanji ? "text-[5rem]" : "text-[5.5rem]")}>
+                {item.character}
+              </span>
+            </div>
 
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-8 pb-12 flex flex-col gap-6">
-        {/* Flashcard */}
-        <div
-          key={index}
-          onClick={() => !flipped && setFlipped(true)}
-          className={`bg-gray-900 border border-white/10 rounded-3xl flex flex-col items-center justify-center gap-4 p-8 min-h-64 cursor-pointer select-none transition-all animate-pop-in ${
-            flipped ? "cursor-default shadow-glow-warm border-orange-500/20" : "hover:border-white/25 active:scale-[0.99]"
-          }`}
-        >
-          {/* Character */}
-          <span
-            className={`jp-char leading-none ${
-              isKanji ? "text-7xl" : "text-8xl"
-            }`}
-          >
-            {item.character}
-          </span>
-
-          {!flipped && (
-            <p className="text-gray-500 text-xs mt-2">Tap to reveal</p>
-          )}
-
-          {/* Revealed content */}
-          {flipped && (
-            <div className="w-full space-y-3 mt-2">
-              <div className="border-t border-white/10 pt-4 space-y-3">
-                {/* Audio button */}
-                <div className="flex justify-center">
-                  <AudioButton text={speechText(item.contentType, item)} size="md" />
-                </div>
-
-                {isKanji ? (
-                  // Kanji revealed content
-                  <div className="space-y-3 text-center">
-                    {item.meanings && item.meanings.length > 0 && (
-                      <p className="text-white font-semibold text-lg">
-                        {item.meanings.join(", ")}
-                      </p>
-                    )}
-                    {(() => {
-                      const readings = kanjiReadings(item.onyomi, item.kunyomi);
-                      return readings.length > 0 ? (
-                        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5">
-                          {readings.map((r) => (
-                            <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
-                              <span className="jp-char text-gray-300">{r.kana}</span>
-                              <span className="text-gray-500 text-sm">{kanaToRomaji(r.kana)}</span>
-                              <span className="text-gray-600 text-[10px] uppercase tracking-wide">{r.label}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : null;
-                    })()}
-                    {exampleWords.length > 0 && (
-                      <div className="pt-1 space-y-1">
-                        <p className="text-gray-600 text-[10px] uppercase tracking-wide">
-                          Common words
-                        </p>
-                        {exampleWords.map((w, i) => (
-                          <div key={i} className="flex items-center justify-center gap-2 text-sm">
-                            <AudioButton text={w.reading || w.word || ""} />
-                            <span className="jp-char text-gray-300">{w.word}</span>
-                            {w.meaning && (
-                              <>
-                                <span className="text-gray-500">·</span>
-                                <span className="text-gray-400">{w.meaning}</span>
-                              </>
-                            )}
-                          </div>
-                        ))}
+            <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-surface-sunken/40">
+              {!flipped ? (
+                <button
+                  onClick={() => setFlipped(true)}
+                  className="text-[13px] text-text-subtle hover:text-text-muted transition-colors"
+                >
+                  Answer hidden — tap Reveal
+                </button>
+              ) : (
+                <div className="w-full flex flex-col items-center gap-4 animate-fade">
+                  {isKanji ? (
+                    <>
+                      <div className="flex items-center gap-2.5">
+                        {item.meanings && item.meanings.length > 0 && (
+                          <p className="text-lg font-semibold tracking-tight">
+                            {item.meanings.join(", ")}
+                          </p>
+                        )}
+                        <AudioButton text={speechText(item.contentType, item)} size="md" />
                       </div>
-                    )}
-                  </div>
-                ) : (
-                  // Hiragana/Katakana revealed content
-                  <div className="space-y-2 text-center">
-                    <p className="text-white font-semibold text-2xl tracking-wide">
-                      {item.romaji}
-                    </p>
-                  </div>
-                )}
-              </div>
+
+                      {readings.length > 0 && (
+                        <div className="w-full space-y-2 text-center">
+                          <DetailLabel>Readings</DetailLabel>
+                          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                            {readings.map((r) => (
+                              <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
+                                <span className="jp text-[15px]">{r.kana}</span>
+                                <span className="text-[13px] text-text-muted">{kanaToRomaji(r.kana)}</span>
+                                <span className="text-[10px] uppercase tracking-wider text-text-subtle border border-line rounded px-1 py-px">
+                                  {r.label}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {exampleWords.length > 0 && (
+                        <div className="w-full space-y-2 text-center">
+                          <DetailLabel>Common words</DetailLabel>
+                          <div className="space-y-1.5">
+                            {exampleWords.map((w, i) => (
+                              <div key={i} className="flex items-center justify-center gap-2 text-[13px]">
+                                <AudioButton text={w.reading || w.word || ""} />
+                                <span className="jp">{w.word}</span>
+                                {w.meaning && <span className="text-text-muted">{w.meaning}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-2.5">
+                      <p className="text-2xl font-semibold tracking-tight">{item.romaji}</p>
+                      <AudioButton text={speechText(item.contentType, item)} size="md" />
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+
+          {flipped && item.mnemonicHint && <MnemonicButton key={item.id} hint={item.mnemonicHint} />}
+          </div>
+
+          {!flipped ? (
+            <button onClick={() => setFlipped(true)} className={buttonStyles({ size: "lg", full: true })}>
+              Reveal
+              <Key>space</Key>
+            </button>
+          ) : (
+            <div className="flex gap-2.5">
+              <button
+                onClick={() => advance(false)}
+                className={buttonStyles({ variant: "danger", size: "lg", full: true })}
+              >
+                <RotateCcw className="w-4 h-4" strokeWidth={1.75} />
+                Again
+                <Key>1</Key>
+              </button>
+              <button
+                onClick={() => advance(true)}
+                className={buttonStyles({ variant: "success", size: "lg", full: true })}
+              >
+                <Check className="w-4 h-4" strokeWidth={2} />
+                Got it
+                <Key>2</Key>
+              </button>
             </div>
           )}
         </div>
-
-        {flipped && item.mnemonicHint && (
-          <MnemonicButton key={item.id} hint={item.mnemonicHint} />
-        )}
-
-        {/* Action buttons — only visible after flip */}
-        {flipped && (
-          <div className="flex gap-3">
-            <button
-              onClick={() => advance(false)}
-              className="flex-1 py-3 rounded-2xl border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-950/40 transition-colors active:scale-[0.98]"
-            >
-              Again ✗
-            </button>
-            <button
-              onClick={() => advance(true)}
-              className="flex-1 py-3 rounded-2xl bg-sunset text-white shadow-glow-warm text-sm font-display font-semibold hover:scale-[1.015] active:scale-[0.98] transition-transform"
-            >
-              Got it ✓
-            </button>
-          </div>
-        )}
-
-        {/* Progress label */}
-        <p className="text-center text-gray-500 text-xs">
-          {index + 1} of {total}
-        </p>
       </main>
     </div>
   );
@@ -476,58 +551,56 @@ function SummaryView({
   const accuracy = total > 0 ? Math.round((correct / total) * 100) : 0;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white flex flex-col">
-      <header className="border-b border-white/10 bg-gray-950/90 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-          >
-            ← Dashboard
-          </Link>
-          <span className="text-sm font-medium text-white">Results</span>
-          <div className="w-20" />
-        </div>
-      </header>
+    <div className="min-h-screen flex flex-col">
+      <TopBar title="Results" backLabel="Dashboard" />
 
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 pt-10 pb-12 flex flex-col items-center gap-6">
-        <div className="text-5xl animate-bounce-soft">{accuracy >= 80 ? "🎉" : accuracy >= 50 ? "👍" : "💪"}</div>
-        <div className="bg-gray-900 border border-white/10 rounded-3xl p-8 w-full text-center space-y-6 animate-pop-in">
-          <div className="space-y-1">
-            <p className="text-gray-400 text-sm">Session complete</p>
-            <p className="font-display text-6xl font-bold text-sunset">{accuracy}%</p>
-            <p className="text-gray-400 text-sm">accuracy</p>
+      <main className="flex-1 max-w-md mx-auto w-full px-4 py-10 flex flex-col justify-center">
+        <div className="space-y-6 animate-enter">
+          <div className="text-center space-y-1.5">
+            <h1 className="text-2xl font-semibold tracking-tight">Session complete</h1>
+            <p className="text-[13px] text-text-muted">
+              {accuracy >= 80
+                ? "That set is well in hand."
+                : accuracy >= 50
+                  ? "Coming along — another pass will help."
+                  : "Worth running these again shortly."}
+            </p>
           </div>
 
-          <div className="flex justify-center gap-8 text-sm text-gray-400">
+          <Card className="p-6 space-y-5">
             <div className="text-center">
-              <p className="text-white text-2xl font-display font-semibold">{correct}</p>
-              <p>Correct</p>
+              <p className="text-[3.25rem] leading-none font-semibold tracking-[-0.03em] tnum">
+                {accuracy}
+                <span className="text-2xl text-text-muted font-medium">%</span>
+              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-text-subtle mt-2">
+                Accuracy
+              </p>
             </div>
-            <div className="text-center">
-              <p className="text-white text-2xl font-display font-semibold">{total - correct}</p>
-              <p>Missed</p>
+            <div className="grid grid-cols-3 divide-x divide-line border-t border-line pt-4">
+              {[
+                { label: "Correct", value: correct, tone: "var(--success)" },
+                { label: "Missed", value: total - correct, tone: "var(--danger)" },
+                { label: "Total", value: total, tone: "var(--text)" },
+              ].map((s) => (
+                <div key={s.label} className="text-center px-2">
+                  <p className="text-xl font-semibold tnum" style={{ color: `hsl(${s.tone})` }}>
+                    {s.value}
+                  </p>
+                  <p className="text-[11px] text-text-subtle mt-0.5">{s.label}</p>
+                </div>
+              ))}
             </div>
-            <div className="text-center">
-              <p className="text-white text-2xl font-display font-semibold">{total}</p>
-              <p>Total</p>
-            </div>
-          </div>
-        </div>
+          </Card>
 
-        <div className="w-full space-y-3">
-          <button
-            onClick={onPracticeAgain}
-            className="w-full py-3 rounded-full bg-sunset text-white shadow-glow-warm font-display font-semibold text-sm hover:scale-[1.015] active:scale-[0.98] transition-transform"
-          >
-            Practice Again
-          </button>
-          <Link
-            href="/dashboard"
-            className="block w-full py-3 rounded-full border border-white/20 text-gray-300 text-sm font-medium hover:bg-white/5 transition-colors text-center"
-          >
-            Back to Dashboard
-          </Link>
+          <div className="space-y-2.5">
+            <button onClick={onPracticeAgain} className={buttonStyles({ size: "lg", full: true })}>
+              Practice again
+            </button>
+            <Link href="/dashboard" className={buttonStyles({ variant: "secondary", size: "lg", full: true })}>
+              Back to dashboard
+            </Link>
+          </div>
         </div>
       </main>
     </div>

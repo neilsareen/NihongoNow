@@ -48,38 +48,41 @@ export default function GlobalError({
 
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-950 text-white antialiased">
-        <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center gap-5">
-          <div className="text-5xl">🍵</div>
-          <div>
-            <h1 className="text-xl font-bold mb-2">Something went wrong</h1>
-            <p className="text-gray-400 text-sm max-w-xs leading-relaxed">
+      <body className="min-h-screen bg-[#0F1115] text-[#f5f6f8] antialiased">
+        <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 gap-6">
+          <div className="text-center space-y-2 max-w-sm">
+            <h1 className="text-xl font-semibold tracking-tight">Something went wrong</h1>
+            <p className="text-[#9aa0ae] text-[13px] leading-relaxed">
               {recovering
                 ? "Clearing cached files and reloading…"
                 : "The app hit an unexpected error. Reloading usually clears it up."}
             </p>
           </div>
+
           {!recovering && (
-            <div className="flex flex-col gap-3 w-full max-w-xs">
+            <div className="flex flex-col gap-2.5 w-full max-w-xs">
               <button
                 onClick={() => reset()}
-                className="w-full py-3 bg-sunset text-white rounded-full font-semibold text-sm"
+                className="w-full h-10 rounded-lg bg-[#5566e8] hover:bg-[#6d7bec] text-white text-sm font-medium transition-colors"
               >
                 Try again
               </button>
               <button
                 onClick={handleManualReset}
-                className="w-full py-3 border border-white/15 text-gray-300 rounded-full text-sm"
+                className="w-full h-10 rounded-lg border border-[#282c36] hover:border-[#3d4250] text-[#c7cbd4] text-sm font-medium transition-colors"
               >
-                Clear cached data & reload
+                Clear cached data and reload
               </button>
             </div>
           )}
+
           {/* Surfaced so a failure on someone else's device can actually be
               diagnosed — the console isn't reachable on mobile. */}
-          <details className="w-full max-w-xs text-left mt-2" open>
-            <summary className="text-gray-500 text-xs cursor-pointer">Error details</summary>
-            <pre className="mt-2 p-3 bg-black/40 border border-white/10 rounded-lg text-[10px] font-mono text-red-300 whitespace-pre-wrap break-words max-h-60 overflow-auto">
+          <details className="w-full max-w-xs text-left" open>
+            <summary className="text-[#6b7280] text-xs cursor-pointer select-none">
+              Error details
+            </summary>
+            <pre className="mt-2 p-3 bg-black/40 border border-[#282c36] rounded-lg text-[10px] font-mono text-[#e58b93] whitespace-pre-wrap break-words max-h-60 overflow-auto">
               {[
                 error?.name && `${error.name}: ${error.message ?? ""}`,
                 error?.digest && `digest: ${error.digest}`,

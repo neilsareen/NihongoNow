@@ -21,17 +21,21 @@ export function PWAUpdateBanner() {
   if (!show) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 max-w-lg mx-auto bg-indigo-600 text-white rounded-xl p-4 flex items-center justify-between gap-3 z-50 shadow-xl">
-      <div>
-        <p className="text-sm font-semibold">App updated</p>
-        <p className="text-xs opacity-80 mt-0.5">Refresh to get the latest version</p>
+    // Sits above the tab bar rather than pinned to the very bottom edge, where
+    // it used to cover the navigation on every screen that has one.
+    <div className="fixed left-1/2 -translate-x-1/2 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-[60] w-[calc(100%-2rem)] max-w-sm animate-enter">
+      <div className="bg-surface-raised border border-line-strong rounded-xl shadow-lifted px-4 py-3 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-[13px] font-medium">Ikou has been updated</p>
+          <p className="text-xs text-text-subtle mt-0.5">Refresh to load the latest version.</p>
+        </div>
+        <button
+          onClick={() => window.location.reload()}
+          className="text-[13px] font-medium text-accent hover:text-accent-hover transition-colors shrink-0"
+        >
+          Refresh
+        </button>
       </div>
-      <button
-        onClick={() => window.location.reload()}
-        className="text-xs bg-white text-indigo-600 font-semibold px-3 py-1.5 rounded-lg shrink-0"
-      >
-        Refresh
-      </button>
     </div>
   );
 }
