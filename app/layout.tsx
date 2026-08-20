@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Outfit, Plus_Jakarta_Sans } from "next/font/google";
+import { Outfit, Plus_Jakarta_Sans, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { PWAUpdateBanner } from "@/app/components/pwa-update-banner";
@@ -23,6 +23,24 @@ const sans = Plus_Jakarta_Sans({
   weight: ["400", "500", "600", "700"],
   display: "swap",
   variable: "--font-sans",
+});
+
+// Kana and kanji get a real webfont rather than whatever the device happens to
+// have. Left to system fonts the same character arrives as Hiragino on Apple,
+// Yu Gothic on Windows and Noto on Android — and Yu Gothic in particular draws
+// kana narrow and tall, which is what made the flashcards look horizontally
+// squashed. Noto Sans JP is drawn to fill the em square, so a lone kana at
+// poster size reads as wide as it should.
+//
+// `subsets` is deliberately omitted: Google exposes no named "japanese" subset
+// for this family, so asking for one would fetch the Latin ranges only. Without
+// it we self-host every unicode-range chunk and the browser downloads just the
+// handful it needs, which also means preload has to be off.
+const japanese = Noto_Sans_JP({
+  weight: ["400", "500", "700"],
+  display: "swap",
+  preload: false,
+  variable: "--font-jp",
 });
 
 export const metadata: Metadata = {
@@ -61,7 +79,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             light-theme learner never sees a flash of the dark ground. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
-      <body className={`${sans.variable} ${display.variable} ${sans.className} min-h-screen bg-ink text-text antialiased`}>
+      <body className={`${sans.variable} ${display.variable} ${japanese.variable} ${sans.className} min-h-screen bg-ink text-text antialiased`}>
         <ThemeSync />
         {children}
         <PWAUpdateBanner />

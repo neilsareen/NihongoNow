@@ -85,8 +85,8 @@ async function seedHiragana() {
     { character: "ぞ", romaji: "zo", displayOrder: 56, mnemonicHint: "🧵 ゛ The そ sewing thread plus two ticks — the s voices into 'zo'." },
     // D row
     { character: "だ", romaji: "da", displayOrder: 57, mnemonicHint: "🌮 ゛ The た taco plus two ticks — the t voices into 'da'." },
-    { character: "ぢ", romaji: "ji2", displayOrder: 58, mnemonicHint: "📣 ゛ The ち cheerleader plus two ticks — rare, and said exactly like じ." },
-    { character: "づ", romaji: "zu2", displayOrder: 59, mnemonicHint: "🌊 ゛ The つ wave plus two ticks — rare, and said exactly like ず." },
+    { character: "ぢ", romaji: "ji", displayOrder: 58, mnemonicHint: "📣 ゛ The ち cheerleader plus two ticks — rare, and said exactly like じ." },
+    { character: "づ", romaji: "zu", displayOrder: 59, mnemonicHint: "🌊 ゛ The つ wave plus two ticks — rare, and said exactly like ず." },
     { character: "で", romaji: "de", displayOrder: 60, mnemonicHint: "🐕 ゛ The て wagging tail plus two ticks — the t voices into 'de'." },
     { character: "ど", romaji: "do", displayOrder: 61, mnemonicHint: "🦶 ゛ The と stubbed toe plus two ticks — the t voices into 'do'." },
     // B row
@@ -107,7 +107,7 @@ async function seedHiragana() {
     await prisma.japaneseCharacter.upsert({
       where: { character: h.character },
       create: { ...h, type: ContentType.HIRAGANA },
-      update: { mnemonicHint: h.mnemonicHint },
+      update: { romaji: h.romaji, displayOrder: h.displayOrder, mnemonicHint: h.mnemonicHint },
     });
   }
   console.log(`  Seeded ${hiragana.length} hiragana`);
@@ -190,7 +190,7 @@ async function seedKatakana() {
     await prisma.japaneseCharacter.upsert({
       where: { character: k.character },
       create: { ...k, type: ContentType.KATAKANA },
-      update: { mnemonicHint: k.mnemonicHint },
+      update: { romaji: k.romaji, displayOrder: k.displayOrder, mnemonicHint: k.mnemonicHint },
     });
   }
   console.log(`  Seeded ${katakana.length} katakana`);
@@ -392,7 +392,7 @@ async function seedPhrases() {
     { japanese: "アレルギーがあります", kana: "アレルギーがあります", romaji: "arerugii ga arimasu", english: "I have an allergy", scenario: "restaurant", difficulty: 3, tags: ["restaurant", "healthcare"] },
     // Transportation
     { japanese: "〜まで、お願いします", kana: "〜まで、おねがいします", romaji: "~ made, onegai shimasu", english: "To ~, please (to driver)", scenario: "transportation", difficulty: 2, tags: ["taxi", "essential"] },
-    { japanese: "〜行きの電車はどれですか？", kana: "〜いきのでんしゃはどれですか？", romaji: "~ yuki no densha wa dore desu ka?", english: "Which train goes to ~?", scenario: "transportation", difficulty: 3, tags: ["train"] },
+    { japanese: "〜行きの電車はどれですか？", kana: "〜ゆきのでんしゃはどれですか？", romaji: "~ yuki no densha wa dore desu ka?", english: "Which train goes to ~?", scenario: "transportation", difficulty: 3, tags: ["train"] },
     { japanese: "切符を一枚ください", kana: "きっぷをいちまいください", romaji: "kippu wo ichimai kudasai", english: "One ticket please", scenario: "transportation", difficulty: 2, tags: ["train"] },
     // Hotel
     { japanese: "チェックインをお願いします", kana: "チェックインをおねがいします", romaji: "chekkuin wo onegai shimasu", english: "I'd like to check in", scenario: "hotel", difficulty: 2, tags: ["hotel"] },

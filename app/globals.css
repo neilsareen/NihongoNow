@@ -183,9 +183,17 @@
    designed for them; Inter-class fallbacks vary wildly between platforms.
    --------------------------------------------------------------------------- */
 .jp {
-  font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI",
-    "Yu Gothic", "Noto Sans JP", "Meiryo", system-ui, sans-serif;
-  font-feature-settings: "palt";
+  font-family: var(--font-jp), "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+    "Noto Sans JP", "Meiryo", system-ui, sans-serif;
+  /* No "palt". Proportional alternates strip the side bearings off kana, which
+     is right for running Japanese text and wrong here: a single character on a
+     flashcard then sits in a box narrower than the glyph was drawn for and
+     reads as squashed. Full-width metrics are what these forms expect. */
+  font-feature-settings: normal;
+  /* The Latin scale carries tight negative tracking (text-mega is -0.04em).
+     Japanese has no business inheriting it — at 4.5rem it drags the dakuten
+     back into the character it belongs to. */
+  letter-spacing: normal;
 }
 
 .jp-char {
