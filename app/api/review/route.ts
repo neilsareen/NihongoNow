@@ -1,15 +1,13 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { calculateNextReview, isMastered, type SRSQuality } from "@/lib/srs";
 import { ContentType, LearningStage } from "@prisma/client";
+import { getSessionUser } from "@/lib/simulation";
 
 export async function POST(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSessionUser();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = session;
 
   const body = await request.json();
   const { contentType, contentId, quality, lessonItemId } = body as {
@@ -24,7 +22,7 @@ export async function POST(request: Request) {
   const existing = await prisma.review.findUnique({
     where: {
       userId_contentType_contentId: {
-        userId: user.id,
+        userId: userId,
         contentType,
         contentId,
       },
@@ -47,13 +45,13 @@ export async function POST(request: Request) {
   const review = await prisma.review.upsert({
     where: {
       userId_contentType_contentId: {
-        userId: user.id,
+        userId: userId,
         contentType,
         contentId,
       },
     },
     create: {
-      userId: user.id,
+      userId: userId,
       contentType,
       contentId,
       ...next,
@@ -81,9 +79,9 @@ export async function POST(request: Request) {
   }
 
   await prisma.userStatistics.upsert({
-    where: { userId: user.id },
+    where: { userId: userId },
     create: {
-      userId: user.id,
+      userId: userId,
       totalReviews: 1,
       correctReviews: correct ? 1 : 0,
     },
@@ -106,16 +104,16 @@ export async function POST(request: Request) {
 
   const [totalItems, masteredItems] = await Promise.all([
     prisma.review.count({
-      where: { userId: user.id, contentType },
+      where: { userId: userId, contentType },
     }),
     prisma.review.count({
-      where: { userId: user.id, contentType, srsLevel: "MASTERED" },
+      where: { userId: userId, contentType, srsLevel: "MASTERED" },
     }),
   ]);
 
   await prisma.userProgress.upsert({
-    where: { userId_stage: { userId: user.id, stage } },
-    create: { userId: user.id, stage, totalItems, masteredItems },
+    where: { userId_stage: { userId: userId, stage } },
+    create: { userId: userId, stage, totalItems, masteredItems },
     update: { totalItems, masteredItems },
   });
 

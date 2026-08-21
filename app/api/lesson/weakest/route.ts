@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { getMasteredKana, filterUnlockedReviews } from "@/lib/progression";
 import { ExerciseType } from "@prisma/client";
+import { getSessionUser } from "@/lib/simulation";
 
 const EXERCISE_FOR_TYPE: Record<string, ExerciseType> = {
   HIRAGANA: ExerciseType.CHARACTER_RECOGNITION,
@@ -14,17 +14,17 @@ const EXERCISE_FOR_TYPE: Record<string, ExerciseType> = {
 };
 
 export async function POST() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSessionUser();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = session;
 
   // Same readability gate as the daily lesson, so content whose reading isn't
   // unlocked yet can't sneak back in through the weakest-items shortcut.
-  const masteredKana = await getMasteredKana(user.id);
+  const masteredKana = await getMasteredKana(userId);
 
   const fetched = await prisma.review.findMany({
     where: {
-      userId: user.id,
+      userId,
       totalAttempts: { gte: 3 },
       srsLevel: { not: "MASTERED" },
     },
@@ -39,7 +39,7 @@ export async function POST() {
 
   const lesson = await prisma.lesson.create({
     data: {
-      userId: user.id,
+      userId,
       items: {
         create: reviews.map((r, i) => ({
           contentType: r.contentType,

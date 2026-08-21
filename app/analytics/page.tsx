@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+import { getSessionUser } from "@/lib/simulation";
 import {
   Banknote,
   BookOpen,
@@ -78,16 +78,16 @@ const CULTURAL_NORMS: { title: string; detail: string; icon: LucideIcon }[] = [
 ];
 
 export default async function AnalyticsPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  const session = await getSessionUser();
+  if (!session) redirect("/login");
+  const { userId } = session;
 
   const [profile, stats, progress, lessonsCompleted, kanjiUnlocked] = await Promise.all([
-    prisma.userProfile.findUnique({ where: { id: user.id } }),
-    prisma.userStatistics.findUnique({ where: { userId: user.id } }),
-    prisma.userProgress.findMany({ where: { userId: user.id } }),
-    prisma.lesson.count({ where: { userId: user.id, completedAt: { not: null } } }),
-    hasAnyUnlockedKanji(user.id),
+    prisma.userProfile.findUnique({ where: { id: userId } }),
+    prisma.userStatistics.findUnique({ where: { userId } }),
+    prisma.userProgress.findMany({ where: { userId } }),
+    prisma.lesson.count({ where: { userId, completedAt: { not: null } } }),
+    hasAnyUnlockedKanji(userId),
   ]);
 
   if (!profile) redirect("/onboarding");

@@ -1,7 +1,7 @@
 import { prisma } from "./prisma";
 import { ContentType, ExerciseType } from "@prisma/client";
 import { CULTURAL_TIPS, getRandomCulturalTip } from "./cultural-tips";
-import { SCRIPT_INTROS } from "./script-intros";
+import { SCRIPT_INTROS, type ScriptIntroKey } from "./script-intros";
 import {
   getMasteredKana,
   filterUnlockedReviews,
@@ -122,7 +122,7 @@ export async function generateDailyLesson(config: LessonConfig) {
   const newItemBudget = Math.max(3, Math.round(newItemSeconds / AVG_SECONDS_PER_ITEM));
 
   const weakTypes = await getWeakContentTypes(userId);
-  const { items: newItems, hasLearnedHiragana, hasLearnedKatakana, hasLearnedDakuten } =
+  const { items: newItems, learned, hasLearnedDakuten } =
     await getNewContent(userId, newItemBudget, weakTypes, masteredKana);
   const spreadNewItems = spreadByFamily(newItems);
 
@@ -155,25 +155,35 @@ export async function generateDailyLesson(config: LessonConfig) {
     withCulture.splice(Math.min(withCulture.length, firstSlot + slotGap * i), 0, cultureItems[i]);
   }
 
-  // Explainer cards shown once, before a learner meets a new script or the
-  // dakuten/handakuten modifiers, for the first time
-  const scriptIntroItems: LessonItemSpec[] = [];
-  const introducesHiragana = newItems.some((i) => i.contentType === ContentType.HIRAGANA);
-  const introducesKatakana = newItems.some((i) => i.contentType === ContentType.KATAKANA);
+  // Explainer cards, each shown once: the very first time the learner opens a
+  // lesson, and thereafter whenever a lesson is about to introduce a kind of
+  // content they have never met — a new script, the sound modifiers, kanji,
+  // their first real words, their first phrases. They are prepended in
+  // curriculum order so an intro always lands before the item it explains.
+  const introCard = (key: ScriptIntroKey) => ({
+    contentType: ContentType.PHRASE,
+    contentId: SCRIPT_INTROS[key].id,
+    exerciseType: ExerciseType.SCENARIO,
+  });
+
+  const introduces = (type: ContentType) => newItems.some((i) => i.contentType === type);
   const introducesDakuten = newItems.some(
     (i) =>
       (i.contentType === ContentType.HIRAGANA || i.contentType === ContentType.KATAKANA) &&
       (i.displayOrder ?? 0) >= DAKUTEN_DISPLAY_ORDER_START
   );
-  if (!hasLearnedHiragana && introducesHiragana) {
-    scriptIntroItems.push({ contentType: ContentType.PHRASE, contentId: SCRIPT_INTROS.hiragana.id, exerciseType: ExerciseType.SCENARIO });
-  }
-  if (!hasLearnedKatakana && introducesKatakana) {
-    scriptIntroItems.push({ contentType: ContentType.PHRASE, contentId: SCRIPT_INTROS.katakana.id, exerciseType: ExerciseType.SCENARIO });
-  }
-  if (!hasLearnedDakuten && introducesDakuten) {
-    scriptIntroItems.push({ contentType: ContentType.PHRASE, contentId: SCRIPT_INTROS.dakuten.id, exerciseType: ExerciseType.SCENARIO });
-  }
+  const hasLearnedAnything = Object.values(learned).some(Boolean);
+
+  const scriptIntroItems: LessonItemSpec[] = [];
+  // The three-scripts overview opens the very first lesson, before the
+  // hiragana card explains the script that lesson actually starts with.
+  if (!hasLearnedAnything) scriptIntroItems.push(introCard("welcome"));
+  if (!learned.HIRAGANA && introduces(ContentType.HIRAGANA)) scriptIntroItems.push(introCard("hiragana"));
+  if (!learned.KATAKANA && introduces(ContentType.KATAKANA)) scriptIntroItems.push(introCard("katakana"));
+  if (!hasLearnedDakuten && introducesDakuten) scriptIntroItems.push(introCard("dakuten"));
+  if (!learned.KANJI && introduces(ContentType.KANJI)) scriptIntroItems.push(introCard("kanji"));
+  if (!learned.VOCABULARY && introduces(ContentType.VOCABULARY)) scriptIntroItems.push(introCard("vocabulary"));
+  if (!learned.PHRASE && introduces(ContentType.PHRASE)) scriptIntroItems.push(introCard("phrases"));
 
   const finalItems = [...scriptIntroItems, ...withCulture];
 
@@ -396,10 +406,15 @@ async function getNewContent(
     results.push(...kanaItems.slice(kanaShare, kanaShare + (budget - results.length)));
   }
 
+  // Which kinds of content the learner has already met at least once, so a
+  // first-encounter explainer is shown exactly once per kind.
+  const learned = Object.fromEntries(
+    Object.values(ContentType).map((t) => [t, (learnedByType[t]?.size ?? 0) > 0])
+  ) as Record<ContentType, boolean>;
+
   return {
     items: results.slice(0, budget),
-    hasLearnedHiragana: (learnedByType[ContentType.HIRAGANA]?.size ?? 0) > 0,
-    hasLearnedKatakana: (learnedByType[ContentType.KATAKANA]?.size ?? 0) > 0,
+    learned,
     hasLearnedDakuten: learnedDakuten.length > 0,
   };
 }

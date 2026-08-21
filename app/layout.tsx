@@ -3,6 +3,7 @@ import { Outfit, Plus_Jakarta_Sans, Noto_Sans_JP } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 import { PWAUpdateBanner } from "@/app/components/pwa-update-banner";
+import { SimulationBanner } from "@/app/components/simulation-banner";
 import { ThemeSync } from "@/app/components/theme";
 import { THEME_COLOR, THEME_INIT_SCRIPT } from "@/lib/theme";
 
@@ -81,6 +82,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`${sans.variable} ${display.variable} ${japanese.variable} ${sans.className} min-h-screen bg-ink text-text antialiased`}>
         <ThemeSync />
+        <SimulationBanner />
         {children}
         <PWAUpdateBanner />
         <Script id="sw-register" strategy="afterInteractive">{`

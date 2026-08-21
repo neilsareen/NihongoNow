@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
 import {
@@ -7,6 +6,7 @@ import {
   getUnlockedVocabulary,
   getUnlockedPhrases,
 } from "@/lib/progression";
+import { getSessionUser } from "@/lib/simulation";
 
 // Words for the speaking drill. Weakest first, because saying a word is the
 // slowest kind of practice in the app and the queue should spend that time on
@@ -52,15 +52,13 @@ function toItem(
 }
 
 export async function GET() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSessionUser();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = session;
 
   const reviews = await prisma.review.findMany({
     where: {
-      userId: user.id,
+      userId,
       contentType: { in: [ContentType.VOCABULARY, ContentType.PHRASE] },
     },
     select: {
@@ -78,7 +76,7 @@ export async function GET() {
     .filter((r) => r.contentType === ContentType.PHRASE)
     .map((r) => r.contentId);
 
-  const masteredKana = await getMasteredKana(user.id);
+  const masteredKana = await getMasteredKana(userId);
 
   const [learnedVocab, learnedPhrases, unlockedVocab, unlockedPhrases] = await Promise.all([
     learnedVocabIds.length

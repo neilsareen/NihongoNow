@@ -37,6 +37,7 @@ interface LessonItem {
     scenario?: string;
     isCulturalTip?: boolean;
     isScriptIntro?: boolean;
+    kicker?: string;
     title?: string;
     question?: string;
     body?: string;
@@ -584,7 +585,7 @@ function ScriptIntroCard({ item }: { item: LessonItem }) {
   if (!content) return null;
   return (
     <div className="flex flex-col gap-3 w-full">
-      <Masthead kicker="Before you begin" tone="var(--sky)" />
+      <Masthead kicker={content.kicker ?? "Before you begin"} tone="var(--sky)" />
       <h3 className="text-xl">{content.title}</h3>
       <p className="text-[15px] text-text-muted leading-relaxed">{content.body}</p>
     </div>

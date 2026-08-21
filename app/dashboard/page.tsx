@@ -1,5 +1,5 @@
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { getSessionUser } from "@/lib/simulation";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
@@ -89,12 +89,11 @@ function lessonOrdinal(n: number): string {
 }
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) redirect("/api/auth/signout");
+  const session = await getSessionUser();
+  if (!session) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked } = await getDashboardData(user.id, timeZone);
+  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked } = await getDashboardData(session.userId, timeZone);
   if (!profile) redirect("/onboarding");
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));

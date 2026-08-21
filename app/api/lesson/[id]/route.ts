@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { SCRIPT_INTRO_LIST } from "@/lib/script-intros";
 import { effectiveSrsLevel } from "@/lib/srs";
+import { getSessionUser } from "@/lib/simulation";
 
 export async function GET(
   _request: Request,
@@ -12,11 +12,9 @@ export async function GET(
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSessionUser();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = session;
 
   const lesson = await prisma.lesson.findUnique({
     where: { id },
@@ -24,7 +22,7 @@ export async function GET(
   });
 
   if (!lesson) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if (lesson.userId !== user.id) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (lesson.userId !== userId) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
   const culturalTipMap = new Map(CULTURAL_TIPS.map((t) => [t.id, t]));
   const scriptIntroMap = new Map(SCRIPT_INTRO_LIST.map((t) => [t.id, t]));
@@ -67,7 +65,7 @@ export async function GET(
     phraseIds.length ? prisma.phrase.findMany({ where: { id: { in: phraseIds } } }) : [],
     reviewContentIds.length
       ? prisma.review.findMany({
-          where: { userId: user.id, contentId: { in: reviewContentIds } },
+          where: { userId, contentId: { in: reviewContentIds } },
           select: {
             contentId: true,
             contentType: true,
@@ -129,11 +127,9 @@ export async function PATCH(
 ) {
   const { id } = await params;
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSessionUser();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const { userId } = session;
 
   const body = await request.json().catch(() => ({}));
   const { completedAt, xpEarned, accuracy, durationSeconds } = body as {
@@ -144,7 +140,7 @@ export async function PATCH(
   };
 
   const updated = await prisma.lesson.update({
-    where: { id, userId: user.id },
+    where: { id, userId },
     data: {
       ...(completedAt !== undefined && { completedAt: new Date(completedAt) }),
       ...(xpEarned !== undefined && { xpEarned }),
@@ -155,8 +151,8 @@ export async function PATCH(
 
   if (durationSeconds !== undefined && durationSeconds > 0) {
     await prisma.userStatistics.upsert({
-      where: { userId: user.id },
-      create: { userId: user.id, totalStudyTime: durationSeconds, lessonsCompleted: 1 },
+      where: { userId },
+      create: { userId, totalStudyTime: durationSeconds, lessonsCompleted: 1 },
       update: {
         totalStudyTime: { increment: durationSeconds },
         ...(completedAt !== undefined && { lessonsCompleted: { increment: 1 } }),

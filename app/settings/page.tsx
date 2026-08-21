@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LogOut } from "lucide-react";
+import { GraduationCap, LogOut, RotateCcw } from "lucide-react";
 import { AVATAR_OPTIONS, cn, getAvatar } from "@/lib/utils";
 import { Avatar, Card, SectionLabel, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 import { BottomNav } from "@/app/components/bottom-nav";
@@ -10,6 +10,19 @@ import { ThemeToggle } from "@/app/components/theme";
 import { SilentModeSettings } from "@/app/components/silent-mode";
 
 const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
+
+interface SandboxSummary {
+  exists: boolean;
+  itemsSeen: number;
+  itemsMastered: number;
+  lessonsCompleted: number;
+}
+
+interface SimulationStatus {
+  canSimulate: boolean;
+  isSimulating: boolean;
+  summary?: SandboxSummary;
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -19,6 +32,15 @@ export default function SettingsPage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const [simStatus, setSimStatus] = useState<SimulationStatus | null>(null);
+  const [simBusy, setSimBusy] = useState(false);
+
+  function refreshSimStatus() {
+    fetch("/api/simulation")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d && setSimStatus(d));
+  }
+
   useEffect(() => {
     fetch("/api/user/profile")
       .then((r) => r.json())
@@ -26,7 +48,20 @@ export default function SettingsPage() {
         setStudyGoal(d.studyGoalMinutes ?? 20);
         setAvatarKey(getAvatar(d.avatarUrl).key);
       });
+    refreshSimStatus();
   }, []);
+
+  async function handleSimulationAction(action: "start" | "stop" | "reset") {
+    setSimBusy(true);
+    const res = await fetch("/api/simulation", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action }),
+    });
+    if (res.ok) setSimStatus(await res.json());
+    setSimBusy(false);
+    if (action === "start") router.push("/dashboard");
+  }
 
   async function handleGoalChange(goal: number) {
     setStudyGoal(goal);
@@ -163,6 +198,72 @@ export default function SettingsPage() {
           </div>
           <ThemeToggle />
         </section>
+
+        {simStatus?.canSimulate && (
+          <section className="space-y-3">
+            <div className="space-y-1">
+              <SectionLabel>Beginner simulation</SectionLabel>
+              <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+                See the app exactly as a brand-new learner would — the welcome
+                and script intros, locked kanji, everything at zero. Your own
+                progress is never touched.
+              </p>
+            </div>
+            <Card className="p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-11 h-11 rounded-full grid place-items-center shrink-0"
+                  style={{ background: "hsl(var(--sun) / 0.18)", color: "hsl(var(--sun))" }}
+                >
+                  <GraduationCap className="w-5 h-5" strokeWidth={2.5} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-display font-bold text-[15px]">
+                    {simStatus.isSimulating ? "Simulation is on" : "Simulate a beginner"}
+                  </p>
+                  {simStatus.summary?.exists ? (
+                    <p className="text-[13px] text-text-subtle tnum">
+                      {simStatus.summary.itemsSeen} seen · {simStatus.summary.itemsMastered} mastered ·{" "}
+                      {simStatus.summary.lessonsCompleted} lessons done
+                    </p>
+                  ) : (
+                    <p className="text-[13px] text-text-subtle">Not started yet</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2.5">
+                <button
+                  onClick={() => handleSimulationAction(simStatus.isSimulating ? "stop" : "start")}
+                  disabled={simBusy}
+                  className={buttonStyles({
+                    variant: simStatus.isSimulating ? "secondary" : "primary",
+                    full: true,
+                  })}
+                  style={buttonVars(simStatus.isSimulating ? "secondary" : "primary")}
+                >
+                  {simStatus.isSimulating ? "Exit simulation" : "Start simulation"}
+                </button>
+                {simStatus.summary?.exists && (
+                  <button
+                    onClick={() => {
+                      if (confirm("Reset the simulated beginner back to day one? This clears its lessons and progress.")) {
+                        handleSimulationAction("reset");
+                      }
+                    }}
+                    disabled={simBusy}
+                    aria-label="Reset simulated progress"
+                    title="Reset simulated progress"
+                    className={buttonStyles({ variant: "secondary" })}
+                    style={buttonVars("secondary")}
+                  >
+                    <RotateCcw className="w-[18px] h-[18px]" strokeWidth={2.5} />
+                  </button>
+                )}
+              </div>
+            </Card>
+          </section>
+        )}
 
         <section className="space-y-3">
           <SectionLabel>Account</SectionLabel>

@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
 import { getMasteredKana, getUnlockedKanji } from "@/lib/progression";
 import { ContentType } from "@prisma/client";
+import { getSessionUser } from "@/lib/simulation";
 
 function shuffleArray<T>(array: T[]): T[] {
   const arr = [...array];
@@ -54,11 +54,8 @@ function spreadShuffleByFamily<T extends { romaji: string; contentType: ContentT
 }
 
 export async function GET(request: Request) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const session = await getSessionUser();
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const typesParam = searchParams.get("types") ?? "";
@@ -77,7 +74,7 @@ export async function GET(request: Request) {
   // Only kanji the learner can already read is practisable. Enforced here
   // rather than only in the UI, since the type comes off the query string.
   const wantsKanji = requestedTypes.includes(ContentType.KANJI);
-  const masteredKana = wantsKanji ? await getMasteredKana(user.id) : null;
+  const masteredKana = wantsKanji ? await getMasteredKana(session.userId) : null;
   const unlockedKanji = masteredKana ? await getUnlockedKanji(masteredKana) : [];
   const includeKanji = wantsKanji && unlockedKanji.length > 0;
 
