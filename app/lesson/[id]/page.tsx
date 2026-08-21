@@ -277,7 +277,7 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CardFront({ item }: { item: LessonItem }) {
+function CardFront({ item, revealed }: { item: LessonItem; revealed: boolean }) {
   const { content, contentType } = item;
   if (!content) return <p className="text-text-muted">No content</p>;
 
@@ -312,10 +312,25 @@ function CardFront({ item }: { item: LessonItem }) {
   }
 
   if (contentType === "VOCABULARY") {
+    // A word written in kanji is being asked to be read, so its kana reading is
+    // part of the answer rather than part of the prompt — printing it under the
+    // word hands the reading over before the learner has tried for it. A word
+    // already written in kana gives nothing away, so it stays on the prompt.
+    const kanaIsTheAnswer = !!content.kana && content.kana !== content.japanese;
+    const showKana = !!content.kana && (!kanaIsTheAnswer || revealed);
     return (
       <div className="flex flex-col items-center gap-2">
         <span className="jp text-[3.5rem] leading-none font-bold">{content.japanese}</span>
-        <span className="jp text-xl text-text-muted font-medium">{content.kana}</span>
+        {showKana && (
+          <span
+            className={cn(
+              "jp text-xl text-text-muted font-medium",
+              kanaIsTheAnswer && "animate-pop-in"
+            )}
+          >
+            {content.kana}
+          </span>
+        )}
       </div>
     );
   }
@@ -1080,7 +1095,7 @@ export default function LessonPage() {
                           ? "What did you hear?"
                           : "What does this mean?"}
                     </p>
-                    <CardFront item={currentItem} />
+                    <CardFront item={currentItem} revealed={revealed} />
                   </div>
 
                   {!isListeningMC && (
