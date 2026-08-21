@@ -60,7 +60,7 @@ export type SpeechErrorKind = "denied" | "no-speech" | "network" | "unknown";
 
 const ERROR_MESSAGE: Record<SpeechErrorKind, string> = {
   denied: "Microphone access is blocked. Allow it in your browser settings to speak your answers.",
-  "no-speech": "Didn't catch that — try again a little louder.",
+  "no-speech": "That wasn't quite right — try again.",
   network: "Speech recognition needs a connection right now. Check your network and try again.",
   unknown: "Something went wrong with the microphone. Try again.",
 };
@@ -95,7 +95,11 @@ export function useSpeechRecognition({
   const onResultRef = useRef(onResult);
   onResultRef.current = onResult;
   // Whether this run produced anything: `onend` fires for both a clean result
-  // and a silent timeout, and only the latter deserves a nudge.
+  // and a run the recogniser couldn't make a word out of, and only the latter
+  // deserves a nudge. That nudge is phrased as a pronunciation miss rather than
+  // a microphone problem: a learner whose attempt lands too far from Japanese
+  // for the recogniser to transcribe has said something, and telling them to
+  // speak up blames the mic for what is really an attempt worth retrying.
   const gotResultRef = useRef(false);
 
   useEffect(() => {

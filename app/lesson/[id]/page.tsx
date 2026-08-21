@@ -207,6 +207,16 @@ function kanjiReadings(onyomi: string[] = [], kunyomi: string[] = []) {
   return readings.filter((r) => (seen.has(r.kana) ? false : (seen.add(r.kana), true))).slice(0, 3);
 }
 
+/** Fisher-Yates, so every ordering is equally likely. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
 function isE2J(item: LessonItem) {
   return item.exerciseType === "ENGLISH_TO_JAPANESE";
 }
@@ -288,6 +298,29 @@ function CardBack({ item }: { item: LessonItem }) {
   if (!content) return null;
 
   const speechTextForItem = getSpeechText(item);
+
+  // A listening card's prompt is audio alone, so its answer has to show the
+  // word in writing as well as in English — otherwise the learner never finds
+  // out what they were listening to.
+  if (isListening(item)) {
+    const japanese = content.japanese ?? content.character ?? "";
+    const isPhrase = contentType === "PHRASE";
+    return (
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div className="flex items-center gap-2.5">
+          <p className={cn("jp font-bold leading-snug", isPhrase ? "text-2xl" : "text-[2.5rem] leading-none")}>
+            {japanese}
+          </p>
+          {speechTextForItem && <AudioButton text={speechTextForItem} size="md" />}
+        </div>
+        {content.kana && content.kana !== japanese && (
+          <p className="jp text-base text-text-muted">{content.kana}</p>
+        )}
+        {content.romaji && <p className="text-[13px] text-text-subtle">{content.romaji}</p>}
+        <p className="font-display text-xl font-extrabold tracking-tight mt-0.5">{content.english}</p>
+      </div>
+    );
+  }
 
   if (isE2J(item)) {
     if (contentType === "VOCABULARY") {
@@ -544,7 +577,7 @@ export default function LessonPage() {
   const currentItem = unansweredItems[currentIndex] ?? null;
   const totalUnanswered = unansweredItems.length;
 
-  const isListeningMC = currentItem
+  const isListeningWord = currentItem
     ? isListening(currentItem) && (currentItem.contentType === "VOCABULARY" || currentItem.contentType === "PHRASE")
     : false;
 
@@ -553,16 +586,30 @@ export default function LessonPage() {
   // Must stay above the loading/empty/results early returns below: those skip
   // the rest of the render, so calling a hook after them changes the hook count
   // between renders and React throws "rendered more hooks than expected".
+  //
+  // Distractors come from the rest of the lesson, so a lesson that happens to
+  // carry only one translatable item can't fill a question. When that happens
+  // this returns nothing and the card falls back to reveal-and-self-assess:
+  // a "multiple choice" listing the single correct answer under the play
+  // button gives the answer away before the learner has listened.
   const mcChoices: string[] = useMemo(() => {
-    if (!isListeningMC || !currentItem || !lesson) return [];
+    if (!isListeningWord || !currentItem || !lesson) return [];
     const correctAnswer = currentItem.content?.english ?? "";
-    const others = lesson.items
-      .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
-      .map((i) => i.content!.english as string);
-    const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 3);
-    return [...shuffled, correctAnswer].sort(() => Math.random() - 0.5);
+    if (!correctAnswer) return [];
+    const others = [
+      ...new Set(
+        lesson.items
+          .filter((i) => i.id !== currentItem.id && i.content?.english && i.content.english !== correctAnswer)
+          .map((i) => i.content!.english as string)
+      ),
+    ];
+    const distractors = shuffle(others).slice(0, 3);
+    if (distractors.length < 2) return [];
+    return shuffle([...distractors, correctAnswer]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentItem?.id, isListeningMC]);
+  }, [currentItem?.id, isListeningWord]);
+
+  const isListeningMC = mcChoices.length > 0;
 
   // Revealing a "Say it in Japanese" card plays the answer straight away. The
   // whole point of that card is what the word sounds like, so making the learner
