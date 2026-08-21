@@ -20,6 +20,10 @@ interface LessonConfig {
 }
 
 const TARGET_LESSON_SECONDS = 600; // 10 minutes
+// A learner who is fully caught up (nothing due, nothing new unlocked) would
+// otherwise get handed just the day's culture card. Floor every lesson here
+// by pulling in reviews ahead of schedule until it clears this bar.
+const MIN_LESSON_SECONDS = 300; // 5 minutes
 
 /** One card in a generated lesson, before it is written to the database. */
 type LessonItemSpec = {
@@ -173,11 +177,13 @@ export async function generateDailyLesson(config: LessonConfig) {
 
   const finalItems = [...scriptIntroItems, ...withCulture];
 
+  const paddedItems = await padToMinimumDuration(finalItems, userId, now, masteredKana);
+
   const lesson = await prisma.lesson.create({
     data: {
       userId,
       items: {
-        create: finalItems.map((item, i) => ({
+        create: paddedItems.map((item, i) => ({
           contentType: item.contentType,
           contentId: item.contentId,
           exerciseType: item.exerciseType,
@@ -189,6 +195,53 @@ export async function generateDailyLesson(config: LessonConfig) {
   });
 
   return lesson;
+}
+
+function estimateSeconds(items: LessonItemSpec[]): number {
+  return items.reduce((sum, item) => sum + SECONDS_PER_EXERCISE[item.exerciseType], 0);
+}
+
+/**
+ * Tops a lesson up to MIN_LESSON_SECONDS by drawing on reviews that aren't
+ * due yet, soonest first. Only reached when reviews-due and new-content are
+ * both too thin to fill even a 5-minute floor — someone caught up on
+ * everything currently unlocked — so reviewing a little early is the only
+ * content left to offer.
+ */
+async function padToMinimumDuration(
+  items: LessonItemSpec[],
+  userId: string,
+  now: Date,
+  masteredKana: MasteredKana
+): Promise<LessonItemSpec[]> {
+  if (estimateSeconds(items) >= MIN_LESSON_SECONDS) return items;
+
+  const usedIds = new Set(items.map((i) => `${i.contentType}:${i.contentId}`));
+  const upcomingReviews = await prisma.review.findMany({
+    where: {
+      userId,
+      nextReviewAt: { gt: now },
+      srsLevel: { not: "MASTERED" },
+      contentType: { not: ContentType.CULTURE },
+    },
+    orderBy: { nextReviewAt: "asc" },
+    take: 30,
+  });
+  const unlockedUpcoming = await filterUnlockedReviews(upcomingReviews, masteredKana);
+
+  const padded = [...items];
+  for (const r of unlockedUpcoming) {
+    if (estimateSeconds(padded) >= MIN_LESSON_SECONDS) break;
+    const key = `${r.contentType}:${r.contentId}`;
+    if (usedIds.has(key)) continue;
+    usedIds.add(key);
+    padded.push({
+      contentType: r.contentType,
+      contentId: r.contentId,
+      exerciseType: pickExerciseType(r.contentType, r.srsLevel),
+    });
+  }
+  return padded;
 }
 
 /**
