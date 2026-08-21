@@ -11,7 +11,7 @@ import { SpeakCard } from "@/app/components/speak-card";
 import { SilentModeButton, useSilentMode } from "@/app/components/silent-mode";
 import { Card, CardScroller, Chip, buttonStyles, buttonVars } from "@/app/components/ui";
 
-type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
+type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE" | "CULTURE";
 
 interface LessonItem {
   id: string;
@@ -77,6 +77,7 @@ const CONTENT_LABEL: Record<ContentType, { label: string; tone: string }> = {
   KANJI: { label: "Kanji", tone: "var(--track-kanji)" },
   VOCABULARY: { label: "Vocabulary", tone: "var(--track-vocab)" },
   PHRASE: { label: "Phrase", tone: "var(--track-phrase)" },
+  CULTURE: { label: "Culture", tone: "var(--sun)" },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -84,6 +85,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   communication: "Communication",
   "daily-life": "Daily Life",
   travel: "Travel",
+  dining: "Dining",
+  bathing: "Onsen",
+  sacred: "Shrines",
+  work: "Work",
 };
 
 function isCulturalTipItem(item: LessonItem): boolean {
@@ -554,7 +559,10 @@ function CulturalTipQuestion({ item }: { item: LessonItem }) {
   const category = CATEGORY_LABELS[content.category ?? ""] ?? "Culture";
   return (
     <div className="flex flex-col gap-4 w-full">
-      <Masthead kicker={`Japan tip · ${category}`} tone="var(--sun)" />
+      <div className="flex items-center justify-between gap-3">
+        <Masthead kicker={`Japan tip · ${category}`} tone="var(--sun)" />
+        <MasteryPips review={item.review} />
+      </div>
       <p className="text-[17px] leading-relaxed font-medium">{content.question}</p>
     </div>
   );
@@ -735,11 +743,15 @@ export default function LessonPage() {
   }, [revealSpeechText]);
 
   function submitReview(item: LessonItem, quality: 1 | 5) {
-    if (isCulturalTipItem(item) || isScriptIntroItem(item)) return;
+    // Script intros are read-once explainers with nothing to remember.
+    if (isScriptIntroItem(item)) return;
+    // Conventions are always scored as CULTURE, including on lesson items
+    // written before that content type existed and stored them as PHRASE.
+    const contentType = isCulturalTipItem(item) ? "CULTURE" : item.contentType;
     fetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contentType: item.contentType, contentId: item.contentId, quality, lessonItemId: item.id }),
+      body: JSON.stringify({ contentType, contentId: item.contentId, quality, lessonItemId: item.id }),
     });
   }
 

@@ -50,6 +50,10 @@ export async function GET(
   const phraseIds = (itemsByType[ContentType.PHRASE] ?? []).map((i) => i.contentId);
 
   const allRealContentIds = realItems.map((i) => i.contentId);
+  // Cultural tips carry mastery too, so their reviews are fetched alongside.
+  // They are always keyed under CULTURE, including on lesson items written
+  // before that content type existed and stored the tip as a PHRASE.
+  const reviewContentIds = [...allRealContentIds, ...culturalItems.map((i) => i.contentId)];
 
   const [hiragana, katakana, kanji, vocabulary, phrases, reviews] = await Promise.all([
     hiraganaIds.length
@@ -61,9 +65,9 @@ export async function GET(
     kanjiIds.length ? prisma.kanji.findMany({ where: { id: { in: kanjiIds } } }) : [],
     vocabularyIds.length ? prisma.vocabulary.findMany({ where: { id: { in: vocabularyIds } } }) : [],
     phraseIds.length ? prisma.phrase.findMany({ where: { id: { in: phraseIds } } }) : [],
-    allRealContentIds.length
+    reviewContentIds.length
       ? prisma.review.findMany({
-          where: { userId: user.id, contentId: { in: allRealContentIds } },
+          where: { userId: user.id, contentId: { in: reviewContentIds } },
           select: {
             contentId: true,
             contentType: true,
@@ -98,7 +102,10 @@ export async function GET(
   for (const r of reviews) reviewMap.set(`${r.contentType}:${r.contentId}`, r);
 
   const enrichedItems = lesson.items.map((item) => {
-    const r = reviewMap.get(`${item.contentType}:${item.contentId}`) ?? null;
+    const lookupType = item.contentId.startsWith("cultural-")
+      ? ContentType.CULTURE
+      : item.contentType;
+    const r = reviewMap.get(`${lookupType}:${item.contentId}`) ?? null;
     return {
       ...item,
       content: contentMap.get(item.contentId) ?? null,

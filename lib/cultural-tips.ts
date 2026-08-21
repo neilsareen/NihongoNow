@@ -1,10 +1,24 @@
+export type CulturalCategory =
+  | "etiquette"
+  | "communication"
+  | "daily-life"
+  | "travel"
+  | "dining"
+  | "bathing"
+  | "sacred"
+  | "work";
+
 export interface CulturalTip {
   id: string;
   title: string;
   question: string;
   body: string;
-  category: "etiquette" | "communication" | "daily-life" | "travel";
+  category: CulturalCategory;
 }
+
+// Ids are stored on lesson items and on the review rows that carry a learner's
+// mastery of each convention, so they are append-only: add to the end, never
+// renumber or reuse.
 
 export const CULTURAL_TIPS: CulturalTip[] = [
   {
@@ -91,7 +105,501 @@ export const CULTURAL_TIPS: CulturalTip[] = [
     body: "If you visit another city or region, it's customary to bring back omiyage (food gifts) for coworkers or anyone you stayed with. Prefectural specialties in nice packaging are expected and appreciated.",
     category: "etiquette",
   },
+  {
+    id: "cultural-12",
+    title: "Slurping is allowed",
+    question: "The person next to you at a ramen counter is slurping loudly. Is that rude?",
+    body: "Slurping noodles is normal and reads as appreciation — it cools the noodles and pulls the aroma in with them. The licence is for noodles only: soup, rice and curry are eaten quietly.",
+    category: "dining",
+  },
+  {
+    id: "cultural-13",
+    title: "Itadakimasu",
+    question: "What do you say before and after eating in Japan?",
+    body: "'Itadakimasu' (I humbly receive) before, 'gochisousama deshita' (thank you for the feast) after. Both are said even when eating alone — they thank everyone who got the food to the table, not only the cook.",
+    category: "dining",
+  },
+  {
+    id: "cultural-14",
+    title: "Never pour your own drink",
+    question: "You're at an izakaya and there's a beer bottle on the table. Whose glass do you fill first?",
+    body: "Everyone else's. Fill your companions' glasses and someone will fill yours — hold the bottle with both hands for anyone senior to you. Nobody drinks until the first 'kanpai'.",
+    category: "dining",
+  },
+  {
+    id: "cultural-15",
+    title: "The oshibori is for hands",
+    question: "A hot rolled towel arrives before the meal. What is it for?",
+    body: "Your hands, before eating. Wiping your face or the table with it looks unrefined — fold it and set it aside once you're done.",
+    category: "dining",
+  },
+  {
+    id: "cultural-16",
+    title: "Money goes on the tray",
+    question: "There's a small tray on the counter next to the register. What's it for?",
+    body: "Cash and cards go on the tray rather than into the cashier's hand, and change is counted back onto it. Handing money over directly isn't offensive, but the tray is what everyone reaches for.",
+    category: "dining",
+  },
+  {
+    id: "cultural-17",
+    title: "Don't eat while walking",
+    question: "You buy a taiyaki from a street stall. Where should you eat it?",
+    body: "Right there. Eating while walking (tabe-aruki) is frowned upon outside festival grounds — stalls expect you to stand, finish, and hand the wrapper back before moving on.",
+    category: "dining",
+  },
+  {
+    id: "cultural-18",
+    title: "Don't rub your chopsticks",
+    question: "Your disposable chopsticks split a little unevenly. Should you rub them together?",
+    body: "No — rubbing them implies you think the restaurant's chopsticks are cheap and splintery. Rest them on the holder, or fold the paper sleeve into one.",
+    category: "dining",
+  },
+  {
+    id: "cultural-19",
+    title: "Dip the fish, not the rice",
+    question: "Nigiri sushi arrives with soy sauce on the side. How do you dip it?",
+    body: "Turn the piece over and dip the fish. Rice soaks up soy sauce, falls apart, and drowns the flavour. Eating nigiri in one bite is normal, and fingers are perfectly acceptable.",
+    category: "dining",
+  },
+  {
+    id: "cultural-20",
+    title: "Ginger is a palate cleanser",
+    question: "What is the pickled ginger beside your sushi actually for?",
+    body: "Gari is eaten between pieces to reset your palate, not piled on top. At a good counter the chef has already put the right amount of wasabi inside the piece, so adding more can read as a critique of their work.",
+    category: "dining",
+  },
+  {
+    id: "cultural-21",
+    title: "Finish the rice",
+    question: "You've had enough, but a few grains of rice are left in the bowl. Does it matter?",
+    body: "Leaving rice is the one thing that reads as genuinely wasteful — mottainai. Finishing the bowl is the polite default; if the portion is too big, it's better to say so when ordering.",
+    category: "dining",
+  },
+  {
+    id: "cultural-22",
+    title: "Call the waiter",
+    question: "You're ready to order but nobody has come to your table. What do you do?",
+    body: "Say 'sumimasen!' clearly across the room, or press the call button on the table. Staff don't hover, so waiting to be noticed can mean waiting a very long time. Calling out is expected, not rude.",
+    category: "dining",
+  },
+  {
+    id: "cultural-23",
+    title: "Ticket machines",
+    question: "There's a vending machine just inside the door of a ramen shop. What's it for?",
+    body: "Many ramen and teishoku places take your order and your money at the machine before you sit down. Press your dish, take the ticket, hand it over at the counter. If there's no English button, the top-left button is usually the house speciality.",
+    category: "dining",
+  },
+  {
+    id: "cultural-24",
+    title: "All-you-can-drink has a clock",
+    question: "A menu offers nomihoudai for 90 minutes. What's the catch?",
+    body: "All-you-can-drink and all-you-can-eat deals are strictly time-limited, and last orders come around ten minutes before the end. Some tabehoudai places add a surcharge for large amounts of food left uneaten.",
+    category: "dining",
+  },
+  {
+    id: "cultural-25",
+    title: "Lift the small bowls",
+    question: "Is it rude to pick your rice bowl up off the table?",
+    body: "The opposite — small bowls of rice and miso soup are lifted towards you with one hand, and leaning down to the table is what looks bad. Large plates and flat dishes stay where they are.",
+    category: "dining",
+  },
+  {
+    id: "cultural-26",
+    title: "Wash before you soak",
+    question: "You're at an onsen for the first time. What comes before getting into the bath?",
+    body: "A thorough wash and rinse at the seated showers. The bath is shared soaking water, not washing water — no soap, ever, goes into it.",
+    category: "bathing",
+  },
+  {
+    id: "cultural-27",
+    title: "No swimsuits",
+    question: "What do you wear into an onsen bath?",
+    body: "Nothing. Baths are gender-separated and bathed in nude. The small towel you're handed is for washing and a little modesty on the walk over — it stays out of the water, usually folded on your head or left on the rim.",
+    category: "bathing",
+  },
+  {
+    id: "cultural-28",
+    title: "Tattoos and onsen",
+    question: "You have a tattoo. Can you use a Japanese onsen?",
+    body: "Often, but not always — many baths still refuse tattoos because of their association with organised crime. Small ones can be covered with a skin-tone patch; otherwise look for 'tattoo OK' baths or book a private one (kashikiri).",
+    category: "bathing",
+  },
+  {
+    id: "cultural-29",
+    title: "Red and blue curtains",
+    question: "Two doorways at the bath entrance have red and blue noren curtains. Which is which?",
+    body: "Red with 女 is the women's bath, blue with 男 the men's. Many onsen swap the two sides daily so the guests share the better view — check the characters rather than trusting yesterday's memory.",
+    category: "bathing",
+  },
+  {
+    id: "cultural-30",
+    title: "Never drain the bath",
+    question: "You've finished your soak. Should you pull the plug?",
+    body: "Never. Onsen water is shared and often fed continuously from the source. Don't add cold water to cool it down without asking either — someone else's soak is on the other side of that tap.",
+    category: "bathing",
+  },
+  {
+    id: "cultural-31",
+    title: "Tie your hair up",
+    question: "Your hair is long enough to touch the water. What's expected?",
+    body: "Tie it up so it stays clear of the bath. The same rule governs the towel: anything that has touched your body outside the wash area stays above the waterline.",
+    category: "bathing",
+  },
+  {
+    id: "cultural-32",
+    title: "Walk to the side of the torii",
+    question: "You're passing through the torii gate at a shrine. Where do you walk?",
+    body: "Bow once before you pass through, then keep to the side of the path — the centre is the kami's route, not yours. On the way out, turn and bow back towards the shrine.",
+    category: "sacred",
+  },
+  {
+    id: "cultural-33",
+    title: "The purification basin",
+    question: "There's a stone basin with ladles at the shrine entrance. What's the sequence?",
+    body: "One ladleful does everything: rinse your left hand, then your right, pour a little into your left hand to rinse your mouth (never drink from the ladle itself), then tip the ladle upright to rinse the handle.",
+    category: "sacred",
+  },
+  {
+    id: "cultural-34",
+    title: "Two bows, two claps, one bow",
+    question: "You're standing at the offering box of a Shinto shrine. What's the ritual?",
+    body: "Coin in the box, ring the bell, then bow twice, clap twice, hold your hands together for your wish, and bow once more. A five-yen coin (go-en) is traditional — it puns on 'good fortune'.",
+    category: "sacred",
+  },
+  {
+    id: "cultural-35",
+    title: "Temples don't clap",
+    question: "Does the same two-claps ritual work at a Buddhist temple?",
+    body: "No. At temples you bow, offer your coin quietly, press your palms together without clapping, and bow again. Clapping is Shinto. If you can't tell which you're in, copy the person ahead of you.",
+    category: "sacred",
+  },
+  {
+    id: "cultural-36",
+    title: "Tie up a bad fortune",
+    question: "You draw a bad fortune (kyou) from the omikuji box. What now?",
+    body: "Tie it to the rack or pine branch provided, which leaves the bad luck at the shrine instead of carrying it home. Good fortunes you keep — in your wallet, usually.",
+    category: "sacred",
+  },
+  {
+    id: "cultural-37",
+    title: "Don't open an omamori",
+    question: "You've been given an omamori charm. Can you look inside?",
+    body: "Never — the blessing is sealed in, and opening it is said to let it out. They're renewed each year, and the old one goes back to a shrine to be burned rather than into a bin.",
+    category: "sacred",
+  },
+  {
+    id: "cultural-38",
+    title: "Photography at shrines",
+    question: "Can you take photos at shrines and temples?",
+    body: "The grounds usually yes, the main halls and inner sanctuaries usually not. Watch for the crossed-out camera sign, never photograph a ceremony or a funeral, and don't set up posed shots in front of the offering hall.",
+    category: "sacred",
+  },
+  {
+    id: "cultural-39",
+    title: "Toilet slippers stay in the toilet",
+    question: "There's a separate pair of slippers just inside the bathroom door. What's the rule?",
+    body: "Step into them at the door, and step out of them on the way back. Walking into the tatami room still wearing toilet slippers is the classic visitor blunder — instantly noticed, never mentioned.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-40",
+    title: "Don't blow your nose in public",
+    question: "You have a cold and need to blow your nose on the train. Is that OK?",
+    body: "It reads as unpleasant — quiet sniffing is, oddly, more acceptable. Step out to a restroom, and wear a mask if you're ill, which comes across as considerate rather than alarming.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-41",
+    title: "Point with an open hand",
+    question: "How do you indicate a person or a direction politely?",
+    body: "Open hand, palm up — an index finger aimed at a person is rude. And to indicate yourself, Japanese people point at their own nose rather than their chest.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-42",
+    title: "Left over right",
+    question: "You're putting on a yukata at a ryokan. Which side goes on top?",
+    body: "Left panel over right, always. Right over left is how the dead are dressed for burial — getting it backwards is the kind of thing everyone notices and nobody points out.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-43",
+    title: "Avoid sets of four",
+    question: "You're buying a gift set for a Japanese host. Why not a set of four?",
+    body: "Four (shi) sounds like death and nine (ku) like suffering. That's why sets come in threes and fives, and why some buildings skip the fourth floor altogether.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-44",
+    title: "Gifts are opened later",
+    question: "Your host sets your gift aside without opening it. Did you offend them?",
+    body: "Not at all — gifts are traditionally opened after the guest leaves, so nobody has to perform a reaction. Hand yours over with both hands, and don't be surprised by a modest 'it's nothing much' from a Japanese giver.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-45",
+    title: "Cash goes in an envelope",
+    question: "You're giving money as a wedding or condolence gift. How is it presented?",
+    body: "Never bare. It goes in a decorative envelope — shuugi-bukuro for celebrations, plain black-and-white for funerals — with crisp new notes for happy occasions and used ones for condolences.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-46",
+    title: "Which side of the escalator",
+    question: "Where do you stand on an escalator?",
+    body: "Stand left, walk right in Tokyo; Osaka does the exact opposite. Signage increasingly asks everyone to stand still on both sides, so follow the queue in front of you rather than the rule you read online.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-47",
+    title: "Priority seats",
+    question: "You're in a priority seat and your phone rings. What's expected?",
+    body: "Priority seats are for elderly, disabled, pregnant and injured passengers, and the convention near them is phones on silent and unused. Offering the seat is done quietly — usually by simply standing up and moving away.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-48",
+    title: "Umbrella etiquette",
+    question: "It's raining and you're walking into a shop with a dripping umbrella.",
+    body: "Use the plastic sleeve dispenser or the stand by the door. Trailing water through a shop is the thing to avoid, and a clear ¥500 umbrella from any konbini is the standard rescue.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-49",
+    title: "Affection stays low-key",
+    question: "How much public affection is normal?",
+    body: "Holding hands is unremarkable; kissing and long embraces are not. Friends greet with a nod or a small bow, and hugging someone you've just met reads as startling rather than warm.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-50",
+    title: "Sitting on tatami",
+    question: "You're seated on tatami at a traditional restaurant. How should you sit?",
+    body: "Formally it's seiza — kneeling with your legs folded under you. No one expects a visitor to hold it: cross-legged for men and legs tucked to one side for women is fine, and saying your legs have gone numb is entirely normal.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-51",
+    title: "Mind the tatami border",
+    question: "Walking across a tatami room — anything to avoid?",
+    body: "Don't tread on the cloth border of a mat, or on the raised threshold of a doorway. Both are treated as boundaries rather than floor, and stepping over them is a habit learned in childhood.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-52",
+    title: "Take your coat off outside",
+    question: "You arrive at someone's home or an office on a cold day. When does the coat come off?",
+    body: "Before you go in — remove and fold your coat at the door rather than bringing the cold and the street inside with you. The same instinct applies to a scarf and hat.",
+    category: "etiquette",
+  },
+  {
+    id: "cultural-53",
+    title: "Listening noises",
+    question: "Your colleague keeps saying 'hai, hai' and 'sou desu ne' while you're talking. Are they agreeing?",
+    body: "Those are aizuchi — sounds that mean 'I'm following you', not 'I agree'. A silent listener seems disengaged, so returning the occasional 'hai' or nod is part of being a good conversational partner.",
+    category: "communication",
+  },
+  {
+    id: "cultural-54",
+    title: "Yoroshiku onegaishimasu",
+    question: "What does 'yoroshiku onegaishimasu' actually mean?",
+    body: "There's no clean English equivalent — roughly 'please treat me favourably'. It closes an introduction, opens a project, and softens a request. If you learn one phrase to be socially safe in Japan, learn this one.",
+    category: "communication",
+  },
+  {
+    id: "cultural-55",
+    title: "Otsukaresama desu",
+    question: "How do Japanese colleagues greet and part from each other at work?",
+    body: "'Otsukaresama desu' — literally acknowledging the other's tiredness — works as hello, goodbye and thank-you inside a workplace. Leaving before the others, you say 'osaki ni shitsurei shimasu' (excuse me for going first).",
+    category: "communication",
+  },
+  {
+    id: "cultural-56",
+    title: "Family name plus -san",
+    question: "Should you call a Japanese colleague by their first name?",
+    body: "Family name plus -san is safe for everyone, and you never attach -san to your own name. First names are for close friends and children; -chan and -kun are affectionate and can sound patronising used upwards.",
+    category: "communication",
+  },
+  {
+    id: "cultural-57",
+    title: "Don't say 'anata'",
+    question: "'Anata' is in every textbook as 'you'. Should you use it?",
+    body: "Rarely. It can sound distant, or — between couples — oddly intimate. Use the person's name with -san, or their title (sensei, buchou), and drop the subject entirely when it's obvious.",
+    category: "communication",
+  },
+  {
+    id: "cultural-58",
+    title: "Reading the air",
+    question: "What does it mean to 'read the air' (kuuki wo yomu)?",
+    body: "It's the expectation that you'll sense the mood and the unstated position of a group and adjust without being told. Someone who misses it gets called KY — kuuki yomenai — which is a joke with a real edge.",
+    category: "communication",
+  },
+  {
+    id: "cultural-59",
+    title: "Deflect the compliment",
+    question: "Someone praises your Japanese. What's the natural response?",
+    body: "Deflect modestly: 'mada mada desu' (I've a long way to go) or 'sonna koto nai desu' (not at all). Taking praise flatly reads as boastful — though don't argue too hard, the compliment is genuine encouragement.",
+    category: "communication",
+  },
+  {
+    id: "cultural-60",
+    title: "'We'll consider it' means no",
+    question: "A Japanese counterpart says 'kentou shimasu' — we'll consider it. What do they mean?",
+    body: "Usually no. Along with 'muzukashii', a sharp intake of breath, or a long 'sou desu ne…', it's a way of declining without anyone having to say the word. Pushing turns a soft no into an awkward one.",
+    category: "communication",
+  },
+  {
+    id: "cultural-61",
+    title: "Tatemae and honne",
+    question: "Why does a Japanese friend seem to say one thing and mean another?",
+    body: "Tatemae is the socially appropriate face, honne the private feeling. Keeping them apart is considered courteous rather than dishonest — honne comes out with close friends, and famously over drinks.",
+    category: "communication",
+  },
+  {
+    id: "cultural-62",
+    title: "Get an IC card",
+    question: "What's the easiest way to pay for trains and buses?",
+    body: "A Suica, Pasmo or ICOCA card — or the version in your phone's wallet. One tap covers almost every train and bus in the country, plus konbini and vending machines, and it saves you decoding fare tables.",
+    category: "travel",
+  },
+  {
+    id: "cultural-63",
+    title: "Let people off first",
+    question: "The train doors open at a busy station. What happens first?",
+    body: "Everyone waiting stands to the sides of the door and lets passengers off before boarding. The markings painted on the platform show exactly where to queue — and the queue genuinely holds.",
+    category: "travel",
+  },
+  {
+    id: "cultural-64",
+    title: "Send your luggage ahead",
+    question: "You have two large suitcases and a shinkansen to catch.",
+    body: "Use takkyubin — the luggage forwarding service at konbini, hotels and airports — and travel with a day bag. Oversized bags now need a reserved space on the shinkansen, and a rush-hour train is no place for them.",
+    category: "travel",
+  },
+  {
+    id: "cultural-65",
+    title: "Taxi doors open themselves",
+    question: "A Japanese taxi pulls up. Do you open the door?",
+    body: "No — the rear left door is driver-operated and grabbing it can jam the mechanism. Expect white gloves, lace seat covers, and no tipping here either.",
+    category: "travel",
+  },
+  {
+    id: "cultural-66",
+    title: "Wait for the green man",
+    question: "It's midnight, there isn't a car in sight, and the pedestrian light is red.",
+    body: "People wait anyway. Jaywalking is uncommon and looks jarring, particularly in front of children, and drivers genuinely don't expect anyone to step out.",
+    category: "travel",
+  },
+  {
+    id: "cultural-67",
+    title: "Sorting your rubbish",
+    question: "You have an empty coffee can and a plastic wrapper. Where do they go?",
+    body: "Into different bins — burnable, PET bottles, cans and glass are collected separately, and konbini bins are meant for things bought there. Rinse bottles and pull off the cap and label; this is one of the few things a neighbour will actually comment on.",
+    category: "travel",
+  },
+  {
+    id: "cultural-68",
+    title: "Tax-free shopping",
+    question: "You spend ¥6,000 at a department store as a tourist. What should you bring?",
+    body: "Your passport. Shops with a 'Tax-Free' sign refund the 10% consumption tax on purchases over ¥5,000. Consumables get sealed in a bag you're not supposed to open until you leave the country.",
+    category: "travel",
+  },
+  {
+    id: "cultural-69",
+    title: "Addresses without streets",
+    question: "A Japanese address names a ward, a district and a block, but no street. How do you find anything?",
+    body: "Most streets have no names — addresses run from largest area to smallest, ending in the building's number within its block. Use a map app, or ask at the koban (police box) on the corner, where giving directions is part of the job.",
+    category: "travel",
+  },
+  {
+    id: "cultural-70",
+    title: "Coin lockers",
+    question: "You check out at 10am but your train isn't until the evening. What do you do with your bags?",
+    body: "Coin lockers at every major station take IC cards and swallow a suitcase for a few hundred yen. Big stations also have a manned baggage room, and hotels will nearly always hold luggage after checkout.",
+    category: "travel",
+  },
+  {
+    id: "cultural-71",
+    title: "Business cards are ceremony",
+    question: "A Japanese businessperson offers you their card. How do you take it?",
+    body: "With both hands, and read it properly before you put it down on the table in front of you for the rest of the meeting. Never into a back pocket, never written on. Offer yours with both hands, text facing them.",
+    category: "work",
+  },
+  {
+    id: "cultural-72",
+    title: "The seat of honour",
+    question: "You arrive at a meeting room or restaurant table with your Japanese hosts. Where do you sit?",
+    body: "The seat furthest from the door (kamiza) is for the most senior person; the one nearest it (shimoza) is for the most junior, who also orders and pours. If someone gestures you to a seat, take the one you're offered.",
+    category: "work",
+  },
+  {
+    id: "cultural-73",
+    title: "Why work happens in the pub",
+    question: "Why does so much of Japanese working life take place at a drinking party?",
+    body: "The nomikai is where hierarchy loosens and real opinions surface. Turning up matters more than drinking much — pour for others, keep an eye on your senior's glass, and say 'osaki ni' if you leave early.",
+    category: "work",
+  },
+  {
+    id: "cultural-74",
+    title: "Five minutes early is on time",
+    question: "The meeting is at 10:00. When should you arrive?",
+    body: "Five to ten minutes before. Trains apologise for sixty-second delays, so 'the train was late' rarely lands, and being late to a first meeting is hard to undo.",
+    category: "work",
+  },
+  {
+    id: "cultural-75",
+    title: "Obon and New Year",
+    question: "You're planning to travel in mid-August, or over New Year.",
+    body: "Those are the two weeks the entire country moves at once — trains sell out, prices spike, and small businesses close completely. New Year is the family holiday; Christmas, oddly, is a date night.",
+    category: "work",
+  },
+  {
+    id: "cultural-76",
+    title: "Smoking rules are inverted",
+    question: "Where can you smoke in Japan?",
+    body: "Often not outdoors — many wards ban and fine street smoking — but sometimes inside cafés and izakaya. It's the reverse of what most visitors expect. Look for the glass smoking room near the station.",
+    category: "daily-life",
+  },
+  {
+    id: "cultural-77",
+    title: "Check your medication",
+    question: "You take cold or allergy medicine containing pseudoephedrine or codeine.",
+    body: "Several drugs that are routine elsewhere are banned imports in Japan, including pseudoephedrine, codeine and Adderall. Check before you fly, and bring a Yakkan Shoumei certificate for anything prescribed.",
+    category: "daily-life",
+  },
+  {
+    id: "cultural-78",
+    title: "Thin walls, early risers",
+    question: "You're in a rental apartment in a residential Tokyo building at 11pm.",
+    body: "Voices in the corridor, suitcase wheels and late showers all carry, and neighbours start early. Noise is the fastest way to sour a stay — as is putting the rubbish out on the wrong morning, or unsorted.",
+    category: "daily-life",
+  },
+  {
+    id: "cultural-79",
+    title: "Drink it by the machine",
+    question: "There's a vending machine on every corner. Can you drink as you walk?",
+    body: "Buy it and drink it on the spot — that's what the bin beside the machine is for. Wandering off down the street with an open drink isn't the norm. In winter, the red あたたかい label marks the hot ones.",
+    category: "daily-life",
+  },
+  {
+    id: "cultural-80",
+    title: "Masks are just courtesy",
+    question: "Do people still wear masks in Japan?",
+    body: "Wearing one when you have a cold predates the pandemic by decades and simply says 'I'm not going to give this to you'. Nobody will think twice about you wearing one, or not.",
+    category: "daily-life",
+  },
+  {
+    id: "cultural-81",
+    title: "Yukata as street clothes",
+    question: "You're staying at a ryokan in an onsen town. Can you wear the yukata outside?",
+    body: "Yes — in onsen towns the yukata and wooden geta are normal street wear for guests, and some inns lend out nicer patterns for the evening. Add the padded tanzen jacket over the top in winter.",
+    category: "daily-life",
+  },
 ];
+
+export function getCulturalTip(id: string): CulturalTip | undefined {
+  return CULTURAL_TIPS.find((t) => t.id === id);
+}
 
 export function getRandomCulturalTip(exclude: string[] = []): CulturalTip {
   const available = CULTURAL_TIPS.filter((t) => !exclude.includes(t.id));

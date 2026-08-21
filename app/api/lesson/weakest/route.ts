@@ -10,6 +10,7 @@ const EXERCISE_FOR_TYPE: Record<string, ExerciseType> = {
   KANJI: ExerciseType.JAPANESE_TO_ENGLISH,
   VOCABULARY: ExerciseType.ENGLISH_TO_JAPANESE,
   PHRASE: ExerciseType.JAPANESE_TO_ENGLISH,
+  CULTURE: ExerciseType.SCENARIO,
 };
 
 export async function POST() {

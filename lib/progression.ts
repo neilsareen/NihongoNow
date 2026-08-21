@@ -4,6 +4,11 @@ import { pickPrimaryKanjiReading } from "./utils";
 
 export const KANA_TYPES: ContentType[] = [ContentType.HIRAGANA, ContentType.KATAKANA];
 
+// Content with no Japanese reading to gate on. Kana is what the gate is built
+// from, and social conventions are taught in English, so neither can ever be
+// locked behind kana the learner hasn't mastered.
+const UNGATED_TYPES: ContentType[] = [...KANA_TYPES, ContentType.CULTURE];
+
 // How many candidates to consider when looking for content the learner can
 // already read. The corpus is ordered by frequency, so the readable items
 // cluster near the front; this keeps the scan bounded instead of loading
@@ -85,7 +90,7 @@ export function isKanjiUnlocked(
 export async function filterUnlockedReviews<
   T extends { contentType: ContentType; contentId: string }
 >(reviews: T[], mastered: MasteredKana): Promise<T[]> {
-  const wordReviews = reviews.filter((r) => !KANA_TYPES.includes(r.contentType));
+  const wordReviews = reviews.filter((r) => !UNGATED_TYPES.includes(r.contentType));
   if (wordReviews.length === 0) return reviews;
 
   const idsFor = (t: ContentType) =>
@@ -115,7 +120,7 @@ export async function filterUnlockedReviews<
   for (const k of kanji) if (isKanjiUnlocked(k, mastered)) unlocked.add(k.id);
 
   return reviews.filter(
-    (r) => KANA_TYPES.includes(r.contentType) || unlocked.has(r.contentId)
+    (r) => UNGATED_TYPES.includes(r.contentType) || unlocked.has(r.contentId)
   );
 }
 

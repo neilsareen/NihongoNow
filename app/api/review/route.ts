@@ -99,6 +99,7 @@ export async function POST(request: Request) {
     VOCABULARY: LearningStage.CORE_VOCAB,
     KANJI: LearningStage.ESSENTIAL_KANJI,
     PHRASE: LearningStage.DAILY_CONVERSATION,
+    CULTURE: LearningStage.CULTURE,
   };
 
   const stage = contentTypeToStage[contentType];

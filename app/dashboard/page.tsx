@@ -15,6 +15,7 @@ const LESSON_TYPE_SYMBOL: Record<string, string> = {
   KANJI: "漢",
   VOCABULARY: "語",
   PHRASE: "話",
+  CULTURE: "礼",
 };
 
 async function getDashboardData(userId: string, timeZone: string) {

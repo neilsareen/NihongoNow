@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 import { ContentType, ExerciseType } from "@prisma/client";
-import { getRandomCulturalTip } from "./cultural-tips";
+import { CULTURAL_TIPS, getRandomCulturalTip } from "./cultural-tips";
 import { SCRIPT_INTROS } from "./script-intros";
 import {
   getMasteredKana,
@@ -20,6 +20,13 @@ interface LessonConfig {
 }
 
 const TARGET_LESSON_SECONDS = 600; // 10 minutes
+
+/** One card in a generated lesson, before it is written to the database. */
+type LessonItemSpec = {
+  contentType: ContentType;
+  contentId: string;
+  exerciseType: ExerciseType;
+};
 
 type NewContentItem = {
   contentType: ContentType;
@@ -49,6 +56,7 @@ const AVG_SECONDS_BY_CONTENT: Record<ContentType, number> = {
   [ContentType.KANJI]:      20, // avg of CHARACTER_RECOGNITION/JAPANESE_TO_ENGLISH/MULTIPLE_CHOICE
   [ContentType.VOCABULARY]: 30, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SPEAKING
   [ContentType.PHRASE]:     32, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SPEAKING/SCENARIO
+  [ContentType.CULTURE]:    40, // always SCENARIO: read the situation, then self-assess
 };
 
 const AVG_SECONDS_PER_ITEM = 25;
@@ -63,14 +71,16 @@ const EXERCISE_TYPES_BY_CONTENT: Record<ContentType, ExerciseType[]> = {
   KANJI:      [ExerciseType.CHARACTER_RECOGNITION, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.MULTIPLE_CHOICE],
   VOCABULARY: [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING],
   PHRASE:     [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING, ExerciseType.SCENARIO],
+  CULTURE:    [ExerciseType.SCENARIO],
 };
 
 export async function generateDailyLesson(config: LessonConfig) {
   const { userId } = config;
   const now = new Date();
 
-  const culturalTipSeconds = SECONDS_PER_EXERCISE[ExerciseType.SCENARIO];
-  const effectiveBudget = TARGET_LESSON_SECONDS - culturalTipSeconds;
+  const cultureCardIds = await pickCultureCards(userId, now);
+  const cultureSeconds = cultureCardIds.length * SECONDS_PER_EXERCISE[ExerciseType.SCENARIO];
+  const effectiveBudget = TARGET_LESSON_SECONDS - cultureSeconds;
   const reviewBudget = Math.floor(effectiveBudget * 0.7);
 
   const masteredKana = await getMasteredKana(userId);
@@ -79,8 +89,15 @@ export async function generateDailyLesson(config: LessonConfig) {
   // to content the learner can actually read: someone who studied kanji before
   // this gate existed still has those reviews on file, and they must not keep
   // resurfacing while their readings use kana that isn't mastered yet.
+  // Culture has its own slots below, so it stays out of the general pool —
+  // otherwise a due convention could land in the lesson twice.
   const fetchedReviews = await prisma.review.findMany({
-    where: { userId, nextReviewAt: { lte: now }, srsLevel: { not: "MASTERED" } },
+    where: {
+      userId,
+      nextReviewAt: { lte: now },
+      srsLevel: { not: "MASTERED" },
+      contentType: { not: ContentType.CULTURE },
+    },
     orderBy: [{ srsLevel: "asc" }, { nextReviewAt: "asc" }],
     take: 60,
   });
@@ -119,18 +136,24 @@ export async function generateDailyLesson(config: LessonConfig) {
 
   const baseItems = interleaveItems(reviewItems, newItemsMapped);
 
-  // Inject one cultural tip per lesson, inserted at a random position after item 2
-  const tip = getRandomCulturalTip();
-  const tipItem = {
-    contentType: ContentType.PHRASE,
-    contentId: tip.id,
+  // Social conventions ride along with the language: one convention the learner
+  // hasn't met yet, plus one that's due for review, spread through the lesson
+  // rather than stacked together.
+  const cultureItems: LessonItemSpec[] = cultureCardIds.map((id) => ({
+    contentType: ContentType.CULTURE,
+    contentId: id,
     exerciseType: ExerciseType.SCENARIO,
-  };
-  const insertAt = Math.min(baseItems.length, 2 + Math.floor(Math.random() * 4));
+  }));
+  const firstSlot = 2 + Math.floor(Math.random() * 4);
+  const slotGap = Math.max(2, Math.floor(baseItems.length / (cultureItems.length + 1)));
+  const withCulture: LessonItemSpec[] = [...baseItems];
+  for (let i = cultureItems.length - 1; i >= 0; i--) {
+    withCulture.splice(Math.min(withCulture.length, firstSlot + slotGap * i), 0, cultureItems[i]);
+  }
 
   // Explainer cards shown once, before a learner meets a new script or the
   // dakuten/handakuten modifiers, for the first time
-  const scriptIntroItems: typeof baseItems = [];
+  const scriptIntroItems: LessonItemSpec[] = [];
   const introducesHiragana = newItems.some((i) => i.contentType === ContentType.HIRAGANA);
   const introducesKatakana = newItems.some((i) => i.contentType === ContentType.KATAKANA);
   const introducesDakuten = newItems.some(
@@ -148,12 +171,7 @@ export async function generateDailyLesson(config: LessonConfig) {
     scriptIntroItems.push({ contentType: ContentType.PHRASE, contentId: SCRIPT_INTROS.dakuten.id, exerciseType: ExerciseType.SCENARIO });
   }
 
-  const finalItems = [
-    ...scriptIntroItems,
-    ...baseItems.slice(0, insertAt),
-    tipItem,
-    ...baseItems.slice(insertAt),
-  ];
+  const finalItems = [...scriptIntroItems, ...withCulture];
 
   const lesson = await prisma.lesson.create({
     data: {
@@ -171,6 +189,34 @@ export async function generateDailyLesson(config: LessonConfig) {
   });
 
   return lesson;
+}
+
+/**
+ * The social conventions a lesson should carry: the one most overdue for
+ * review, and one the learner has never seen. Either can be missing — a first
+ * lesson has nothing due, and a learner who has met all of them has nothing
+ * new — and when neither applies the convention closest to coming due is
+ * pulled forward, so a lesson is never without one.
+ */
+async function pickCultureCards(userId: string, now: Date): Promise<string[]> {
+  const reviews = await prisma.review.findMany({
+    where: { userId, contentType: ContentType.CULTURE },
+    select: { contentId: true, nextReviewAt: true, srsLevel: true },
+  });
+
+  const seen = new Set(reviews.map((r) => r.contentId));
+  const scheduled = reviews
+    .filter((r) => r.srsLevel !== "MASTERED")
+    .sort((a, b) => a.nextReviewAt.getTime() - b.nextReviewAt.getTime());
+  const unseen = CULTURAL_TIPS.filter((t) => !seen.has(t.id));
+
+  const cards: string[] = [];
+  const due = scheduled.find((r) => r.nextReviewAt <= now);
+  if (due) cards.push(due.contentId);
+  if (unseen.length > 0) cards.push(unseen[Math.floor(Math.random() * unseen.length)].id);
+  if (cards.length === 0) cards.push(scheduled[0]?.contentId ?? getRandomCulturalTip().id);
+
+  return cards;
 }
 
 function interleaveItems<T>(a: T[], b: T[]): T[] {

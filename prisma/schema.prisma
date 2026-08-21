@@ -14,6 +14,7 @@ enum ContentType {
   KANJI
   VOCABULARY
   PHRASE
+  CULTURE
 }
 
 enum SRSLevel {
@@ -31,6 +32,7 @@ enum LearningStage {
   ESSENTIAL_KANJI
   DAILY_CONVERSATION
   ADVANCED_SURVIVAL
+  CULTURE
 }
 
 enum ExerciseType {

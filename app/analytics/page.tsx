@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { hasAnyUnlockedKanji } from "@/lib/progression";
+import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, TopBar } from "@/app/components/ui";
 
@@ -106,6 +107,7 @@ export default async function AnalyticsPage() {
     { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", locked: !kanjiUnlocked },
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", locked: false },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", locked: false },
+    { label: "Culture", stage: "CULTURE", total: CULTURAL_TIPS.length, glyph: "礼", tone: "var(--sun)", locked: false },
   ];
 
   const masteredByStage = (stage: string, total: number) => {
