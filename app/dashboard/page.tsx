@@ -3,10 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { ChevronRight, Flame, Lock, Mic, Zap } from "lucide-react";
-import { getStartOfDayInTimezone, getAvatar } from "@/lib/utils";
+import { ChevronRight, Lock, Mic, Zap } from "lucide-react";
+import { getStartOfDayInTimezone } from "@/lib/utils";
 import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji } from "@/lib/progression";
-import { Avatar, Card, Chip, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
+import { Card, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
 
 const LESSON_TYPE_SYMBOL: Record<string, string> = {
   HIRAGANA: "あ",
@@ -95,8 +95,6 @@ export default async function DashboardPage() {
   const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked } = await getDashboardData(user.id, timeZone);
   if (!profile) redirect("/onboarding");
 
-  const avatar = getAvatar(profile.avatarUrl);
-
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
 
   const answeredCount = inProgressLesson?.items.filter((i) => i.answeredAt !== null).length ?? 0;
@@ -169,23 +167,15 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-7">
-      {/* Header */}
-      <header className="flex items-center justify-between gap-3">
-        <Link href="/settings" className="flex items-center gap-3 min-w-0 group">
-          <Avatar avatar={avatar} size={46} />
-          <span className="min-w-0">
-            <span className="block text-[13px] text-text-subtle font-medium">{getGreeting()}</span>
-            <span className="block font-display font-bold text-[19px] tracking-tight truncate">
-              {profile.displayName || "Learner"}
-            </span>
-          </span>
-        </Link>
-
-        {/* Streak. A number worth looking at, so it gets the sun and a size. */}
-        <Chip hue="var(--sun)" className="h-10 px-3.5 text-[15px]" >
-          <Flame className="w-4 h-4" strokeWidth={2.5} fill="currentColor" />
-          <span className="tnum">{profile.currentStreak}</span>
-        </Chip>
+      {/* The greeting is now the page's opening line rather than a second bar
+          of chrome: the avatar and the streak live in the app header above, so
+          what is left is free to be addressed to the learner and sized like a
+          headline. */}
+      <header>
+        <p className="text-[13px] text-text-subtle font-medium">{getGreeting()},</p>
+        <h1 className="font-display font-extrabold text-[28px] leading-tight tracking-tight truncate mt-0.5">
+          {profile.displayName || "Learner"}
+        </h1>
       </header>
 
       {/* The one thing to do next, as a block of colour you cannot miss. */}

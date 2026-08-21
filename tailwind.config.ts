@@ -30,6 +30,9 @@ const config: Config = {
           DEFAULT: token("line"),
           strong: token("line-strong"),
         },
+        // The app header's band — see globals.css.
+        brand: { bar: token("brand-bar") },
+
         // The backdrop behind a modal. Its own token because the light theme
         // still wants a dark scrim, so it cannot just be the deepest ground.
         scrim: token("scrim"),

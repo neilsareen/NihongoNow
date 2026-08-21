@@ -75,6 +75,12 @@
        glyph is always dark ink. */
     --on-bright: 266 60% 10%;
 
+    /* The app header's band. Deliberately its own token rather than a reuse
+       of --ink-deep: the chrome is warmed towards coral so the bar reads as
+       the brand's own surface against the violet ground, while staying dark
+       enough that it never competes with the coral action card beneath it. */
+    --brand-bar: 14 42% 9%;
+
     /* Track hues, aliased so screens name the content, not the colour. */
     --track-hiragana: var(--blossom);
     --track-katakana: var(--sky);
@@ -131,6 +137,10 @@
     --blossom-deep: 332 74% 33%;
     --rose: 351 76% 43%;
     --rose-deep: 350 74% 32%;
+
+    /* Warm paper, the light-ground counterpart of the dark bar: enough tint
+       to separate the chrome from the near-white canvas without a border. */
+    --brand-bar: 26 78% 96%;
 
     --on-light: 0 0% 100%;
     --on-dark: 0 0% 100%;
