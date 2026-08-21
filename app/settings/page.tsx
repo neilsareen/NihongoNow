@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { GraduationCap, LogOut, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { GraduationCap, LogOut, RotateCcw, Upload, X } from "lucide-react";
 import { AVATAR_OPTIONS, cn, getAvatar } from "@/lib/utils";
 import { Avatar, Card, SectionLabel, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 import { BottomNav } from "@/app/components/bottom-nav";
@@ -28,9 +28,15 @@ export default function SettingsPage() {
   const router = useRouter();
 
   const [studyGoal, setStudyGoal] = useState<number | null>(null);
-  const [avatarKey, setAvatarKey] = useState<string | null>(null);
+  const [avatarValue, setAvatarValue] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const avatar = getAvatar(avatarValue);
 
   const [simStatus, setSimStatus] = useState<SimulationStatus | null>(null);
   const [simBusy, setSimBusy] = useState(false);
@@ -46,7 +52,7 @@ export default function SettingsPage() {
       .then((r) => r.json())
       .then((d) => {
         setStudyGoal(d.studyGoalMinutes ?? 20);
-        setAvatarKey(getAvatar(d.avatarUrl).key);
+        setAvatarValue(d.avatarUrl ?? null);
       });
     refreshSimStatus();
   }, []);
@@ -78,7 +84,8 @@ export default function SettingsPage() {
   }
 
   async function handleAvatarChange(key: string) {
-    setAvatarKey(key);
+    setAvatarValue(key);
+    setUploadError(null);
     setSaving(true);
     setSaved(false);
     await fetch("/api/user/profile", {
@@ -90,6 +97,39 @@ export default function SettingsPage() {
     setSaved(true);
     router.refresh();
     setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handlePhotoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+
+    setUploadError(null);
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await fetch("/api/user/avatar", { method: "POST", body: formData });
+    if (res.ok) {
+      const profile = await res.json();
+      setAvatarValue(profile.avatarUrl);
+      router.refresh();
+    } else {
+      const body = await res.json().catch(() => null);
+      setUploadError(body?.error ?? "Couldn't upload that photo. Try again.");
+    }
+    setUploading(false);
+  }
+
+  async function handleRemovePhoto() {
+    setUploadError(null);
+    setUploading(true);
+    const res = await fetch("/api/user/avatar", { method: "DELETE" });
+    if (res.ok) {
+      const profile = await res.json();
+      setAvatarValue(profile.avatarUrl);
+      router.refresh();
+    }
+    setUploading(false);
   }
 
   return (
@@ -113,13 +153,53 @@ export default function SettingsPage() {
           <div className="space-y-1">
             <SectionLabel>Your mark</SectionLabel>
             <p className="text-[14px] text-text-muted font-medium">
-              Pick a kanji. It shows up wherever you do.
+              Upload a photo, or pick a kanji. It shows up wherever you do.
             </p>
           </div>
+
+          <Card className="p-4 flex items-center gap-4">
+            <Avatar avatar={avatar} size={56} className="rounded-full" />
+            <div className="flex-1 min-w-0 space-y-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handlePhotoSelected}
+              />
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className={buttonStyles({ variant: "secondary", size: "sm" })}
+                  style={buttonVars("secondary")}
+                >
+                  <Upload className="w-4 h-4" strokeWidth={2.5} />
+                  {uploading ? "Uploading…" : "Upload a photo"}
+                </button>
+                {avatar.type === "image" && (
+                  <button
+                    type="button"
+                    onClick={handleRemovePhoto}
+                    disabled={uploading}
+                    aria-label="Remove photo"
+                    title="Remove photo"
+                    className={buttonStyles({ variant: "ghost", size: "sm" })}
+                  >
+                    <X className="w-4 h-4" strokeWidth={2.5} />
+                    Remove
+                  </button>
+                )}
+              </div>
+              {uploadError && <p className="text-[13px] text-rose font-medium">{uploadError}</p>}
+            </div>
+          </Card>
+
           <Card className="p-4">
             <div className="grid grid-cols-5 gap-3">
               {AVATAR_OPTIONS.map((a) => {
-                const isOn = avatarKey === a.key;
+                const isOn = avatar.type === "preset" && avatar.key === a.key;
                 return (
                   <button
                     key={a.key}

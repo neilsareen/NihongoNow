@@ -102,8 +102,21 @@ export const AVATAR_OPTIONS = [
 
 export type AvatarKey = (typeof AVATAR_OPTIONS)[number]["key"];
 
-export function getAvatar(key: string | null | undefined) {
-  return AVATAR_OPTIONS.find((a) => a.key === key) ?? AVATAR_OPTIONS[0];
+export type ResolvedAvatar =
+  | { type: "image"; url: string }
+  | ({ type: "preset" } & (typeof AVATAR_OPTIONS)[number]);
+
+// UserProfile.avatarUrl doubles as either a preset key ("samurai") or, once a
+// learner uploads their own picture, an actual URL — a plain key never starts
+// with a slash or a scheme, so the two are unambiguous.
+function isImageUrl(value: string): boolean {
+  return value.startsWith("http://") || value.startsWith("https://") || value.startsWith("/");
+}
+
+export function getAvatar(value: string | null | undefined): ResolvedAvatar {
+  if (value && isImageUrl(value)) return { type: "image", url: value };
+  const preset = AVATAR_OPTIONS.find((a) => a.key === value) ?? AVATAR_OPTIONS[0];
+  return { type: "preset", ...preset };
 }
 
 export function getXPForLevel(level: number): number {

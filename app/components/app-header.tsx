@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Flame } from "lucide-react";
 import { Avatar, Wordmark } from "@/app/components/ui";
+import type { ResolvedAvatar } from "@/lib/utils";
 
 /**
  * The app header.
@@ -41,7 +42,7 @@ export function AppHeader({
   avatar,
   streak,
 }: {
-  avatar?: { glyph: string; label: string; tone: string } | null;
+  avatar?: ResolvedAvatar | null;
   streak?: number;
 }) {
   return (
