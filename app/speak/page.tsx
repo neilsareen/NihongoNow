@@ -3,7 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SpeakCard } from "@/app/components/speak-card";
+import { SilentModeButton, useSilentMode } from "@/app/components/silent-mode";
 import { Card, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
+import { endSilentMode, silentMinutesLeft } from "@/lib/silent-mode";
 import { cn } from "@/lib/utils";
 
 /* ===========================================================================
@@ -36,7 +38,7 @@ type View = "loading" | "error" | "locked" | "drill" | "summary";
 function Shell({ children, fixed = false }: { children: React.ReactNode; fixed?: boolean }) {
   return (
     <div className={cn(fixed ? "screen-fixed" : "min-h-screen", "bg-canvas text-text flex flex-col")}>
-      <TopBar title="Speaking" />
+      <TopBar title="Speaking" trailing={<SilentModeButton />} />
       <main
         className={cn(
           "flex-1 w-full max-w-md mx-auto px-4 flex flex-col",
@@ -71,6 +73,7 @@ function CenteredNotice({
 }
 
 export default function SpeakPracticePage() {
+  const { until, active: silent } = useSilentMode();
   const [view, setView] = useState<View>("loading");
   const [items, setItems] = useState<SpeakItem[]>([]);
   const [index, setIndex] = useState(0);
@@ -105,6 +108,39 @@ export default function SpeakPracticePage() {
     } else {
       setView("summary");
     }
+  }
+
+  // Nothing on this screen works without a voice, so silent mode takes the
+  // whole page rather than each card. A finished run keeps its summary — that
+  // is a report on work already done, and pulling it away would lose it.
+  if (silent && view !== "summary") {
+    return (
+      <Shell>
+        <CenteredNotice
+          glyph="静"
+          title="Silent for now"
+          body={`Speaking practice needs your voice, so it's paused for another ${silentMinutesLeft(until)} ${silentMinutesLeft(until) === 1 ? "minute" : "minutes"}. Lessons still work — listening and speaking cards are asked in writing while silent mode is on.`}
+          action={
+            <div className="w-full max-w-xs space-y-3">
+              <button
+                onClick={endSilentMode}
+                className={buttonStyles({ size: "lg", full: true })}
+                style={buttonVars("primary")}
+              >
+                Turn sound back on
+              </button>
+              <Link
+                href="/lesson"
+                className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
+                style={buttonVars("secondary")}
+              >
+                Do a lesson instead
+              </Link>
+            </div>
+          }
+        />
+      </Shell>
+    );
   }
 
   if (view === "loading") {

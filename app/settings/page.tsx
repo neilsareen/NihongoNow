@@ -7,6 +7,7 @@ import { AVATAR_OPTIONS, cn, getAvatar } from "@/lib/utils";
 import { Avatar, Card, SectionLabel, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { ThemeToggle } from "@/app/components/theme";
+import { SilentModeSettings } from "@/app/components/silent-mode";
 
 const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
 
@@ -140,6 +141,17 @@ export default function SettingsPage() {
               );
             })}
           </div>
+        </section>
+
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <SectionLabel>Silent mode</SectionLabel>
+            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+              For a quiet carriage or a sleeping flatmate. It also sits in the header
+              of every lesson, for when the room goes quiet mid-session.
+            </p>
+          </div>
+          <SilentModeSettings />
         </section>
 
         <section className="space-y-3">

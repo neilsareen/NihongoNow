@@ -5,6 +5,8 @@
 // several Android voices. Every play button routes its text through here so the
 // utterance is built from the kana reading, which is unambiguous.
 
+import { isSilentNow } from "./silent-mode";
+
 export interface SpeechContent {
   character?: string;
   kana?: string;
@@ -74,6 +76,10 @@ let _voiceIdx = 0;
 export function speak(text: string, lang = "ja-JP", rate = 0.85) {
   if (typeof window === "undefined" || !window.speechSynthesis) return;
   if (!text) return;
+  // Silent mode is enforced here rather than at each call site: every play
+  // button, autoplay and repeat in the app comes through this function, so one
+  // guard covers the ones nobody remembered to think about.
+  if (isSilentNow()) return;
   window.speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.lang = lang;

@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Check, Flame, Lightbulb, RotateCcw, Volume2, X } from "lucide-react";
+import { Check, Flame, Lightbulb, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 import { readingSpeechText, speak, speechText } from "@/lib/speech";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { SpeakCard } from "@/app/components/speak-card";
+import { SilentModeButton, useSilentMode } from "@/app/components/silent-mode";
 import { Card, CardScroller, Chip, buttonStyles, buttonVars } from "@/app/components/ui";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
@@ -102,8 +103,12 @@ function AudioButton({
   lang?: string;
   size?: "sm" | "md" | "lg";
 }) {
+  const { active: silent } = useSilentMode();
   const dims = size === "lg" ? "w-16 h-16" : size === "md" ? "w-12 h-12" : "w-9 h-9";
   const icon = size === "lg" ? "w-6 h-6" : size === "md" ? "w-5 h-5" : "w-4 h-4";
+  // A play button that plays nothing is worse than no play button: it reads as
+  // broken audio rather than as a mute the learner switched on themselves.
+  if (silent) return null;
   return (
     <button
       onClick={(e) => {
@@ -211,6 +216,25 @@ function SpeakChip({
   className?: string;
   children: React.ReactNode;
 }) {
+  const { active: silent } = useSilentMode();
+
+  // Muted, the chip is still worth showing — it carries the reading itself,
+  // not just a speaker icon — so it drops to plain text rather than staying a
+  // button that does nothing.
+  if (silent) {
+    return (
+      <span
+        className={cn(
+          "flex items-center gap-2 min-h-11 px-3 rounded-full bg-surface-raised",
+          className
+        )}
+      >
+        <VolumeX className="w-4 h-4 shrink-0 text-text-subtle" strokeWidth={2.5} />
+        {children}
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -261,6 +285,26 @@ function isListening(item: LessonItem) {
 
 function isSpeaking(item: LessonItem) {
   return item.exerciseType === "SPEAKING";
+}
+
+/* Two of the exercise types cannot be answered without sound: a listening card
+   is nothing but audio, and a say-it-back card is graded by microphone. With
+   silent mode on they are asked another way rather than dropped — dropping
+   them would quietly shorten the lesson and leave those words unstudied, and
+   the learner would never know which ones they missed.
+
+   The substitutes keep the same recall direction the sound version had.
+   Listening is meaning-from-Japanese, so it becomes the written form of that
+   question; saying a word back is production, so it becomes the prompt that
+   asks for the Japanese. Both still count for the same review. */
+const SILENT_SUBSTITUTES: Record<string, string> = {
+  LISTENING: "JAPANESE_TO_ENGLISH",
+  SPEAKING: "ENGLISH_TO_JAPANESE",
+};
+
+function askInSilence(item: LessonItem): LessonItem {
+  const substitute = SILENT_SUBSTITUTES[item.exerciseType];
+  return substitute ? { ...item, exerciseType: substitute } : item;
 }
 
 // Audio always plays the kana reading, never the kanji — see lib/speech.
@@ -561,6 +605,8 @@ function Spinner({ label = "Preparing lesson…" }: { label?: string }) {
 export default function LessonPage() {
   const { id } = useParams<{ id: string }>();
 
+  const { active: silent } = useSilentMode();
+
   const [lesson, setLesson] = useState<LessonResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -620,8 +666,25 @@ export default function LessonPage() {
       });
   }, [id]);
 
-  const unansweredItems = lesson ? lesson.items.filter((item) => item.answeredAt === null) : [];
+  // Cards already put on screen in their written form. A silent window can
+  // lapse mid-card, and a card that reshaped itself between the learner
+  // reading it and answering it — the answer they had revealed swapped for a
+  // play button they now have to listen to — would read as a glitch. Sound
+  // comes back on the next card instead.
+  const askedInWriting = useRef<Set<string>>(new Set());
+
+  // Substituted here, at the single source the whole player reads from, so
+  // every card, hint and control below follows without knowing about silence.
+  const unansweredItems = useMemo(() => {
+    const pending = lesson ? lesson.items.filter((item) => item.answeredAt === null) : [];
+    if (silent) return pending.map(askInSilence);
+    return pending.map((item) => (askedInWriting.current.has(item.id) ? askInSilence(item) : item));
+  }, [lesson, silent]);
   const currentItem = unansweredItems[currentIndex] ?? null;
+
+  useEffect(() => {
+    if (silent && currentItem) askedInWriting.current.add(currentItem.id);
+  }, [silent, currentItem]);
   const totalUnanswered = unansweredItems.length;
 
   const isListeningWord = currentItem
@@ -663,7 +726,7 @@ export default function LessonPage() {
   // reach for the speaker button every time puts a tap between them and the one
   // thing they are there to hear. The speaker button stays for replays.
   const revealSpeechText =
-    revealed && currentItem && isE2J(currentItem) ? getSpeechText(currentItem) : "";
+    revealed && !silent && currentItem && isE2J(currentItem) ? getSpeechText(currentItem) : "";
   useEffect(() => {
     if (!revealSpeechText) return;
     // A beat, so the answer is on screen before it is spoken.
@@ -970,13 +1033,15 @@ export default function LessonPage() {
             </div>
           </div>
 
+          <SilentModeButton />
+
           {combo >= 3 ? (
             <Chip hue="var(--sun)" className="shrink-0 animate-pop" key={combo}>
               <Flame className="w-3.5 h-3.5" strokeWidth={2.5} fill="currentColor" />
               <span className="tnum">{combo}</span>
             </Chip>
           ) : (
-            <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0 min-w-[3rem] text-right">
+            <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0 text-right">
               {currentIndex + 1}/{totalUnanswered}
             </span>
           )}
@@ -1090,7 +1155,9 @@ export default function LessonPage() {
                   <div className="px-8 pt-5 pb-8 flex flex-col items-center justify-center gap-4 min-h-[12rem]">
                     <p className="text-[13px] font-semibold text-text-subtle">
                       {isE2J(currentItem)
-                        ? "Say it in Japanese"
+                        ? silent
+                          ? "How would you say this?"
+                          : "Say it in Japanese"
                         : isListening(currentItem)
                           ? "What did you hear?"
                           : "What does this mean?"}

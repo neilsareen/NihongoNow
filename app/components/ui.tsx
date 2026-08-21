@@ -359,7 +359,10 @@ export function TopBar({
             {title}
           </span>
         )}
-        <div className="w-10 flex justify-end items-center shrink-0">{trailing}</div>
+        {/* Wide enough to balance the back button, but free to grow: a trailing
+            control that carries a label (the silent-mode countdown) would
+            otherwise spill out of a fixed 40px box. */}
+        <div className="min-w-[2.5rem] flex justify-end items-center shrink-0">{trailing}</div>
       </div>
     </header>
   );

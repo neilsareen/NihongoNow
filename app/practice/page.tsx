@@ -4,8 +4,9 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
-import { Check, Flame, Lightbulb, Lock, RotateCcw, Volume2 } from "lucide-react";
+import { Check, Flame, Lightbulb, Lock, RotateCcw, Volume2, VolumeX } from "lucide-react";
 import { readingSpeechText, speak, speechText } from "@/lib/speech";
+import { useSilentMode } from "@/app/components/silent-mode";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { Card, CardScroller, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
@@ -37,6 +38,10 @@ type ExampleWord = {
 // ---------------------------------------------------------------------------
 
 function AudioButton({ text, lang = "ja-JP" }: { text: string; lang?: string }) {
+  const { active: silent } = useSilentMode();
+  // Same reasoning as the lesson player's: a mute should remove the audio, not
+  // leave dead buttons behind.
+  if (silent) return null;
   return (
     <button
       onClick={(e) => {
@@ -67,6 +72,25 @@ function SpeakChip({
   className?: string;
   children: React.ReactNode;
 }) {
+  const { active: silent } = useSilentMode();
+
+  // Muted, the chip is still worth showing — it carries the reading itself,
+  // not just a speaker icon — so it drops to plain text rather than staying a
+  // button that does nothing.
+  if (silent) {
+    return (
+      <span
+        className={cn(
+          "flex items-center gap-2 min-h-11 px-3 rounded-full bg-surface-raised",
+          className
+        )}
+      >
+        <VolumeX className="w-4 h-4 shrink-0 text-text-subtle" strokeWidth={2.5} />
+        {children}
+      </span>
+    );
+  }
+
   return (
     <button
       type="button"
