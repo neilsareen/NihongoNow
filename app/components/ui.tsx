@@ -409,18 +409,38 @@ export function Wordmark({
 }
 
 /**
- * Profile avatar: a kanji on a colour plate. Reads as a considered mark at
- * every size, where a cartoon illustration turns to mud in a tab bar.
+ * Profile avatar: either a learner's own uploaded photo, or a kanji on a
+ * colour plate. The kanji plate reads as a considered mark at every size,
+ * where a cartoon illustration turns to mud in a tab bar — but a real photo
+ * is the whole point once someone uploads one, so that renders as-is.
  */
 export function Avatar({
   avatar,
   size = 48,
   className,
 }: {
-  avatar: { glyph: string; label: string; tone: string };
+  avatar: { glyph: string; label: string; tone: string } | { type: "image"; url: string };
   size?: number;
   className?: string;
 }) {
+  // Checked on "url" rather than "type": callers pass either a raw preset
+  // ({glyph,label,tone}) or a full ResolvedAvatar (whose preset variant also
+  // carries its own `type: "preset"` at runtime), so `"type" in avatar` would
+  // misfire for that second shape. Only the image variant ever has a url.
+  if ("url" in avatar) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={avatar.url}
+        alt="Your profile photo"
+        width={size}
+        height={size}
+        className={cn("rounded-tile shrink-0 select-none card-ledge object-cover", className)}
+        style={{ width: size, height: size, ["--ledge" as string]: "hsl(var(--line))" }}
+      />
+    );
+  }
+
   return (
     <span
       className={cn("inline-grid place-items-center rounded-tile shrink-0 select-none card-ledge", className)}
