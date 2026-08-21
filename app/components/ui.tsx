@@ -368,17 +368,42 @@ export function TopBar({
   );
 }
 
-/** The 行 wordmark. */
-export function Wordmark({ className }: { className?: string }) {
+/**
+ * The 行 wordmark — the one brand lockup, used identically on every screen
+ * that shows it (landing, auth, onboarding, the dashboard's app header).
+ *
+ * `sm` is the chrome size: it drops the ledge, because a 4px block under a
+ * 28px tile inside a 64px bar reads as a misalignment rather than as depth.
+ */
+export function Wordmark({
+  className,
+  size = "md",
+}: {
+  className?: string;
+  size?: "sm" | "md";
+}) {
+  const sm = size === "sm";
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
+    <span className={cn("inline-flex items-center", sm ? "gap-2" : "gap-2.5", className)}>
       <span
-        className="w-9 h-9 rounded-tile grid place-items-center card-ledge"
+        className={cn(
+          "rounded-tile grid place-items-center shrink-0",
+          sm ? "w-7 h-7" : "w-9 h-9 card-ledge"
+        )}
         style={{ background: "hsl(var(--coral))", ["--ledge" as string]: "var(--coral-deep)" }}
       >
-        <span className="jp text-on-dark text-[17px] font-bold leading-none">行</span>
+        <span className={cn("jp text-on-dark font-bold leading-none", sm ? "text-[14px]" : "text-[17px]")}>
+          行
+        </span>
       </span>
-      <span className="font-display font-extrabold tracking-tight text-[19px]">Ikou</span>
+      <span
+        className={cn(
+          "font-display font-extrabold tracking-tight",
+          sm ? "text-[17px]" : "text-[19px]"
+        )}
+      >
+        Ikou
+      </span>
     </span>
   );
 }
