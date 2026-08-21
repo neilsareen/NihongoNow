@@ -217,6 +217,11 @@ function estimateSeconds(items: LessonItemSpec[]): number {
  * both too thin to fill even a 5-minute floor — someone caught up on
  * everything currently unlocked — so reviewing a little early is the only
  * content left to offer.
+ *
+ * A learner who has ridden everything all the way to MASTERED has nothing
+ * left in that first pool either, so a second pass reaches into mastered
+ * content too — a slightly-early refresher beats a lesson that is just the
+ * culture card.
  */
 async function padToMinimumDuration(
   items: LessonItemSpec[],
@@ -227,30 +232,38 @@ async function padToMinimumDuration(
   if (estimateSeconds(items) >= MIN_LESSON_SECONDS) return items;
 
   const usedIds = new Set(items.map((i) => `${i.contentType}:${i.contentId}`));
-  const upcomingReviews = await prisma.review.findMany({
-    where: {
-      userId,
-      nextReviewAt: { gt: now },
-      srsLevel: { not: "MASTERED" },
-      contentType: { not: ContentType.CULTURE },
-    },
-    orderBy: { nextReviewAt: "asc" },
-    take: 30,
-  });
-  const unlockedUpcoming = await filterUnlockedReviews(upcomingReviews, masteredKana);
-
   const padded = [...items];
-  for (const r of unlockedUpcoming) {
-    if (estimateSeconds(padded) >= MIN_LESSON_SECONDS) break;
-    const key = `${r.contentType}:${r.contentId}`;
-    if (usedIds.has(key)) continue;
-    usedIds.add(key);
-    padded.push({
-      contentType: r.contentType,
-      contentId: r.contentId,
-      exerciseType: pickExerciseType(r.contentType, r.srsLevel),
+
+  const addFrom = async (srsFilter: object) => {
+    if (estimateSeconds(padded) >= MIN_LESSON_SECONDS) return;
+    const upcomingReviews = await prisma.review.findMany({
+      where: {
+        userId,
+        nextReviewAt: { gt: now },
+        ...srsFilter,
+        contentType: { not: ContentType.CULTURE },
+      },
+      orderBy: { nextReviewAt: "asc" },
+      take: 30,
     });
-  }
+    const unlockedUpcoming = await filterUnlockedReviews(upcomingReviews, masteredKana);
+
+    for (const r of unlockedUpcoming) {
+      if (estimateSeconds(padded) >= MIN_LESSON_SECONDS) break;
+      const key = `${r.contentType}:${r.contentId}`;
+      if (usedIds.has(key)) continue;
+      usedIds.add(key);
+      padded.push({
+        contentType: r.contentType,
+        contentId: r.contentId,
+        exerciseType: pickExerciseType(r.contentType, r.srsLevel),
+      });
+    }
+  };
+
+  await addFrom({ srsLevel: { not: "MASTERED" } });
+  await addFrom({ srsLevel: "MASTERED" });
+
   return padded;
 }
 
