@@ -8,7 +8,7 @@ import { readingSpeechText, speak, speechText } from "@/lib/speech";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { SpeakCard } from "@/app/components/speak-card";
-import { Card, Chip, buttonStyles, buttonVars } from "@/app/components/ui";
+import { Card, CardScroller, Chip, buttonStyles, buttonVars } from "@/app/components/ui";
 
 type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
 
@@ -855,7 +855,7 @@ export default function LessonPage() {
   const isEditorial = isCultural || isScriptIntro;
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="screen-fixed flex flex-col">
       {showDoneDialog && (
         <div
           className="fixed inset-0 z-50 grid place-items-center px-4 bg-scrim/70 backdrop-blur-sm animate-fade"
@@ -900,7 +900,7 @@ export default function LessonPage() {
           measure of the session is always in view without taking up a row. */}
       {/* Session bar. The progress track is thick and lime because watching it
           fill is a large part of why anyone finishes a set. */}
-      <header className="sticky top-0 z-30 bg-ink/90 backdrop-blur-xl">
+      <header className="shrink-0 z-30 bg-ink/90 backdrop-blur-xl">
         <div className="max-w-md mx-auto h-16 px-4 flex items-center gap-3">
           <button
             onClick={() => setShowDoneDialog(true)}
@@ -936,7 +936,7 @@ export default function LessonPage() {
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-md mx-auto px-4 py-6 flex flex-col gap-4">
+      <main className="flex-1 min-h-0 w-full max-w-md mx-auto px-4 pt-4 safe-bottom flex flex-col gap-4">
         {/* One keyed wrapper for the whole card group. Every card, hint and
             answer control for the current item lives inside this single subtree,
             so advancing swaps it out as one unit. Previously these were sibling
@@ -945,10 +945,10 @@ export default function LessonPage() {
             the dropped card's DOM node is never removed — that is what left a
             previous character sitting above the current one. */}
         {currentItem && (
-          <div key={currentItem.id} className="flex-1 w-full flex flex-col gap-4 animate-pop-in">
+          <div key={currentItem.id} className="flex-1 min-h-0 w-full flex flex-col gap-4 animate-pop-in">
             {isEditorial ? (
               <>
-                <div className="flex-1 flex flex-col justify-center">
+                <CardScroller>
                   <Card className="p-6 flex flex-col justify-center min-h-[13rem]">
                     {isScriptIntro ? (
                       <ScriptIntroCard item={currentItem} />
@@ -958,12 +958,12 @@ export default function LessonPage() {
                       <CulturalTipQuestion item={currentItem} />
                     )}
                   </Card>
-                </div>
+                </CardScroller>
 
                 {isScriptIntro ? (
                   <button
                     onClick={() => handleAnswer(true)}
-                    className={buttonStyles({ size: "lg", full: true })}
+                    className={buttonStyles({ size: "lg", full: true, className: "shrink-0" })}
                     style={buttonVars("primary")}
                   >
                     Got it — let&apos;s start
@@ -971,14 +971,14 @@ export default function LessonPage() {
                 ) : !revealed ? (
                   <button
                     onClick={() => setRevealed(true)}
-                    className={buttonStyles({ size: "lg", full: true })}
+                    className={buttonStyles({ size: "lg", full: true, className: "shrink-0" })}
                     style={buttonVars("primary")}
                   >
                     Reveal
                     <Key>space</Key>
                   </button>
                 ) : (
-                  <div className="flex gap-2.5">
+                  <div className="flex gap-2.5 shrink-0">
                     <button
                       onClick={() => handleAnswer(false)}
                       className={buttonStyles({ variant: "reject", size: "lg", full: true })}
@@ -1004,7 +1004,7 @@ export default function LessonPage() {
               /* Say-it-back. The card owns its own controls end to end: there
                  is no reveal step and no self-assessment pair, because the
                  attempt itself is the answer. */
-              <div className="flex-1 flex flex-col justify-center">
+              <div className="flex-1 min-h-0 flex flex-col">
                 <SpeakCard
                   prompt={{
                     japanese: currentItem.content?.japanese ?? currentItem.content?.character ?? "",
@@ -1026,7 +1026,7 @@ export default function LessonPage() {
                 {/* Prompt and answer share one card, divided by a hairline.
                     The old layout used two detached cards with a "─ ─ ─"
                     placeholder in the second, which read as a rendering fault. */}
-                <div className="flex-1 flex flex-col justify-center gap-4">
+                <CardScroller>
                 <Card className="overflow-hidden">
                   <div className="px-4 h-12 flex items-center justify-between border-b-2 border-line">
                     <span
@@ -1071,10 +1071,10 @@ export default function LessonPage() {
                 {shouldShowMnemonicHint(currentItem) && (
                   <MnemonicButton hint={currentItem.content!.mnemonicHint!} />
                 )}
-                </div>
+                </CardScroller>
 
                 {isListeningMC ? (
-                  <div className="space-y-2">
+                  <div className="space-y-2 shrink-0">
                     {mcChoices.map((choice) => {
                       const isCorrectAnswer = choice === (currentItem.content?.english ?? "");
                       const isSelected = mcChoice === choice;
@@ -1129,14 +1129,14 @@ export default function LessonPage() {
                 ) : !revealed ? (
                   <button
                     onClick={() => setRevealed(true)}
-                    className={buttonStyles({ size: "lg", full: true })}
+                    className={buttonStyles({ size: "lg", full: true, className: "shrink-0" })}
                     style={buttonVars("primary")}
                   >
                     Reveal
                     <Key>space</Key>
                   </button>
                 ) : (
-                  <div className="flex gap-2.5">
+                  <div className="flex gap-2.5 shrink-0">
                     <button
                       onClick={() => handleAnswer(false)}
                       className={buttonStyles({ variant: "reject", size: "lg", full: true })}

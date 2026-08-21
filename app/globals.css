@@ -204,6 +204,48 @@
   padding-top: max(1rem, env(safe-area-inset-top));
 }
 
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* ---------------------------------------------------------------------------
+   A screen that is exactly the viewport, and never scrolls.
+   ---------------------------------------------------------------------------
+   Drilling screens (lesson, practice) are a fixed frame: the card takes the
+   room that is left and the answer buttons stay pinned above the home bar.
+   `min-h-screen` cannot do this on a phone — 100vh is measured against the
+   *largest* viewport, i.e. with the browser's URL bar retracted, so on first
+   paint the page is taller than what you can see and the Reveal button sits
+   below the fold. 100dvh tracks the visible viewport as the URL bar comes and
+   goes; the 100vh line above it is the fallback for anything that predates it.
+   --------------------------------------------------------------------------- */
+.screen-fixed {
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  /* Kills the rubber-band drag that makes a non-scrolling screen feel broken. */
+  overscroll-behavior: none;
+}
+
+/* The page around such a screen has to stop scrolling too. <body> carries
+   `min-h-screen`, i.e. 100vh, which on a phone is taller than the visible
+   viewport whenever the URL bar is showing — that alone is enough to drag the
+   whole frame up and take the answer buttons off the bottom of the screen,
+   even though the frame itself is clipped. Browsers without `:has()` still get
+   a fully visible card and buttons; all they keep is the ability to drag a
+   URL-bar's worth of empty ground. */
+html:has(.screen-fixed) {
+  height: 100%;
+  overflow: hidden;
+}
+
+html:has(.screen-fixed) body {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* ---------------------------------------------------------------------------
    The pressable ledge.
    ---------------------------------------------------------------------------

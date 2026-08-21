@@ -125,6 +125,36 @@ export function Card({
 }
 
 /**
+ * The card well on a drilling screen.
+ *
+ * A lesson or practice screen is a fixed frame (`.screen-fixed`): it never
+ * scrolls, and the answer controls stay pinned at the bottom. Everything that
+ * has to give is in here — the well takes whatever height is left and centres
+ * the card in it, and only if the card genuinely cannot fit (a kanji card with
+ * every reading and example word revealed, on a short phone) does it scroll
+ * inside itself, so Reveal is never pushed below the fold.
+ *
+ * The centring is `m-auto` on the inner wrapper rather than `justify-center`
+ * on the scroller: a flex child centred with `justify-content` that overgrows
+ * its scroll container has its top edge clipped and unreachable, while auto
+ * margins collapse to zero in that case and leave the whole thing scrollable.
+ */
+export function CardScroller({
+  children,
+  className,
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex-1 min-h-0 overflow-y-auto flex flex-col", className)}>
+      {/* py-1 keeps the cards' 4px ledge from being clipped by the scroll box. */}
+      <div className="m-auto w-full flex flex-col gap-4 py-1">{children}</div>
+    </div>
+  );
+}
+
+/**
  * A card that IS a colour — the Headspace move. Used sparingly, for the one
  * thing on a screen that should be impossible to miss.
  */

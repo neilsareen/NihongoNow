@@ -164,9 +164,18 @@ export function SpeakCard({
   const tone = toneForBand(grade);
 
   return (
-    <div className="w-full flex flex-col gap-4">
-      <Card className="overflow-hidden">
-        <div className="px-4 h-12 flex items-center justify-between border-b-2 border-line">
+    /* Fills the well it is given. This card is the tallest thing in the app —
+       prompt, listen controls, verdict panel and an 80px mic — and it sits on a
+       screen that does not scroll, so it is built to compress rather than to
+       overflow: the card is capped at the room available, the header and the
+       verdict panel keep their size, and the prompt in the middle is the part
+       that gives way (and scrolls, in the last resort). Letting the card scroll
+       as a whole would have hidden the verdict panel exactly when it starts
+       reporting what it heard. */
+    <div className="w-full flex-1 min-h-0 flex flex-col gap-4">
+      <div className="flex-1 min-h-0 flex flex-col justify-center py-1">
+      <Card className="overflow-hidden flex flex-col max-h-full">
+        <div className="shrink-0 px-4 h-12 flex items-center justify-between border-b-2 border-line">
           <span
             className="inline-flex items-center h-7 px-3 rounded-full font-display text-[11px] font-bold uppercase tracking-[0.1em] text-on-light"
             style={{ background: "hsl(var(--grape))" }}
@@ -180,7 +189,12 @@ export function SpeakCard({
           )}
         </div>
 
-        <div className="px-6 pt-5 pb-6 flex flex-col items-center gap-4 min-h-[13rem] justify-center text-center">
+        {/* The prompt well. `m-auto` on the inner column rather than
+            `justify-center` on the scroll box: content centred with
+            justify-content has its top edge clipped and unreachable once it
+            overgrows a scroller, while auto margins collapse instead. */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 pt-5 pb-6 flex flex-col [@media(min-height:640px)]:min-h-[13rem] text-center">
+          <div className="m-auto w-full flex flex-col items-center gap-4">
           {prompt.english && (
             <p className="font-display text-[19px] font-extrabold tracking-tight leading-tight">
               {prompt.english}
@@ -207,12 +221,13 @@ export function SpeakCard({
           )}
 
           <ListenControls text={speechTextForPrompt} />
+          </div>
         </div>
 
         {/* Verdict panel. Reserved space rather than a panel that appears and
             shoves the mic button down mid-tap. */}
         <div
-          className="border-t-2 border-line px-6 py-5 min-h-[6.5rem] flex flex-col items-center justify-center gap-2 bg-ink-deep/40"
+          className="shrink-0 border-t-2 border-line px-6 py-4 min-h-[5.5rem] [@media(min-height:640px)]:min-h-[6.5rem] flex flex-col items-center justify-center gap-2 bg-ink-deep/40"
           aria-live="polite"
         >
           {listening ? (
@@ -255,12 +270,13 @@ export function SpeakCard({
           )}
         </div>
       </Card>
+      </div>
 
       {/* Controls. Grading yourself is always available: the recogniser
           mishears often enough that making it the only judge would punish
           correct answers. */}
       {!supported ? (
-        <div className="flex gap-2.5">
+        <div className="flex gap-2.5 shrink-0">
           <button
             onClick={onFail}
             className={buttonStyles({ variant: "reject", size: "lg", full: true })}
@@ -284,20 +300,23 @@ export function SpeakCard({
             if (advanceTimer.current) clearTimeout(advanceTimer.current);
             onPass(grade);
           }}
-          className={buttonStyles({ variant: "affirm", size: "lg", full: true })}
+          className={buttonStyles({ variant: "affirm", size: "lg", full: true, className: "shrink-0" })}
           style={buttonVars("affirm")}
         >
           <Check className="w-[18px] h-[18px]" strokeWidth={3} />
           Nice — keep going
         </button>
       ) : (
-        <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-col items-center gap-3 shrink-0">
           <button
             type="button"
             onClick={listening ? undefined : tryAgain}
             disabled={listening}
             className={cn(
-              "relative w-20 h-20 rounded-full grid place-items-center text-on-light ledge",
+              // Smaller on a short screen, where every pixel it gives back is a
+              // pixel the prompt above it keeps.
+              "relative w-16 h-16 [@media(min-height:640px)]:w-20 [@media(min-height:640px)]:h-20",
+              "rounded-full grid place-items-center text-on-light ledge",
               "transition-transform active:scale-95 disabled:pointer-events-none"
             )}
             style={{
@@ -313,9 +332,9 @@ export function SpeakCard({
                 aria-hidden="true"
               />
             )}
-            <Mic className="relative w-8 h-8" strokeWidth={2.5} />
+            <Mic className="relative w-7 h-7 [@media(min-height:640px)]:w-8 [@media(min-height:640px)]:h-8" strokeWidth={2.5} />
           </button>
-          <p className="font-display font-bold text-[13px] text-text-subtle">
+          <p className="hidden [@media(min-height:640px)]:block font-display font-bold text-[13px] text-text-subtle">
             {listening ? "Listening…" : grade || error ? "Tap to try again" : "Tap to speak"}
           </p>
 

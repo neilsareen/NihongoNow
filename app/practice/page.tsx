@@ -8,7 +8,7 @@ import { Check, Flame, Lightbulb, Lock, RotateCcw, Volume2 } from "lucide-react"
 import { speak, speechText } from "@/lib/speech";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
-import { Card, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
+import { Card, CardScroller, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -478,8 +478,8 @@ function PracticeView({
   }, [flipped, advance]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="sticky top-0 z-30 bg-ink/90 backdrop-blur-xl">
+    <div className="screen-fixed flex flex-col">
+      <header className="shrink-0 z-30 bg-ink/90 backdrop-blur-xl">
         <div className="max-w-md mx-auto h-16 px-4 flex items-center gap-3">
           <Link
             href="/dashboard"
@@ -519,10 +519,10 @@ function PracticeView({
         </div>
       </header>
 
-      <main className="flex-1 w-full max-w-md mx-auto px-4 py-4 flex flex-col gap-3">
+      <main className="flex-1 min-h-0 w-full max-w-md mx-auto px-4 pt-4 safe-bottom flex flex-col gap-3">
         {/* Running score. Spelled out rather than abbreviated, so there is no
             guessing at what a number means mid-drill. */}
-        <div className="flex items-center justify-center gap-2 flex-wrap">
+        <div className="shrink-0 flex items-center justify-center gap-2 flex-wrap">
           <Chip hue="var(--lime)">
             <Check className="w-3.5 h-3.5" strokeWidth={3} />
             <span className="tnum">{cleared}</span> got right
@@ -536,7 +536,7 @@ function PracticeView({
           </Chip>
         </div>
 
-        <div className="h-5 flex items-center justify-center">
+        <div className="h-5 shrink-0 flex items-center justify-center">
           {flash && (
             <p
               key={flash.turn}
@@ -550,8 +550,8 @@ function PracticeView({
           )}
         </div>
 
-        <div key={turn} className="flex-1 w-full flex flex-col gap-4 animate-pop-in">
-          <div className="flex-1 flex flex-col justify-center gap-4">
+        <div key={turn} className="flex-1 min-h-0 w-full flex flex-col gap-4 animate-pop-in">
+          <CardScroller>
           <Card className="overflow-hidden">
             <div className="p-8 flex items-center justify-center min-h-[12rem]">
               <span className={cn("jp leading-none font-bold", isKanji ? "text-[5rem]" : "text-mega")}>
@@ -625,19 +625,19 @@ function PracticeView({
           </Card>
 
           {flipped && item.mnemonicHint && <MnemonicButton key={item.id} hint={item.mnemonicHint} />}
-          </div>
+          </CardScroller>
 
           {!flipped ? (
             <button
               onClick={() => setFlipped(true)}
-              className={buttonStyles({ size: "lg", full: true })}
+              className={buttonStyles({ size: "lg", full: true, className: "shrink-0" })}
               style={buttonVars("primary")}
             >
               Reveal
               <Key>space</Key>
             </button>
           ) : (
-            <div className="flex gap-2.5">
+            <div className="flex gap-2.5 shrink-0">
               <button
                 onClick={() => advance(false)}
                 className={buttonStyles({ variant: "reject", size: "lg", full: true })}

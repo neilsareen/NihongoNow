@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { SpeakCard } from "@/app/components/speak-card";
 import { Card, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
+import { cn } from "@/lib/utils";
 
 /* ===========================================================================
    Speaking drill.
@@ -26,11 +27,22 @@ interface SpeakItem {
 
 type View = "loading" | "error" | "locked" | "drill" | "summary";
 
-function Shell({ children }: { children: React.ReactNode }) {
+/**
+ * `fixed` is for the drill itself: the card screen is exactly the viewport and
+ * does not scroll, so the mic and the skip control stay under the thumb instead
+ * of sliding off the bottom behind the browser's URL bar. The notices and the
+ * summary keep the ordinary scrolling page.
+ */
+function Shell({ children, fixed = false }: { children: React.ReactNode; fixed?: boolean }) {
   return (
-    <div className="min-h-screen bg-canvas text-text flex flex-col">
+    <div className={cn(fixed ? "screen-fixed" : "min-h-screen", "bg-canvas text-text flex flex-col")}>
       <TopBar title="Speaking" />
-      <main className="flex-1 w-full max-w-md mx-auto px-4 pb-8 flex flex-col">
+      <main
+        className={cn(
+          "flex-1 w-full max-w-md mx-auto px-4 flex flex-col",
+          fixed ? "min-h-0 safe-bottom" : "pb-8"
+        )}
+      >
         {children}
       </main>
     </div>
@@ -214,8 +226,8 @@ export default function SpeakPracticePage() {
   const progressPct = items.length > 0 ? Math.round((index / items.length) * 100) : 0;
 
   return (
-    <Shell>
-      <div className="flex items-center gap-3 pb-4">
+    <Shell fixed>
+      <div className="shrink-0 flex items-center gap-3 pb-4">
         <div className="flex-1 h-3.5 rounded-full bg-surface-raised overflow-hidden">
           <div
             className="h-full rounded-full bg-lime transition-[width] duration-500 ease-bounce"
@@ -227,7 +239,7 @@ export default function SpeakPracticePage() {
         </span>
       </div>
 
-      <div className="flex-1 flex flex-col justify-center">
+      <div className="flex-1 min-h-0 flex flex-col">
         <SpeakCard
           key={item.id}
           prompt={{
