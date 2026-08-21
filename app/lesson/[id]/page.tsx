@@ -1012,10 +1012,12 @@ export default function LessonPage() {
                     romaji: currentItem.content?.romaji,
                     english: currentItem.content?.english,
                   }}
-                  /* A word met for the first time is taught, then repeated
-                     back; one already in the schedule is prompted from its
-                     meaning and has to be recalled. */
-                  teachFirst={(currentItem.review?.srsLevel ?? "NEW") === "NEW"}
+                  /* A word the learner has never got right is taught, then
+                     repeated back; one they have answered before is prompted
+                     from its meaning and has to be recalled. Keyed on the
+                     tally rather than the mastery level, which no longer
+                     falls back to "New" after a miss. */
+                  teachFirst={(currentItem.review?.correctCount ?? 0) === 0}
                   onPass={() => handleAnswer(true)}
                   onFail={() => handleAnswer(false)}
                   failLabel="I can't say this one yet"

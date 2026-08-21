@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { SCRIPT_INTRO_LIST } from "@/lib/script-intros";
+import { effectiveSrsLevel } from "@/lib/srs";
 
 export async function GET(
   _request: Request,
@@ -70,6 +71,8 @@ export async function GET(
             totalAttempts: true,
             correctCount: true,
             incorrectCount: true,
+            consecutiveSuccesses: true,
+            interval: true,
           },
         })
       : [],
@@ -101,7 +104,7 @@ export async function GET(
       content: contentMap.get(item.contentId) ?? null,
       review: r
         ? {
-            srsLevel: r.srsLevel,
+            srsLevel: effectiveSrsLevel(r),
             totalAttempts: r.totalAttempts,
             correctCount: r.correctCount,
             incorrectCount: r.incorrectCount,

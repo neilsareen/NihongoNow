@@ -38,9 +38,10 @@ export async function POST(request: Request) {
     srsLevel: "NEW" as const,
   };
 
-  const next = calculateNextReview(currentItem, quality);
   const correctCount = (existing?.correctCount ?? 0) + (correct ? 1 : 0);
   const totalAttempts = (existing?.totalAttempts ?? 0) + 1;
+  // The tallies include this answer, so the level reflects the attempt just made.
+  const next = calculateNextReview(currentItem, quality, { correctCount, totalAttempts });
   const mastered = isMastered(correctCount, totalAttempts, next.consecutiveSuccesses);
 
   const review = await prisma.review.upsert({
