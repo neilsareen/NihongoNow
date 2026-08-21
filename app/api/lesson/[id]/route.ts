@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { SCRIPT_INTRO_LIST } from "@/lib/script-intros";
 import { effectiveSrsLevel } from "@/lib/srs";
 import { getSessionUser } from "@/lib/simulation";
+import { nextStreak } from "@/lib/utils";
 
 export async function GET(
   _request: Request,
@@ -139,10 +141,12 @@ export async function PATCH(
     durationSeconds?: number;
   };
 
+  const completedDate = completedAt !== undefined ? new Date(completedAt) : undefined;
+
   const updated = await prisma.lesson.update({
     where: { id, userId },
     data: {
-      ...(completedAt !== undefined && { completedAt: new Date(completedAt) }),
+      ...(completedDate !== undefined && { completedAt: completedDate }),
       ...(xpEarned !== undefined && { xpEarned }),
       ...(accuracy !== undefined && { accuracy }),
       ...(durationSeconds !== undefined && { durationSeconds }),
@@ -158,6 +162,21 @@ export async function PATCH(
         ...(completedAt !== undefined && { lessonsCompleted: { increment: 1 } }),
       },
     });
+  }
+
+  if (completedDate !== undefined) {
+    const timeZone = (await cookies()).get("tz")?.value || "UTC";
+    const profile = await prisma.userProfile.findUnique({
+      where: { id: userId },
+      select: { currentStreak: true, longestStreak: true, lastStudiedAt: true },
+    });
+    if (profile) {
+      const { currentStreak, longestStreak } = nextStreak(profile, timeZone, completedDate);
+      await prisma.userProfile.update({
+        where: { id: userId },
+        data: { currentStreak, longestStreak, lastStudiedAt: completedDate },
+      });
+    }
   }
 
   return NextResponse.json(updated);

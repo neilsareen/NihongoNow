@@ -170,7 +170,7 @@ export function SilentModeButton({ className }: { className?: string }) {
         aria-label={active ? `Silent mode on, ${minutesLeft} minutes left` : "Turn on silent mode"}
         title={active ? `Silent for ${minutesLeft} more minutes` : "Can’t speak out loud?"}
         className={cn(
-          "h-10 rounded-full grid grid-flow-col items-center gap-1.5 shrink-0 border-2 transition-colors",
+          "h-10 rounded-full grid grid-flow-col justify-center items-center gap-1.5 shrink-0 border-2 transition-colors",
           active
             ? "px-3 text-on-light"
             : "w-10 bg-surface border-line text-text-muted hover:text-text hover:border-line-strong",

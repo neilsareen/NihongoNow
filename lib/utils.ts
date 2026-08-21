@@ -16,8 +16,10 @@ export function formatDuration(seconds: number): string {
 // own local time is usually UTC, which is wrong for a user in any other
 // timezone: their late-evening session can already fall after UTC midnight
 // and get miscounted as "today" before their day has actually started.
-export function getStartOfDayInTimezone(timeZone: string): Date {
-  const now = new Date();
+// `at` picks the instant whose local day is wanted, defaulting to now — used
+// by streak bookkeeping to find the start of some earlier day too.
+export function getStartOfDayInTimezone(timeZone: string, at: Date = new Date()): Date {
+  const now = at;
   let dateStr: string;
   try {
     dateStr = now.toLocaleDateString("en-CA", { timeZone });
@@ -29,6 +31,32 @@ export function getStartOfDayInTimezone(timeZone: string): Date {
   const utcWallClock = new Date(guessUTC.toLocaleString("en-US", { timeZone: "UTC" }));
   const offsetMs = tzWallClock.getTime() - utcWallClock.getTime();
   return new Date(guessUTC.getTime() - offsetMs);
+}
+
+// Rolls a streak forward when a lesson completes at `completedAt`: unchanged
+// if that's the same local day as the last completion, +1 if it's the very
+// next local day, and reset to 1 if a day (or more) was missed or this is the
+// first one. `longestStreak` rides along as the running max.
+export function nextStreak(
+  profile: { currentStreak: number; longestStreak: number; lastStudiedAt: Date | null },
+  timeZone: string,
+  completedAt: Date
+): { currentStreak: number; longestStreak: number } {
+  const todayStart = getStartOfDayInTimezone(timeZone, completedAt);
+  const lastStart = profile.lastStudiedAt
+    ? getStartOfDayInTimezone(timeZone, profile.lastStudiedAt)
+    : null;
+  const oneDayMs = 24 * 60 * 60 * 1000;
+
+  const currentStreak = !lastStart
+    ? 1
+    : lastStart.getTime() === todayStart.getTime()
+      ? Math.max(profile.currentStreak, 1)
+      : lastStart.getTime() === todayStart.getTime() - oneDayMs
+        ? profile.currentStreak + 1
+        : 1;
+
+  return { currentStreak, longestStreak: Math.max(profile.longestStreak, currentStreak) };
 }
 
 // Kanji whose most natural standalone reading is on'yomi: counting numbers,
