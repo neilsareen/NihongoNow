@@ -198,6 +198,40 @@ function shouldShowMnemonicHint(item: LessonItem): boolean {
   return (item.review?.incorrectCount ?? 0) > 0;
 }
 
+/**
+ * A whole reading — icon, kana, romaji, tag — is the tap target. Several of
+ * these sit side by side on a kanji card, where a lone icon is easy to miss.
+ */
+function SpeakChip({
+  text,
+  className,
+  children,
+}: {
+  text: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        speak(text);
+      }}
+      className={cn(
+        "flex items-center gap-2 min-h-11 px-3 rounded-full bg-surface-raised",
+        "transition-[filter] hover:brightness-125 active:brightness-110 touch-manipulation",
+        className
+      )}
+      aria-label="Play pronunciation"
+      title="Play pronunciation"
+    >
+      <Volume2 className="w-4 h-4 shrink-0 text-sky" strokeWidth={2.5} />
+      {children}
+    </button>
+  );
+}
+
 function kanjiReadings(onyomi: string[] = [], kunyomi: string[] = []) {
   const readings = [
     ...onyomi.map((r) => ({ label: "on" as const, kana: katakanaToHiragana(r) })),
@@ -377,16 +411,15 @@ function CardBack({ item }: { item: LessonItem }) {
         {readings.length > 0 && (
           <div className="w-full space-y-2">
             <DetailLabel>Readings</DetailLabel>
-            <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+            <div className="flex flex-wrap items-center justify-center gap-2">
               {readings.map((r) => (
-                <div key={`${r.label}-${r.kana}`} className="flex items-center gap-2">
-                  <AudioButton text={readingSpeechText(r.kana)} />
+                <SpeakChip key={`${r.label}-${r.kana}`} text={readingSpeechText(r.kana)}>
                   <span className="jp text-[15px] text-text">{r.kana}</span>
                   <span className="text-[13px] text-text-muted">{kanaToRomaji(r.kana)}</span>
                   <span className="font-display text-[10px] font-bold uppercase tracking-wider text-text-subtle bg-ink-deep rounded-full px-2 py-0.5">
                     {r.label}
                   </span>
-                </div>
+                </SpeakChip>
               ))}
             </div>
           </div>
@@ -395,13 +428,12 @@ function CardBack({ item }: { item: LessonItem }) {
         {exampleWords.length > 0 && (
           <div className="w-full space-y-2 pt-1">
             <DetailLabel>Common words</DetailLabel>
-            <div className="space-y-1.5">
+            <div className="flex flex-col items-center gap-1.5">
               {exampleWords.map((w, i) => (
-                <div key={i} className="flex items-center justify-center gap-2 text-[13px]">
-                  <AudioButton text={w.reading || w.word || ""} />
+                <SpeakChip key={i} text={w.reading || w.word || ""} className="text-[13px]">
                   <span className="jp text-text">{w.word}</span>
                   {w.meaning && <span className="text-text-muted">{w.meaning}</span>}
-                </div>
+                </SpeakChip>
               ))}
             </div>
           </div>

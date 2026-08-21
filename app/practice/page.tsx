@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
 import { Check, Flame, Lightbulb, Lock, RotateCcw, Volume2 } from "lucide-react";
-import { speak, speechText } from "@/lib/speech";
+import { readingSpeechText, speak, speechText } from "@/lib/speech";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { Card, CardScroller, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
@@ -36,42 +36,54 @@ type ExampleWord = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function AudioButton({
-  text,
-  lang = "ja-JP",
-  size = "sm",
-}: {
-  text: string;
-  lang?: string;
-  size?: "sm" | "md";
-}) {
+function AudioButton({ text, lang = "ja-JP" }: { text: string; lang?: string }) {
   return (
     <button
       onClick={(e) => {
         e.stopPropagation();
         speak(text, lang);
       }}
-      className={cn(
-        "relative rounded-full shrink-0 grid place-items-center transition-colors touch-manipulation",
-        size === "sm"
-          ? "bg-surface-raised text-sky hover:brightness-125"
-          : "ledge-sm text-on-light",
-        // 36px still reads under the thumb as small, so the compact size keeps its
-        // look and grows the tap area to 44px with an invisible overlay.
-        size === "sm" &&
-          "before:absolute before:left-1/2 before:top-1/2 before:-translate-x-1/2 before:-translate-y-1/2 before:h-11 before:w-11 before:content-['']",
-        size === "md" ? "w-12 h-12" : "w-9 h-9"
-      )}
-      style={
-        size === "sm"
-          ? undefined
-          : { background: "hsl(var(--sky))", ["--ledge" as string]: "var(--sky-deep)" }
-      }
+      className="w-12 h-12 rounded-full shrink-0 grid place-items-center ledge-sm text-on-light transition-colors touch-manipulation"
+      style={{ background: "hsl(var(--sky))", ["--ledge" as string]: "var(--sky-deep)" }}
       aria-label="Play pronunciation"
       title="Play pronunciation"
       type="button"
     >
-      <Volume2 className={size === "md" ? "w-5 h-5" : "w-4 h-4"} strokeWidth={2.5} />
+      <Volume2 className="w-5 h-5" strokeWidth={2.5} />
+    </button>
+  );
+}
+
+/**
+ * A whole reading — icon, kana, romaji, tag — is the tap target. Several of
+ * these sit side by side on a kanji card, where a lone icon is easy to miss.
+ */
+function SpeakChip({
+  text,
+  className,
+  children,
+}: {
+  text: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        speak(text);
+      }}
+      className={cn(
+        "flex items-center gap-2 min-h-11 px-3 rounded-full bg-surface-raised",
+        "transition-[filter] hover:brightness-125 active:brightness-110 touch-manipulation",
+        className
+      )}
+      aria-label="Play pronunciation"
+      title="Play pronunciation"
+    >
+      <Volume2 className="w-4 h-4 shrink-0 text-sky" strokeWidth={2.5} />
+      {children}
     </button>
   );
 }
@@ -578,21 +590,21 @@ function PracticeView({
                             {item.meanings.join(", ")}
                           </p>
                         )}
-                        <AudioButton text={speechText(item.contentType, item)} size="md" />
+                        <AudioButton text={speechText(item.contentType, item)} />
                       </div>
 
                       {readings.length > 0 && (
                         <div className="w-full space-y-2 text-center">
                           <DetailLabel>Readings</DetailLabel>
-                          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+                          <div className="flex flex-wrap items-center justify-center gap-2">
                             {readings.map((r) => (
-                              <div key={`${r.label}-${r.kana}`} className="flex items-center gap-1.5">
+                              <SpeakChip key={`${r.label}-${r.kana}`} text={readingSpeechText(r.kana)}>
                                 <span className="jp text-[15px]">{r.kana}</span>
                                 <span className="text-[13px] text-text-muted">{kanaToRomaji(r.kana)}</span>
                                 <span className="font-display text-[10px] font-bold uppercase tracking-wider text-text-subtle bg-ink-deep rounded-full px-2 py-0.5">
                                   {r.label}
                                 </span>
-                              </div>
+                              </SpeakChip>
                             ))}
                           </div>
                         </div>
@@ -601,13 +613,12 @@ function PracticeView({
                       {exampleWords.length > 0 && (
                         <div className="w-full space-y-2 text-center">
                           <DetailLabel>Common words</DetailLabel>
-                          <div className="space-y-1.5">
+                          <div className="flex flex-col items-center gap-1.5">
                             {exampleWords.map((w, i) => (
-                              <div key={i} className="flex items-center justify-center gap-2 text-[13px]">
-                                <AudioButton text={w.reading || w.word || ""} />
+                              <SpeakChip key={i} text={w.reading || w.word || ""} className="text-[13px]">
                                 <span className="jp">{w.word}</span>
                                 {w.meaning && <span className="text-text-muted">{w.meaning}</span>}
-                              </div>
+                              </SpeakChip>
                             ))}
                           </div>
                         </div>
@@ -616,7 +627,7 @@ function PracticeView({
                   ) : (
                     <div className="flex items-center gap-2.5">
                       <p className="font-display text-[2rem] font-extrabold tracking-tight">{item.romaji}</p>
-                      <AudioButton text={speechText(item.contentType, item)} size="md" />
+                      <AudioButton text={speechText(item.contentType, item)} />
                     </div>
                   )}
                 </div>
