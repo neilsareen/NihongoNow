@@ -173,8 +173,8 @@ export default async function DashboardPage() {
           what is left is free to be addressed to the learner and sized like a
           headline. */}
       <header>
-        <p className="text-[13px] text-text-subtle font-medium">{getGreeting()},</p>
-        <h1 className="font-display font-extrabold text-[28px] leading-tight tracking-tight truncate mt-0.5">
+        <h1 className="font-display font-extrabold text-[22px] leading-tight tracking-tight truncate">
+          <span className="font-medium text-text-subtle">{getGreeting()}, </span>
           {profile.displayName || "Learner"}
         </h1>
       </header>
