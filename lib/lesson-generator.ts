@@ -529,5 +529,13 @@ function pickExerciseType(contentType: ContentType, srsLevel: string): ExerciseT
     if (contentType === ContentType.VOCABULARY || contentType === ContentType.PHRASE) return ExerciseType.ENGLISH_TO_JAPANESE;
     return types[0];
   }
-  return types[Math.floor(Math.random() * types.length)];
+  const picked = types[Math.floor(Math.random() * types.length)];
+  // Half of a vocabulary review's English-to-Japanese turns ask the learner to
+  // type the romaji instead of just flipping the card, so production gets
+  // checked rather than taken on trust. First encounters stay pure flip cards
+  // above — nothing to type yet for a word never seen before.
+  if (contentType === ContentType.VOCABULARY && picked === ExerciseType.ENGLISH_TO_JAPANESE && Math.random() < 0.5) {
+    return ExerciseType.FILL_IN_BLANK;
+  }
+  return picked;
 }

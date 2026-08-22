@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Flame, Lightbulb, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
 import { readingSpeechText, speak, speechText } from "@/lib/speech";
-import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
+import { gradePronunciation, kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { SpeakCard } from "@/app/components/speak-card";
 import { SilentModeButton, useSilentMode } from "@/app/components/silent-mode";
@@ -241,7 +241,7 @@ function MnemonicButton({ hint }: { hint: string }) {
 }
 
 function shouldShowMnemonicHint(item: LessonItem): boolean {
-  if (isE2J(item) || isListening(item)) return false;
+  if (isE2J(item) || isListening(item) || isFillInBlank(item)) return false;
   if (item.contentType !== "HIRAGANA" && item.contentType !== "KATAKANA" && item.contentType !== "KANJI") return false;
   if (!item.content?.mnemonicHint) return false;
   return (item.review?.incorrectCount ?? 0) > 0;
@@ -331,6 +331,10 @@ function isSpeaking(item: LessonItem) {
   return item.exerciseType === "SPEAKING";
 }
 
+function isFillInBlank(item: LessonItem) {
+  return item.exerciseType === "FILL_IN_BLANK";
+}
+
 /* Two of the exercise types cannot be answered without sound: a listening card
    is nothing but audio, and a say-it-back card is graded by microphone. With
    silent mode on they are asked another way rather than dropped — dropping
@@ -356,6 +360,59 @@ function getSpeechText(item: LessonItem): string {
   return speechText(item.contentType, item.content);
 }
 
+/** The typed-answer input for a "type the romaji" card. Its own tiny form so
+ * Enter submits without needing the Check button below the card. */
+function RomajiInputForm({
+  value,
+  onChange,
+  onSubmit,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+}) {
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSubmit();
+      }}
+      className="w-full flex justify-center"
+    >
+      <input
+        autoFocus
+        type="text"
+        inputMode="text"
+        autoComplete="off"
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="type the romaji…"
+        className={cn(
+          "w-full max-w-[16rem] h-12 px-4 rounded-tile text-center text-[17px] font-medium",
+          "bg-ink-deep border border-line text-text placeholder:text-text-subtle/60",
+          "transition-colors duration-150",
+          "hover:border-line-strong focus:border-coral focus:outline-none"
+        )}
+      />
+    </form>
+  );
+}
+
+/** Correct/incorrect readout shown above the revealed answer on a typed card. */
+function RomajiResultBanner({ correct }: { correct: boolean }) {
+  return (
+    <p
+      className="font-display text-[13px] font-bold uppercase tracking-[0.1em]"
+      style={{ color: `hsl(${correct ? "var(--lime)" : "var(--rose)"})` }}
+    >
+      {correct ? "Correct" : "Not quite"}
+    </p>
+  );
+}
+
 /** Small caption above a group of secondary details on the answer side. */
 function DetailLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -365,7 +422,7 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function CardFront({ item, revealed }: { item: LessonItem; revealed: boolean }) {
+function CardFront({ item }: { item: LessonItem }) {
   const { content, contentType } = item;
   if (!content) return <p className="text-text-muted">No content</p>;
 
@@ -387,7 +444,7 @@ function CardFront({ item, revealed }: { item: LessonItem; revealed: boolean }) 
     );
   }
 
-  if (isE2J(item)) {
+  if (isE2J(item) || isFillInBlank(item)) {
     return (
       <span className="font-display text-[2rem] font-extrabold tracking-tight text-center leading-tight">
         {content.english}
@@ -400,24 +457,15 @@ function CardFront({ item, revealed }: { item: LessonItem; revealed: boolean }) 
   }
 
   if (contentType === "VOCABULARY") {
-    // A word written in kanji is being asked to be read, so its kana reading is
-    // part of the answer rather than part of the prompt — printing it under the
-    // word hands the reading over before the learner has tried for it. A word
-    // already written in kana gives nothing away, so it stays on the prompt.
-    const kanaIsTheAnswer = !!content.kana && content.kana !== content.japanese;
-    const showKana = !!content.kana && (!kanaIsTheAnswer || revealed);
+    // A kana-only word repeats the same text below itself, so the reading
+    // line only earns its place when it actually adds information.
+    const showKana = !!content.kana && content.kana !== content.japanese;
     return (
       <div className="flex flex-col items-center gap-2">
         <span className="jp text-[3.5rem] leading-none font-bold">{content.japanese}</span>
-        {showKana && (
-          <span
-            className={cn(
-              "jp text-xl text-text-muted font-medium",
-              kanaIsTheAnswer && "animate-pop-in"
-            )}
-          >
-            {content.kana}
-          </span>
+        {showKana && <span className="jp text-xl text-text-muted font-medium">{content.kana}</span>}
+        {content.romaji && (
+          <span className="text-sm text-text-subtle font-medium tracking-wide">{content.romaji}</span>
         )}
       </div>
     );
@@ -461,7 +509,7 @@ function CardBack({ item }: { item: LessonItem }) {
     );
   }
 
-  if (isE2J(item)) {
+  if (isE2J(item) || isFillInBlank(item)) {
     if (contentType === "VOCABULARY") {
       return (
         <div className="flex flex-col items-center gap-2.5 text-center">
@@ -828,6 +876,8 @@ export default function LessonPage() {
   const [showDoneDialog, setShowDoneDialog] = useState(false);
   const [mcChoice, setMcChoice] = useState<string | null>(null);
   const [mcCorrect, setMcCorrect] = useState<boolean | null>(null);
+  const [romajiInput, setRomajiInput] = useState("");
+  const [romajiCorrect, setRomajiCorrect] = useState<boolean | null>(null);
   const startTime = useRef(Date.now());
   // Guards against a double-tap/ghost-click firing an answer handler twice for
   // the same item before React commits the advance, which silently skips a card.
@@ -854,6 +904,8 @@ export default function LessonPage() {
     setRevealed(false);
     setMcChoice(null);
     setMcCorrect(null);
+    setRomajiInput("");
+    setRomajiCorrect(null);
     setCorrectCount(0);
     setAnsweredCount(0);
     setCombo(0);
@@ -899,6 +951,7 @@ export default function LessonPage() {
     : false;
 
   const isSpeakingItem = currentItem ? isSpeaking(currentItem) : false;
+  const isFillInBlankItem = currentItem ? isFillInBlank(currentItem) : false;
 
   // Must stay above the loading/empty/results early returns below: those skip
   // the rest of the render, so calling a hook after them changes the hook count
@@ -933,7 +986,9 @@ export default function LessonPage() {
   // reach for the speaker button every time puts a tap between them and the one
   // thing they are there to hear. The speaker button stays for replays.
   const revealSpeechText =
-    revealed && !silent && currentItem && isE2J(currentItem) ? getSpeechText(currentItem) : "";
+    revealed && !silent && currentItem && (isE2J(currentItem) || isFillInBlankItem)
+      ? getSpeechText(currentItem)
+      : "";
   useEffect(() => {
     if (!revealSpeechText) return;
     // A beat, so the answer is on screen before it is spoken.
@@ -994,6 +1049,8 @@ export default function LessonPage() {
       answeringRef.current = true;
       setMcChoice(null);
       setMcCorrect(null);
+      setRomajiInput("");
+      setRomajiCorrect(null);
       setCombo((c) => (correct ? c + 1 : 0));
       submitReview(currentItem, correct ? 5 : 1);
       advanceAfterAnswer(correct);
@@ -1001,6 +1058,25 @@ export default function LessonPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [currentItem, lesson, correctCount, answeredCount, currentIndex, totalUnanswered]
   );
+
+  // Graded the moment the learner submits, rather than trusted like a flip
+  // card's self-assessment — the whole point of typing an answer is that it
+  // can be checked. Reuses the same phonetic folding a spoken answer is judged
+  // by, so a typo in vowel length or shi/si doesn't fail an answer that was
+  // otherwise right.
+  function checkFillInBlank() {
+    if (!currentItem || romajiInput.trim().length === 0) return;
+    const grade = gradePronunciation([romajiInput], {
+      japanese: currentItem.content?.japanese,
+      kana: currentItem.content?.kana,
+      romaji: currentItem.content?.romaji,
+    });
+    setRomajiCorrect(grade.passed);
+    setRevealed(true);
+    if (grade.passed) {
+      setTimeout(() => handleAnswer(true), 900);
+    }
+  }
 
   function handleEarlyExit() {
     const durationSeconds = Math.round((Date.now() - startTime.current) / 1000);
@@ -1018,7 +1094,7 @@ export default function LessonPage() {
   // row; requiring a pointer for every one of them is the single biggest drag
   // on the desktop experience.
   const canUseShortcuts =
-    !loading && !finalResults && !!currentItem && !isListeningMC && !isSpeakingItem;
+    !loading && !finalResults && !!currentItem && !isListeningMC && !isSpeakingItem && !isFillInBlankItem;
   useEffect(() => {
     if (!canUseShortcuts) return;
     function onKeyDown(e: KeyboardEvent) {
@@ -1374,23 +1450,34 @@ export default function LessonPage() {
 
                   <div className="px-8 pt-5 pb-8 flex flex-col items-center justify-center gap-4 min-h-[12rem]">
                     <p className="text-[13px] font-semibold text-text-subtle">
-                      {isE2J(currentItem)
-                        ? silent
-                          ? "How would you say this?"
-                          : "Say it in Japanese"
-                        : isListening(currentItem)
-                          ? "What did you hear?"
-                          : "What does this mean?"}
+                      {isFillInBlankItem
+                        ? "Type it in romaji"
+                        : isE2J(currentItem)
+                          ? silent
+                            ? "How would you say this?"
+                            : "Say it in Japanese"
+                          : isListening(currentItem)
+                            ? "What did you hear?"
+                            : "What does this mean?"}
                     </p>
-                    <CardFront item={currentItem} revealed={revealed} />
+                    <CardFront item={currentItem} />
                   </div>
 
                   {!isListeningMC && (
                     <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
                       {revealed ? (
-                        <div className="w-full flex justify-center animate-pop-in">
+                        <div className="w-full flex flex-col items-center gap-2 animate-pop-in">
+                          {isFillInBlankItem && romajiCorrect !== null && (
+                            <RomajiResultBanner correct={romajiCorrect} />
+                          )}
                           <CardBack item={currentItem} />
                         </div>
+                      ) : isFillInBlankItem ? (
+                        <RomajiInputForm
+                          value={romajiInput}
+                          onChange={setRomajiInput}
+                          onSubmit={checkFillInBlank}
+                        />
                       ) : (
                         <button
                           onClick={() => setRevealed(true)}
@@ -1462,6 +1549,27 @@ export default function LessonPage() {
                       </button>
                     )}
                   </div>
+                ) : isFillInBlankItem ? (
+                  !revealed ? (
+                    <button
+                      onClick={checkFillInBlank}
+                      disabled={romajiInput.trim().length === 0}
+                      className={buttonStyles({ size: "lg", full: true, className: "shrink-0" })}
+                      style={buttonVars("primary")}
+                    >
+                      Check
+                    </button>
+                  ) : (
+                    !romajiCorrect && (
+                      <button
+                        onClick={() => handleAnswer(false)}
+                        className={buttonStyles({ variant: "secondary", full: true, size: "lg", className: "shrink-0" })}
+                        style={buttonVars("secondary")}
+                      >
+                        Continue
+                      </button>
+                    )
+                  )
                 ) : !revealed ? (
                   <button
                     onClick={() => setRevealed(true)}

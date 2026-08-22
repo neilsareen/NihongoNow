@@ -622,7 +622,7 @@ function PracticeView({
         <div key={turn} className="flex-1 min-h-0 w-full flex flex-col gap-4 animate-pop-in">
           <CardScroller>
           <Card className="overflow-hidden">
-            <div className="p-8 flex items-center justify-center min-h-[12rem]">
+            <div className="p-8 flex flex-col items-center justify-center gap-2 min-h-[12rem]">
               <span
                 className={cn(
                   "jp font-bold text-center",
@@ -635,6 +635,12 @@ function PracticeView({
               >
                 {item.character}
               </span>
+              {isWordy && item.kana && item.kana !== item.character && (
+                <span className="jp text-lg text-text-muted font-medium">{item.kana}</span>
+              )}
+              {isWordy && item.romaji && (
+                <span className="text-sm text-text-subtle font-medium tracking-wide">{item.romaji}</span>
+              )}
             </div>
 
             <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
