@@ -244,7 +244,7 @@ export default function SettingsPage() {
                   onClick={() => handleGoalChange(min)}
                   aria-pressed={isOn}
                   className={cn(
-                    "h-14 rounded-tile border-2 font-display font-bold text-[15px] tnum card-ledge",
+                    "h-14 rounded-tile border font-display font-bold text-[15px] tnum elevated",
                     "transition-colors duration-150",
                     isOn
                       ? "border-lime bg-lime text-on-light"

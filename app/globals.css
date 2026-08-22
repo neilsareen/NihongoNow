@@ -12,7 +12,9 @@
       and keeps it on every screen, so colour is navigation, not decoration.
       (The build before last smeared one orange-pink gradient over every
       surface — that is what read as a toy.)
-   2. Depth comes from solid ledges, never from blurred coloured glow.
+   2. Depth comes from light, not from blocks. A hairline catches the light on
+      a panel's top edge and a soft shade — tinted with that panel's own hue —
+      falls beneath it. Nothing is stacked on a hard offset slab.
 
    Values are raw HSL triples so Tailwind can compose them with alpha.
 
@@ -33,25 +35,44 @@
     --surface: 264 34% 14%;
     --surface-raised: 263 30% 20%;
 
-    /* The block that sits under a coloured card. On the dark ground the
-       deepest ink reads as a shadow; the light theme needs a real mid-tone
-       for the same effect, which is why this is its own token. */
-    --ledge-base: 266 52% 5%;
+    /* The default shade colour beneath a panel, for anything that does not
+       set its own `--shade`. Deeper and more saturated than the ground, so a
+       neutral card still casts a violet shadow rather than a grey one. */
+    --shade-base: 268 70% 3%;
+
+    /* How hard the shade falls. The dark ground swallows a soft shadow, so
+       both layers run at high alpha here; the light theme roughly quarters them. */
+    --shade-near: 60%;
+    --shade-far: 72%;
+
+    /* How far an element's own hue is pulled towards `--shade-base` before it
+       is allowed to be a shadow. A shadow has to be darker than the ground it
+       falls on: at 0% a coral button would ring itself in a neon halo on this
+       near-black violet, which is the one thing this design will not do. High
+       here, moderate on paper — a white ground can carry far more colour in a
+       shadow before it stops reading as shadow. */
+    --shade-sink: 84%;
+
+    /* The hairline of light along a panel's top edge — the detail that makes
+       a surface read as a material catching light from above. */
+    --edge-light: 0 0% 100% / 0.1;
 
     /* Backdrop behind modals. */
     --scrim: 266 52% 5%;
 
-    /* 2px borders, not hairlines — the chunk is the point. */
-    --line: 263 26% 26%;
-    --line-strong: 263 26% 38%;
+    /* Hairlines. They define an edge; the shade is what gives it depth, so
+       these only need to be strong enough to survive at 1px. */
+    --line: 263 24% 30%;
+    --line-strong: 263 26% 44%;
 
     --text: 270 30% 97%;
     --text-muted: 268 18% 74%;
     --text-subtle: 266 14% 56%;
 
-    /* The cast. Each is usable as a fill with `--on-<x>` as its text colour. */
+    /* The cast. Each is usable as a fill with `--on-<x>` as its text colour;
+       the `-deep` variant is that hue's shade, and its darkened light-theme fill. */
     --coral: 16 92% 61%;          /* primary action */
-    --coral-deep: 12 78% 46%;     /* its pressed ledge */
+    --coral-deep: 12 78% 46%;     /* the shade it casts */
     --lime: 82 78% 55%;           /* affirmative, correct */
     --lime-deep: 84 70% 38%;
     --sun: 44 98% 58%;            /* streaks, kanji */
@@ -104,8 +125,9 @@
         every filled button and colour card correct without touching a
         component.
 
-     Depth still comes from solid ledges, so `--ledge-base` is a real
-     mid-tone grey-violet rather than the near-white ground.
+     Depth still comes from a tinted shade, so `--shade-base` is a real
+     mid-tone grey-violet rather than the near-white ground, and both shade
+     alphas drop: on paper a shadow at dark-theme strength reads as soot.
      ----------------------------------------------------------------------- */
   :root.light {
     --ink: 268 44% 97%;
@@ -113,11 +135,16 @@
     --surface: 0 0% 100%;
     --surface-raised: 267 42% 96%;
 
-    --ledge-base: 266 22% 74%;
+    --shade-base: 266 40% 46%;
+    --shade-near: 15%;
+    --shade-far: 24%;
+    --shade-sink: 46%;
+    --edge-light: 0 0% 100% / 0.55;
+
     --scrim: 266 32% 26%;
 
-    --line: 265 24% 86%;
-    --line-strong: 265 20% 60%;
+    --line: 265 22% 88%;
+    --line-strong: 265 20% 66%;
 
     --text: 266 45% 12%;
     --text-muted: 266 20% 35%;
@@ -257,37 +284,118 @@ html:has(.screen-fixed) body {
 }
 
 /* ---------------------------------------------------------------------------
-   The pressable ledge.
+   Sheen.
    ---------------------------------------------------------------------------
-   A solid block of colour below the button that compresses when pressed. It is
-   the single detail that makes an interface feel like a thing you touch rather
-   than a page you click, and it costs one box-shadow. Set --ledge to the
-   darker shade of whatever fill the element carries.
+   A fill lit from above: a highlight that fades out down the element rather
+   than a hard bright line ruled across its top edge. On a progress bar that is
+   the difference between a rounded surface and two stacked stripes.
    --------------------------------------------------------------------------- */
-.ledge {
-  box-shadow: 0 4px 0 0 hsl(var(--ledge, var(--line-strong)));
-  transition: box-shadow 0.1s ease-out, transform 0.1s ease-out;
+.sheen {
+  background-image: linear-gradient(
+    180deg,
+    rgb(255 255 255 / 0.26),
+    rgb(255 255 255 / 0) 65%
+  );
 }
 
-.ledge:active:not(:disabled) {
-  transform: translateY(4px);
-  box-shadow: 0 0 0 0 hsl(var(--ledge, var(--line-strong)));
+/* ---------------------------------------------------------------------------
+   Elevation.
+   ---------------------------------------------------------------------------
+   Every raised thing in this app — a card, a button, an avatar plate — is lit
+   the same way: a hairline of light along its top edge, and a soft shade
+   falling beneath it, carrying a trace of the element's own colour rather than
+   being flatly black. Set `--shade` to a bare HSL triple (or a token holding
+   one) and a coral button drops a warm shadow, a grape card a cool one. That
+   is what makes the interface feel like coloured glass in a lit room rather
+   than like cardboard cut-outs on a table.
+
+   Two layers do the work, in the manner of iOS materials and of Stripe's and
+   Linear's surfaces: a tight contact shadow that pins the element to the
+   ground, and a wide, heavily-feathered one that gives it its height. The
+   `-1px` and `-14px` spreads keep the wide layer from leaking out sideways,
+   which is what separates a considered shadow from a smudge.
+
+   `--shade-c` is the colour those layers actually use: the element's hue sunk
+   most of the way into `--shade-base` first, so it always lands darker than
+   the ground. Skipping that step is what turns a tinted shadow into a neon
+   glow — the failure mode this design has always refused.
+
+   `--shade` must be a raw triple (`16 92% 61%` or `var(--coral-deep)`), never
+   a finished `hsl(...)` string: these rules compose the colour themselves.
+   --------------------------------------------------------------------------- */
+
+.elevated,
+.pressable,
+.pressable-sm {
+  --shade-c: color-mix(
+    in oklab,
+    hsl(var(--shade-base)) var(--shade-sink),
+    hsl(var(--shade, var(--shade-base)))
+  );
 }
 
-.ledge-sm {
-  box-shadow: 0 3px 0 0 hsl(var(--ledge, var(--line-strong)));
-  transition: box-shadow 0.1s ease-out, transform 0.1s ease-out;
+.elevated {
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--edge-light)),
+    0 1px 2px -1px color-mix(in srgb, var(--shade-c) var(--shade-near), transparent),
+    0 10px 24px -14px color-mix(in srgb, var(--shade-c) var(--shade-far), transparent);
 }
 
-.ledge-sm:active:not(:disabled) {
-  transform: translateY(3px);
-  box-shadow: 0 0 0 0 hsl(var(--ledge, var(--line-strong)));
+/* ---------------------------------------------------------------------------
+   Pressable.
+   ---------------------------------------------------------------------------
+   The same elevation, plus the response to touch. Pressing does not squash a
+   block flat — it settles the element towards the ground: it shrinks a hair,
+   and its shade contracts with it, because a thing closer to a surface casts a
+   tighter shadow. The whole gesture is over in 120ms, so it reads as the
+   control acknowledging the finger rather than as an animation played at you.
+   --------------------------------------------------------------------------- */
+
+.pressable {
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--edge-light)),
+    0 1px 2px -1px color-mix(in srgb, var(--shade-c) var(--shade-near), transparent),
+    0 12px 26px -14px color-mix(in srgb, var(--shade-c) var(--shade-far), transparent);
+  /* Also carries the fill and border transitions the button utilities ask
+     for: this shorthand lands later in the sheet and would otherwise
+     replace them, snapping the hover brightness on instead of fading it. */
+  transition: box-shadow 0.16s ease-out, transform 0.12s ease-out,
+    filter 0.16s ease-out, background-color 0.16s ease-out,
+    border-color 0.16s ease-out;
 }
 
-/* Cards get the same treatment at rest, which is what gives the interface its
-   stacked, physical quality. */
-.card-ledge {
-  box-shadow: 0 4px 0 0 hsl(var(--ledge, var(--line)));
+.pressable-sm {
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--edge-light)),
+    0 1px 2px -1px color-mix(in srgb, var(--shade-c) var(--shade-near), transparent),
+    0 8px 18px -12px color-mix(in srgb, var(--shade-c) var(--shade-far), transparent);
+  /* Also carries the fill and border transitions the button utilities ask
+     for: this shorthand lands later in the sheet and would otherwise
+     replace them, snapping the hover brightness on instead of fading it. */
+  transition: box-shadow 0.16s ease-out, transform 0.12s ease-out,
+    filter 0.16s ease-out, background-color 0.16s ease-out,
+    border-color 0.16s ease-out;
+}
+
+/* Only where a pointer actually hovers — on a phone this state sticks after a
+   tap and the control would stay lifted for as long as the screen is up. */
+@media (hover: hover) and (pointer: fine) {
+  .pressable:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow:
+      inset 0 1px 0 0 hsl(var(--edge-light)),
+      0 2px 4px -2px color-mix(in srgb, var(--shade-c) var(--shade-near), transparent),
+      0 18px 34px -16px color-mix(in srgb, var(--shade-c) var(--shade-far), transparent);
+  }
+}
+
+.pressable:active:not(:disabled),
+.pressable-sm:active:not(:disabled) {
+  transform: scale(0.977);
+  box-shadow:
+    inset 0 1px 0 0 hsl(var(--edge-light)),
+    0 1px 2px -1px color-mix(in srgb, var(--shade-c) var(--shade-near), transparent),
+    0 3px 8px -6px color-mix(in srgb, var(--shade-c) var(--shade-far), transparent);
 }
 
 /* ---------------------------------------------------------------------------
@@ -373,8 +481,9 @@ html:has(.screen-fixed) body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  .ledge:active:not(:disabled),
-  .ledge-sm:active:not(:disabled) { transform: none; }
+  .pressable:hover:not(:disabled),
+  .pressable:active:not(:disabled),
+  .pressable-sm:active:not(:disabled) { transform: none; }
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }

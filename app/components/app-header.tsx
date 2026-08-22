@@ -67,7 +67,7 @@ export function AppHeader({
 
           {typeof streak === "number" ? (
             <span
-              className="justify-self-end inline-flex items-center gap-1.5 h-9 px-3 rounded-full font-display font-bold text-[15px] border-2"
+              className="justify-self-end inline-flex items-center gap-1.5 h-9 px-3 rounded-full font-display font-bold text-[15px] border"
               // The fill is the app's own surface rather than a tinted sun,
               // which on this warm band would silt up into olive. A clean
               // plate with the sun on the flame and the number instead.

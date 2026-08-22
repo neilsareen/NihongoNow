@@ -52,7 +52,7 @@ export default function SignupPage() {
     return (
       <div className="min-h-screen flex items-center justify-center px-4">
         <Card className="w-full max-w-sm p-6 text-center space-y-3 animate-pop-in">
-          <span className="w-14 h-14 rounded-tile bg-lime text-on-light grid place-items-center mx-auto card-ledge">
+          <span className="w-14 h-14 rounded-tile bg-lime text-on-light grid place-items-center mx-auto elevated">
             <MailCheck className="w-7 h-7" strokeWidth={2.5} />
           </span>
           <h1 className="text-2xl">Check your email</h1>
@@ -88,7 +88,7 @@ export default function SignupPage() {
           {error && (
             <p
               role="alert"
-              className="text-[14px] text-rose bg-rose/12 border-2 border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
+              className="text-[14px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
             >
               {error}
             </p>
@@ -134,7 +134,7 @@ export default function SignupPage() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t-2 border-line" />
+              <div className="w-full border-t border-line" />
             </div>
             <div className="relative flex justify-center">
               <span className="px-3 bg-surface font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle">or</span>

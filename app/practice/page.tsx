@@ -48,8 +48,8 @@ function AudioButton({ text, lang = "ja-JP" }: { text: string; lang?: string }) 
         e.stopPropagation();
         speak(text, lang);
       }}
-      className="w-12 h-12 rounded-full shrink-0 grid place-items-center ledge-sm text-on-light transition-colors touch-manipulation"
-      style={{ background: "hsl(var(--sky))", ["--ledge" as string]: "var(--sky-deep)" }}
+      className="w-12 h-12 rounded-full shrink-0 grid place-items-center pressable-sm text-on-light transition-colors touch-manipulation"
+      style={{ background: "hsl(var(--sky))", ["--shade" as string]: "var(--sky-deep)" }}
       aria-label="Play pronunciation"
       title="Play pronunciation"
       type="button"
@@ -240,7 +240,7 @@ function SelectionView({
                 aria-pressed={isOn}
                 title={locked ? "Master the kana used in a kanji\u2019s reading to unlock it" : undefined}
                 className={cn(
-                  "w-full flex items-center gap-4 p-4 rounded-card border-2 text-left card-ledge",
+                  "w-full flex items-center gap-4 p-4 rounded-card border text-left elevated",
                   "transition-colors duration-150",
                   locked
                     ? "border-line bg-surface/50 cursor-not-allowed"
@@ -248,7 +248,16 @@ function SelectionView({
                       ? "bg-surface"
                       : "border-line bg-surface hover:border-line-strong"
                 )}
-                style={!locked && isOn ? { borderColor: `hsl(${tone})` } : undefined}
+                style={
+                  !locked && isOn
+                    ? {
+                        borderColor: `hsl(${tone} / 0.75)`,
+                        // Wash of the track's own hue over the surface — see the
+                        // level picker in onboarding, which selects the same way.
+                        background: `linear-gradient(hsl(${tone} / 0.14), hsl(${tone} / 0.14)), hsl(var(--surface))`,
+                      }
+                    : undefined
+                }
               >
                 <span
                   className="w-14 h-14 rounded-tile grid place-items-center shrink-0"
@@ -284,7 +293,7 @@ function SelectionView({
                 {!locked && (
                   <span
                     className={cn(
-                      "w-7 h-7 rounded-full grid place-items-center shrink-0 transition-colors border-2",
+                      "w-7 h-7 rounded-full grid place-items-center shrink-0 transition-colors border",
                       isOn ? "text-on-light" : "border-line-strong"
                     )}
                     style={isOn ? { background: `hsl(${tone})`, borderColor: `hsl(${tone})` } : undefined}
@@ -311,11 +320,20 @@ function SelectionView({
                   onClick={() => setCount(n)}
                   aria-pressed={isOn}
                   className={cn(
-                    "h-14 rounded-tile border-2 bg-surface card-ledge",
+                    "h-14 rounded-tile border bg-surface elevated",
                     "font-display font-extrabold text-[19px] tnum transition-colors duration-150",
                     isOn ? "text-text" : "border-line text-text-muted hover:border-line-strong"
                   )}
-                  style={isOn ? { borderColor: "hsl(var(--sky))", color: "hsl(var(--sky))" } : undefined}
+                  style={
+                    isOn
+                      ? {
+                          borderColor: "hsl(var(--sky) / 0.75)",
+                          color: "hsl(var(--sky))",
+                          background:
+                            "linear-gradient(hsl(var(--sky) / 0.14), hsl(var(--sky) / 0.14)), hsl(var(--surface))",
+                        }
+                      : undefined
+                  }
                 >
                   {n}
                 </button>
@@ -524,7 +542,7 @@ function PracticeView({
           <Link
             href="/dashboard"
             aria-label="Back to dashboard"
-            className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border-2 border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
+            className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2.2"
@@ -537,11 +555,8 @@ function PracticeView({
                 miss holds the bar where it is instead of advancing it. */}
             <div className="h-3.5 rounded-full bg-surface-raised overflow-hidden">
               <div
-                className="h-full rounded-full bg-lime transition-[width] duration-500 ease-bounce"
-                style={{
-                  width: `${(cleared / size) * 100}%`,
-                  boxShadow: "inset 0 2px 0 0 rgb(255 255 255 / 0.3)",
-                }}
+                className="h-full rounded-full bg-lime sheen transition-[width] duration-500 ease-bounce"
+                style={{ width: `${(cleared / size) * 100}%` }}
               />
             </div>
           </div>
@@ -599,7 +614,7 @@ function PracticeView({
               </span>
             </div>
 
-            <div className="border-t-2 border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
+            <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
               {!flipped ? (
                 <button
                   onClick={() => setFlipped(true)}
@@ -727,8 +742,8 @@ function SummaryView({
       <main className="flex-1 max-w-sm mx-auto w-full px-4 py-6 flex flex-col justify-center">
         <div className="space-y-5">
           <div
-            className="relative rounded-card overflow-hidden card-ledge text-on-light animate-pop-in"
-            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ledge-base))" }}
+            className="relative rounded-card overflow-hidden elevated text-on-light animate-pop-in"
+            style={{ background: `hsl(${hue})` }}
           >
             <span
               className="jp absolute -right-7 -bottom-14 text-[9rem] leading-none font-bold select-none pointer-events-none"
@@ -766,7 +781,7 @@ function SummaryView({
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-tile border-2 border-line bg-surface card-ledge py-3.5 px-2 text-center"
+                className="rounded-tile border border-line bg-surface elevated py-3.5 px-2 text-center"
               >
                 <p
                   className="font-display font-extrabold text-[26px] tnum leading-none"

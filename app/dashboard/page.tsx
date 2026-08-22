@@ -184,7 +184,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* The one thing to do next, as a block of colour you cannot miss. */}
-      <ColorCard hue="var(--coral)" ledgeHue="var(--coral-deep)" href={lessonHref} className="relative">
+      <ColorCard hue="var(--coral)" shadeHue="var(--coral-deep)" href={lessonHref} className="relative">
         {/* Oversized glyph bleeding off the edge — the app's own alphabet as
             ornament, instead of a stock illustration. */}
         <span
@@ -298,7 +298,7 @@ export default async function DashboardPage() {
             );
 
             const rowClass =
-              "flex items-center gap-4 p-3.5 rounded-card border-2 border-line bg-surface card-ledge";
+              "flex items-center gap-4 p-3.5 rounded-card border border-line bg-surface elevated";
 
             return href ? (
               <Link

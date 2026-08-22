@@ -125,7 +125,7 @@ function AudioButton({
         "relative rounded-full shrink-0 grid place-items-center transition-colors touch-manipulation",
         size === "sm"
           ? "bg-surface-raised text-sky hover:brightness-125"
-          : "ledge-sm text-on-light",
+          : "pressable-sm text-on-light",
         // 36px still reads under the thumb as small, so the compact size keeps its
         // look and grows the tap area to 44px with an invisible overlay.
         size === "sm" &&
@@ -135,7 +135,7 @@ function AudioButton({
       style={
         size === "sm"
           ? undefined
-          : { background: "hsl(var(--sky))", ["--ledge" as string]: "var(--sky-deep)" }
+          : { background: "hsl(var(--sky))", ["--shade" as string]: "var(--sky-deep)" }
       }
       aria-label="Play pronunciation"
       title="Play pronunciation"
@@ -338,8 +338,8 @@ function CardFront({ item, revealed }: { item: LessonItem; revealed: boolean }) 
         <p className="text-[14px] text-text-muted font-medium">Listen and identify</p>
         <button
           onClick={() => speak(text)}
-          className="w-20 h-20 rounded-full grid place-items-center ledge text-on-light"
-          style={{ background: "hsl(var(--sky))", ["--ledge" as string]: "var(--sky-deep)" }}
+          className="w-20 h-20 rounded-full grid place-items-center pressable text-on-light"
+          style={{ background: "hsl(var(--sky))", ["--shade" as string]: "var(--sky-deep)" }}
           aria-label="Play audio"
         >
           <Volume2 className="w-8 h-8" strokeWidth={2.5} />
@@ -867,8 +867,8 @@ export default function LessonPage() {
         <div className="w-full max-w-sm space-y-5">
           {/* Score as a block of colour with the number at poster size. */}
           <div
-            className="relative rounded-card overflow-hidden card-ledge text-on-light animate-pop-in"
-            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ledge-base))" }}
+            className="relative rounded-card overflow-hidden elevated text-on-light animate-pop-in"
+            style={{ background: `hsl(${hue})` }}
           >
             <span
               className="jp absolute -right-7 -bottom-14 text-[9rem] leading-none font-bold select-none pointer-events-none"
@@ -904,7 +904,7 @@ export default function LessonPage() {
             ].map((stat) => (
               <div
                 key={stat.label}
-                className="rounded-tile border-2 border-line bg-surface card-ledge py-3.5 text-center"
+                className="rounded-tile border border-line bg-surface elevated py-3.5 text-center"
               >
                 <p
                   className="font-display font-extrabold text-[26px] tnum leading-none"
@@ -1017,7 +1017,7 @@ export default function LessonPage() {
         <div className="max-w-md mx-auto h-16 px-4 flex items-center gap-3">
           <button
             onClick={() => setShowDoneDialog(true)}
-            className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border-2 border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
+            className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
             aria-label="End session"
             title="End session (Esc)"
           >
@@ -1027,11 +1027,8 @@ export default function LessonPage() {
           <div className="flex-1">
             <div className="h-3.5 rounded-full bg-surface-raised overflow-hidden">
               <div
-                className="h-full rounded-full bg-lime transition-[width] duration-500 ease-bounce"
-                style={{
-                  width: `${progressPct}%`,
-                  boxShadow: "inset 0 2px 0 0 rgb(255 255 255 / 0.3)",
-                }}
+                className="h-full rounded-full bg-lime sheen transition-[width] duration-500 ease-bounce"
+                style={{ width: `${progressPct}%` }}
               />
             </div>
           </div>
@@ -1142,7 +1139,7 @@ export default function LessonPage() {
                     placeholder in the second, which read as a rendering fault. */}
                 <CardScroller>
                 <Card className="overflow-hidden">
-                  <div className="px-4 h-12 flex items-center justify-between border-b-2 border-line">
+                  <div className="px-4 h-12 flex items-center justify-between border-b border-line">
                     <span
                       className="inline-flex items-center h-7 px-3 rounded-full font-display text-[11px] font-bold uppercase tracking-[0.1em] text-on-light"
                       style={{ background: `hsl(${CONTENT_LABEL[currentItem.contentType].tone})` }}
@@ -1166,7 +1163,7 @@ export default function LessonPage() {
                   </div>
 
                   {!isListeningMC && (
-                    <div className="border-t-2 border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
+                    <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
                       {revealed ? (
                         <div className="w-full flex justify-center animate-pop-in">
                           <CardBack item={currentItem} />
@@ -1196,7 +1193,7 @@ export default function LessonPage() {
                       const isSelected = mcChoice === choice;
 
                       let stateClass =
-                        "bg-surface border-line text-text hover:border-line-strong card-ledge";
+                        "bg-surface border-line text-text hover:border-line-strong elevated";
                       if (mcChoice) {
                         if (isSelected && mcCorrect) {
                           stateClass = "bg-lime border-lime text-on-light animate-pop";
@@ -1214,7 +1211,7 @@ export default function LessonPage() {
                           key={choice}
                           disabled={!!mcChoice}
                           className={cn(
-                            "w-full py-4 px-5 rounded-tile text-[15px] font-semibold text-left border-2",
+                            "w-full py-4 px-5 rounded-tile text-[15px] font-semibold text-left border",
                             "transition-colors duration-150 disabled:cursor-default",
                             stateClass
                           )}

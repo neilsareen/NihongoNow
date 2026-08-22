@@ -40,7 +40,7 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      <header className="border-b-2 border-line">
+      <header className="border-b border-line">
         <div className="max-w-2xl mx-auto px-6 h-20 flex items-center justify-between">
           <Wordmark />
           <Link
@@ -108,8 +108,8 @@ export default async function HomePage() {
           {SCRIPTS.map((s) => (
             <div
               key={s.label}
-              className="rounded-card p-4 text-on-light card-ledge"
-              style={{ background: `hsl(${s.tone})`, ["--ledge" as string]: "hsl(var(--ledge-base))" }}
+              className="rounded-card p-4 text-on-light elevated"
+              style={{ background: `hsl(${s.tone})` }}
             >
               <div className="jp text-[2.75rem] leading-none font-bold mb-2">{s.glyph}</div>
               <div className="font-display text-[13px] font-bold">{s.label}</div>
@@ -122,7 +122,7 @@ export default async function HomePage() {
           {FEATURES.map(({ icon: Icon, title, desc, tone }) => (
             <div
               key={title}
-              className="flex gap-4 p-5 rounded-card border-2 border-line bg-surface card-ledge"
+              className="flex gap-4 p-5 rounded-card border border-line bg-surface elevated"
             >
               <span
                 className="w-12 h-12 rounded-tile grid place-items-center shrink-0 text-on-light"
@@ -141,8 +141,8 @@ export default async function HomePage() {
         {/* Closing call to action */}
         <section className="mt-14">
           <div
-            className="relative rounded-card overflow-hidden card-ledge text-on-light p-7 text-center"
-            style={{ background: "hsl(var(--coral))", ["--ledge" as string]: "hsl(var(--ledge-base))" }}
+            className="relative rounded-card overflow-hidden elevated text-on-light p-7 text-center"
+            style={{ background: "hsl(var(--coral))" }}
           >
             <span
               className="jp absolute -right-6 -bottom-12 text-[12rem] leading-none font-bold select-none pointer-events-none"
@@ -158,8 +158,7 @@ export default async function HomePage() {
               </p>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 h-14 px-7 rounded-full font-display font-bold text-[16px] bg-on-light text-coral ledge"
-                style={{ ["--ledge" as string]: "hsl(var(--ledge-base))" }}
+                className="inline-flex items-center gap-2 h-14 px-7 rounded-full font-display font-bold text-[16px] bg-on-light text-coral pressable"
               >
                 Start free
                 <ArrowRight className="w-[18px] h-[18px]" strokeWidth={3} />
@@ -169,7 +168,7 @@ export default async function HomePage() {
         </section>
       </div>
 
-      <footer className="border-t-2 border-line">
+      <footer className="border-t border-line">
         <div className="max-w-2xl mx-auto px-6 py-8 flex flex-wrap items-center justify-between gap-4">
           <Wordmark />
           <p className="text-[13px] text-text-subtle font-medium">

@@ -52,7 +52,7 @@ export default function LoginPage() {
           {error && (
             <p
               role="alert"
-              className="text-[14px] text-rose bg-rose/12 border-2 border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
+              className="text-[14px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
             >
               {error}
             </p>
@@ -87,7 +87,7 @@ export default function LoginPage() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center" aria-hidden="true">
-              <div className="w-full border-t-2 border-line" />
+              <div className="w-full border-t border-line" />
             </div>
             <div className="relative flex justify-center">
               <span className="px-3 bg-surface font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle">or</span>

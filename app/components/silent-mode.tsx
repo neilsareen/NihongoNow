@@ -83,7 +83,7 @@ export function SilentModePanel({ onChoose }: { onChoose?: () => void }) {
               onChoose?.();
             }}
             className={cn(
-              "h-14 rounded-tile border-2 bg-surface card-ledge",
+              "h-14 rounded-tile border bg-surface elevated",
               "font-display font-bold text-[15px] tnum transition-colors duration-150",
               "border-line text-text-muted hover:border-line-strong hover:text-text"
             )}
@@ -170,7 +170,7 @@ export function SilentModeButton({ className }: { className?: string }) {
         aria-label={active ? `Silent mode on, ${minutesLeft} minutes left` : "Turn on silent mode"}
         title={active ? `Silent for ${minutesLeft} more minutes` : "Can’t speak out loud?"}
         className={cn(
-          "h-10 rounded-full grid grid-flow-col justify-center items-center gap-1.5 shrink-0 border-2 transition-colors",
+          "h-10 rounded-full grid grid-flow-col justify-center items-center gap-1.5 shrink-0 border transition-colors",
           active
             ? "px-3 text-on-light"
             : "w-10 bg-surface border-line text-text-muted hover:text-text hover:border-line-strong",

@@ -61,7 +61,7 @@ export function ThemeToggle() {
             onClick={() => setTheme(value)}
             aria-pressed={isOn}
             className={cn(
-              "h-[4.5rem] rounded-tile border-2 card-ledge",
+              "h-[4.5rem] rounded-tile border elevated",
               "flex flex-col items-center justify-center gap-1.5",
               "font-display font-bold text-[13px]",
               "transition-colors duration-150",

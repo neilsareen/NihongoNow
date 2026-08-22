@@ -25,7 +25,7 @@ export function Field({
         id={id}
         className={cn(
           "w-full h-12 px-4 rounded-tile text-[15px] font-medium",
-          "bg-ink-deep border-2 border-line text-text placeholder:text-text-subtle",
+          "bg-ink-deep border border-line text-text placeholder:text-text-subtle",
           "transition-colors duration-150",
           "hover:border-line-strong focus:border-coral focus:outline-none",
           className

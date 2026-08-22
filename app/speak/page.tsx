@@ -202,8 +202,8 @@ export default function SpeakPracticePage() {
       <Shell>
         <div className="flex-1 flex flex-col justify-center gap-5 py-6">
           <div
-            className="relative rounded-card overflow-hidden card-ledge text-on-light animate-pop-in"
-            style={{ background: `hsl(${hue})`, ["--ledge" as string]: "hsl(var(--ink-deep))" }}
+            className="relative rounded-card overflow-hidden elevated text-on-light animate-pop-in"
+            style={{ background: `hsl(${hue})` }}
           >
             <span
               className="jp absolute -right-7 -bottom-14 text-[9rem] leading-none font-bold select-none pointer-events-none"
@@ -266,8 +266,8 @@ export default function SpeakPracticePage() {
       <div className="shrink-0 flex items-center gap-3 pb-4">
         <div className="flex-1 h-3.5 rounded-full bg-surface-raised overflow-hidden">
           <div
-            className="h-full rounded-full bg-lime transition-[width] duration-500 ease-bounce"
-            style={{ width: `${progressPct}%`, boxShadow: "inset 0 2px 0 0 rgb(255 255 255 / 0.3)" }}
+            className="h-full rounded-full bg-lime sheen transition-[width] duration-500 ease-bounce"
+            style={{ width: `${progressPct}%` }}
           />
         </div>
         <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0">

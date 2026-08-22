@@ -175,7 +175,7 @@ export function SpeakCard({
     <div className="w-full flex-1 min-h-0 flex flex-col gap-4">
       <div className="flex-1 min-h-0 flex flex-col justify-center py-1">
       <Card className="overflow-hidden flex flex-col max-h-full">
-        <div className="shrink-0 px-4 h-12 flex items-center justify-between border-b-2 border-line">
+        <div className="shrink-0 px-4 h-12 flex items-center justify-between border-b border-line">
           <span
             className="inline-flex items-center h-7 px-3 rounded-full font-display text-[11px] font-bold uppercase tracking-[0.1em] text-on-light"
             style={{ background: "hsl(var(--grape))" }}
@@ -227,7 +227,7 @@ export function SpeakCard({
         {/* Verdict panel. Reserved space rather than a panel that appears and
             shoves the mic button down mid-tap. */}
         <div
-          className="shrink-0 border-t-2 border-line px-6 py-4 min-h-[5.5rem] [@media(min-height:640px)]:min-h-[6.5rem] flex flex-col items-center justify-center gap-2 bg-ink-deep/40"
+          className="shrink-0 border-t border-line px-6 py-4 min-h-[5.5rem] [@media(min-height:640px)]:min-h-[6.5rem] flex flex-col items-center justify-center gap-2 bg-ink-deep/40"
           aria-live="polite"
         >
           {listening ? (
@@ -316,12 +316,12 @@ export function SpeakCard({
               // Smaller on a short screen, where every pixel it gives back is a
               // pixel the prompt above it keeps.
               "relative w-16 h-16 [@media(min-height:640px)]:w-20 [@media(min-height:640px)]:h-20",
-              "rounded-full grid place-items-center text-on-light ledge",
+              "rounded-full grid place-items-center text-on-light pressable",
               "transition-transform active:scale-95 disabled:pointer-events-none"
             )}
             style={{
               background: listening ? "hsl(var(--lime))" : "hsl(var(--coral))",
-              ["--ledge" as string]: listening ? "var(--lime-deep)" : "var(--coral-deep)",
+              ["--shade" as string]: listening ? "var(--lime-deep)" : "var(--coral-deep)",
             }}
             aria-label={listening ? "Listening" : grade || error ? "Try again" : "Start speaking"}
           >

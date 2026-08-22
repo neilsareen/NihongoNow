@@ -54,7 +54,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b-2 border-line">
+      <header className="border-b border-line">
         <div className="max-w-lg mx-auto h-16 px-4 flex items-center">
           <Link href="/">
             <Wordmark />
@@ -83,11 +83,22 @@ export default function OnboardingPage() {
                   onClick={() => setSelectedLevel(level.id)}
                   aria-pressed={isOn}
                   className={cn(
-                    "w-full flex items-center gap-4 p-4 rounded-card border-2 text-left card-ledge",
+                    "w-full flex items-center gap-4 p-4 rounded-card border text-left elevated",
                     "transition-colors duration-150",
                     isOn ? "bg-surface" : "border-line bg-surface hover:border-line-strong"
                   )}
-                  style={isOn ? { borderColor: `hsl(${level.tone})` } : undefined}
+                  style={
+                    isOn
+                      ? {
+                          borderColor: `hsl(${level.tone} / 0.75)`,
+                          // A hairline alone is too quiet to carry selection, so
+                          // the chosen row also takes a wash of its own hue. It
+                          // is layered over --surface rather than replacing it,
+                          // so the tint reads the same on either ground.
+                          background: `linear-gradient(hsl(${level.tone} / 0.14), hsl(${level.tone} / 0.14)), hsl(var(--surface))`,
+                        }
+                      : undefined
+                  }
                 >
                   <span
                     className="w-14 h-14 rounded-tile grid place-items-center shrink-0 text-on-light"
@@ -105,7 +116,7 @@ export default function OnboardingPage() {
                   </span>
                   <span
                     className={cn(
-                      "w-7 h-7 rounded-full grid place-items-center shrink-0 transition-colors border-2",
+                      "w-7 h-7 rounded-full grid place-items-center shrink-0 transition-colors border",
                       isOn ? "text-on-light" : "border-line-strong"
                     )}
                     style={isOn ? { background: `hsl(${level.tone})`, borderColor: `hsl(${level.tone})` } : undefined}
@@ -131,7 +142,7 @@ export default function OnboardingPage() {
                   onClick={() => setStudyGoal(min)}
                   aria-pressed={isOn}
                   className={cn(
-                    "h-16 rounded-tile border-2 font-display font-bold text-[16px] tnum card-ledge",
+                    "h-16 rounded-tile border font-display font-bold text-[16px] tnum elevated",
                     "transition-colors duration-150",
                     isOn
                       ? "border-lime bg-lime text-on-light"
@@ -152,7 +163,7 @@ export default function OnboardingPage() {
         {error && (
           <p
             role="alert"
-            className="text-[14px] text-rose bg-rose/12 border-2 border-rose/35 rounded-tile px-4 py-3 font-semibold animate-shake"
+            className="text-[14px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 font-semibold animate-shake"
           >
             {error}
           </p>

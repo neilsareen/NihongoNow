@@ -44,7 +44,7 @@ export function PWAInstallBanner() {
 
   return (
     <div className="max-w-lg mx-auto px-4 pt-4">
-      <div className="bg-surface border-2 border-line rounded-card card-ledge p-4 flex items-start gap-3">
+      <div className="bg-surface border border-line rounded-card elevated p-4 flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <p className="font-display font-bold text-[14px]">Put Ikou on your home screen</p>
           {prompt ? (

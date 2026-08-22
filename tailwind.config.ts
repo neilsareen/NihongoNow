@@ -42,7 +42,8 @@ const config: Config = {
           subtle: token("text-subtle"),
         },
 
-        // The cast. `-deep` variants are ledge colours, not fills.
+        // The cast. On the dark theme a `-deep` variant is the shade that hue
+        // casts, not a fill; on the light theme it doubles as the darker fill.
         coral: { DEFAULT: token("coral"), deep: token("coral-deep") },
         lime: { DEFAULT: token("lime"), deep: token("lime-deep") },
         sun: { DEFAULT: token("sun"), deep: token("sun-deep") },

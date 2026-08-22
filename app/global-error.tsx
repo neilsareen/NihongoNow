@@ -69,7 +69,7 @@ export default function GlobalError({
               </button>
               <button
                 onClick={handleManualReset}
-                className="w-full h-11 rounded-full border-2 border-[#3B2F56] hover:border-[#584878] text-[#D6CCE6] text-sm font-medium transition-colors"
+                className="w-full h-11 rounded-full border border-[#3B2F56] hover:border-[#584878] text-[#D6CCE6] text-sm font-medium transition-colors"
               >
                 Clear cached data and reload
               </button>

@@ -24,8 +24,9 @@ type ButtonVariant =
 type ButtonSize = "sm" | "md" | "lg";
 
 /**
- * Filled variants carry their own ledge colour via the `--ledge` custom
- * property, which `.ledge` in globals.css reads. Label colour is a token
+ * Filled variants carry their own shade colour via the `--shade` custom
+ * property, which `.pressable` in globals.css reads, so a coral button drops a
+ * coral-tinted shadow rather than a grey one. Label colour is a token
  * rather than a literal — `--on-light` is ink on the dark theme's bright
  * lime/sun fills and white on the light theme's darkened ones — so these
  * variants stay legible in both themes without a `dark:`/`light:` variant
@@ -34,27 +35,27 @@ type ButtonSize = "sm" | "md" | "lg";
 const VARIANT: Record<ButtonVariant, { className: string; style?: CSSProperties }> = {
   primary: {
     className: "bg-coral text-on-dark hover:brightness-110",
-    style: { ["--ledge" as string]: "var(--coral-deep)" },
+    style: { ["--shade" as string]: "var(--coral-deep)" },
   },
   affirm: {
     className: "bg-lime text-on-light hover:brightness-110",
-    style: { ["--ledge" as string]: "var(--lime-deep)" },
+    style: { ["--shade" as string]: "var(--lime-deep)" },
   },
   reject: {
     className: "bg-rose text-on-dark hover:brightness-110",
-    style: { ["--ledge" as string]: "var(--rose-deep)" },
+    style: { ["--shade" as string]: "var(--rose-deep)" },
   },
   sun: {
     className: "bg-sun text-on-light hover:brightness-110",
-    style: { ["--ledge" as string]: "var(--sun-deep)" },
+    style: { ["--shade" as string]: "var(--sun-deep)" },
   },
   grape: {
     className: "bg-grape text-on-light hover:brightness-110",
-    style: { ["--ledge" as string]: "var(--grape-deep)" },
+    style: { ["--shade" as string]: "var(--grape-deep)" },
   },
   secondary: {
-    className: "bg-surface-raised text-text border-2 border-line hover:border-line-strong",
-    style: { ["--ledge" as string]: "var(--line)" },
+    className: "bg-surface-raised text-text border border-line hover:border-line-strong",
+    style: { ["--shade" as string]: "var(--line)" },
   },
   ghost: {
     className: "text-text-muted hover:text-text hover:bg-surface-raised",
@@ -84,7 +85,7 @@ export function buttonStyles({
     "font-display font-bold tracking-tight",
     "transition-[filter,background-color,border-color] duration-100",
     "disabled:opacity-40 disabled:pointer-events-none",
-    variant !== "ghost" && (size === "sm" ? "ledge-sm" : "ledge"),
+    variant !== "ghost" && (size === "sm" ? "pressable-sm" : "pressable"),
     v.className,
     SIZE[size],
     full && "w-full",
@@ -92,7 +93,7 @@ export function buttonStyles({
   );
 }
 
-/** Paired with `buttonStyles` — supplies the ledge colour for filled variants. */
+/** Paired with `buttonStyles` — supplies the shade colour for filled variants. */
 export function buttonVars(variant: ButtonVariant = "primary"): CSSProperties {
   return VARIANT[variant].style ?? {};
 }
@@ -102,20 +103,20 @@ export function buttonVars(variant: ButtonVariant = "primary"): CSSProperties {
 export function Card({
   children,
   className,
-  ledge = true,
+  raised = true,
   as: As = "div",
 }: {
   children: ReactNode;
   className?: string;
-  /** The solid block beneath the card. Off for nested or inline panels. */
-  ledge?: boolean;
+  /** The lit edge and the shade beneath. Off for nested or inline panels. */
+  raised?: boolean;
   as?: "div" | "section" | "article";
 }) {
   return (
     <As
       className={cn(
-        "bg-surface border-2 border-line rounded-card",
-        ledge && "card-ledge",
+        "bg-surface border border-line rounded-card",
+        raised && "elevated",
         className
       )}
     >
@@ -148,7 +149,7 @@ export function CardScroller({
 }) {
   return (
     <div className={cn("flex-1 min-h-0 overflow-y-auto flex flex-col", className)}>
-      {/* py-1 keeps the cards' 4px ledge from being clipped by the scroll box. */}
+      {/* py-1 keeps the cards' shade from being clipped by the scroll box. */}
       <div className="m-auto w-full flex flex-col gap-4 py-1">{children}</div>
     </div>
   );
@@ -160,7 +161,7 @@ export function CardScroller({
  */
 export function ColorCard({
   hue,
-  ledgeHue,
+  shadeHue,
   children,
   className,
   href,
@@ -168,23 +169,24 @@ export function ColorCard({
   /** HSL triple or var() reference for the fill. */
   hue: string;
   /**
-   * The block beneath the card. Defaults to `--ledge-base`, the current
-   * theme's shadow tone under any fill — pass a hue's own `-deep` token for a
-   * tighter, more saturated stack.
+   * The colour of the shade beneath the card. Defaults to `--shade-base`, the
+   * theme's near-black violet — pass a hue's own `-deep` token to have the card
+   * cast its own colour instead. Must be a bare HSL triple, not `hsl(...)`:
+   * `.elevated` composes the alpha itself.
    */
-  ledgeHue?: string;
+  shadeHue?: string;
   children: ReactNode;
   className?: string;
   href?: string;
 }) {
   const style = {
     background: `hsl(${hue})`,
-    ["--ledge" as string]: ledgeHue ?? "var(--ledge-base)",
+    ["--shade" as string]: shadeHue ?? "var(--shade-base)",
   } as CSSProperties;
 
   const cls = cn(
     "block rounded-card text-on-light overflow-hidden",
-    href ? "ledge" : "card-ledge",
+    href ? "pressable" : "elevated",
     className
   );
 
@@ -225,7 +227,7 @@ export function Chip({
     <span
       className={cn(
         "inline-flex items-center gap-1.5 h-8 px-3 rounded-full",
-        "font-display font-bold text-[13px] border-2",
+        "font-display font-bold text-[13px] border",
         !hue && "bg-surface-raised border-line text-text",
         className
       )}
@@ -269,12 +271,10 @@ export function ProgressBar({
       aria-valuemax={100}
     >
       <div
-        className="h-full rounded-full transition-[width] duration-700 ease-bounce"
+        className="h-full rounded-full sheen transition-[width] duration-700 ease-bounce"
         style={{
           width: `${pct}%`,
-          background: `hsl(${hue ?? "var(--lime)"})`,
-          // A light top edge reads as a rounded surface rather than a flat bar.
-          boxShadow: "inset 0 2px 0 0 rgb(255 255 255 / 0.28)",
+          backgroundColor: `hsl(${hue ?? "var(--lime)"})`,
         }}
       />
     </div>
@@ -347,7 +347,7 @@ export function TopBar({
         <Link
           href={backHref}
           aria-label="Back"
-          className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border-2 border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
+          className="w-10 h-10 -ml-1 rounded-full grid place-items-center bg-surface border border-line text-text-muted hover:text-text hover:border-line-strong transition-colors shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
             <path d="M10 3L5 8l5 5" stroke="currentColor" strokeWidth="2.2"
@@ -391,7 +391,7 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "inline-flex flex-col items-center rounded-full bg-surface border-2 border-coral/25",
+        "inline-flex flex-col items-center rounded-full bg-surface border border-coral/25",
         sm ? "px-3 py-1" : "px-4 py-1.5",
         className
       )}
@@ -444,15 +444,15 @@ export function Avatar({
         alt="Your profile photo"
         width={size}
         height={size}
-        className={cn("rounded-tile shrink-0 select-none card-ledge object-cover", className)}
-        style={{ width: size, height: size, ["--ledge" as string]: "hsl(var(--line))" }}
+        className={cn("rounded-tile shrink-0 select-none elevated object-cover", className)}
+        style={{ width: size, height: size, ["--shade" as string]: "var(--line)" }}
       />
     );
   }
 
   return (
     <span
-      className={cn("inline-grid place-items-center rounded-tile shrink-0 select-none card-ledge", className)}
+      className={cn("inline-grid place-items-center rounded-tile shrink-0 select-none elevated", className)}
       style={{
         width: size,
         height: size,
@@ -461,7 +461,9 @@ export function Avatar({
         // glyph is always dark ink — `--on-light` flips to white in the light
         // theme and would disappear here.
         color: "hsl(var(--on-bright))",
-        ["--ledge" as string]: `hsl(${avatar.tone} / 0.45)`,
+        // The plate casts its own colour, so a lime avatar sits over a lime
+        // shade. `--shade` composes its own alpha, so this is the bare triple.
+        ["--shade" as string]: avatar.tone,
       }}
       aria-hidden="true"
     >

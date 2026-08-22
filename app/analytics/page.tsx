@@ -202,7 +202,7 @@ export default async function AnalyticsPage() {
             {summaryStats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-tile border-2 border-line bg-surface card-ledge p-3.5"
+                className="rounded-tile border border-line bg-surface elevated p-3.5"
               >
                 <s.icon
                   className="w-[18px] h-[18px] mb-2.5"
@@ -233,7 +233,7 @@ export default async function AnalyticsPage() {
               return (
                 <div
                   key={item.label}
-                  className="flex items-center gap-4 p-3.5 rounded-card border-2 border-line bg-surface card-ledge"
+                  className="flex items-center gap-4 p-3.5 rounded-card border border-line bg-surface elevated"
                 >
                   <span
                     className="w-14 h-14 rounded-tile grid place-items-center shrink-0"
@@ -321,7 +321,7 @@ export default async function AnalyticsPage() {
               return (
                 <div
                   key={title}
-                  className="flex gap-3.5 p-4 rounded-card border-2 border-line bg-surface card-ledge"
+                  className="flex gap-3.5 p-4 rounded-card border border-line bg-surface elevated"
                 >
                   <span
                     className="w-11 h-11 rounded-tile grid place-items-center shrink-0 text-on-light"
