@@ -25,6 +25,8 @@ interface PracticeItem {
   kunyomi?: string[];
   exampleWords?: unknown;
   mnemonicHint?: string | null;
+  kana?: string;
+  english?: string;
 }
 
 type ExampleWord = {
@@ -143,13 +145,18 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
 // Selection view
 // ---------------------------------------------------------------------------
 
-type TypeKey = "HIRAGANA" | "KATAKANA" | "KANJI";
+type TypeKey = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
 
 const TYPES: { key: TypeKey; label: string; glyph: string; tone: string }[] = [
   { key: "HIRAGANA", label: "Hiragana", glyph: "あ", tone: "var(--track-hiragana)" },
   { key: "KATAKANA", label: "Katakana", glyph: "ア", tone: "var(--track-katakana)" },
   { key: "KANJI", label: "Kanji", glyph: "漢", tone: "var(--track-kanji)" },
+  { key: "VOCABULARY", label: "Vocabulary", glyph: "語", tone: "var(--track-vocab)" },
+  { key: "PHRASE", label: "Phrases", glyph: "話", tone: "var(--track-phrase)" },
 ];
+
+/** Types whose availability depends on how much kana the learner has mastered. */
+const LOCKABLE_TYPES: TypeKey[] = ["KANJI", "VOCABULARY", "PHRASE"];
 
 /** Stack sizes on offer. The middle one is the default — a few minutes' worth. */
 const COUNTS = [10, 25, 50, 100] as const;
@@ -164,16 +171,22 @@ function SelectionView({
   const [count, setCount] = useState<number>(DEFAULT_COUNT);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Assume locked until told otherwise, so kanji is never offered on a slow
-  // or failed response.
-  const [kanjiUnlocked, setKanjiUnlocked] = useState(false);
+  // Assume locked until told otherwise, so kanji/vocabulary/phrases are never
+  // offered on a slow or failed response.
+  const [unlocked, setUnlocked] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
     fetch("/api/progression")
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error("failed"))))
       .then((d) => {
-        if (!cancelled) setKanjiUnlocked(!!d.kanjiUnlocked);
+        if (!cancelled) {
+          setUnlocked({
+            KANJI: !!d.kanjiUnlocked,
+            VOCABULARY: !!d.vocabUnlocked,
+            PHRASE: !!d.phraseUnlocked,
+          });
+        }
       })
       .catch(() => {});
     return () => {
@@ -182,7 +195,7 @@ function SelectionView({
   }, []);
 
   function toggle(type: TypeKey) {
-    if (type === "KANJI" && !kanjiUnlocked) return;
+    if (LOCKABLE_TYPES.includes(type) && !unlocked[type]) return;
     setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -230,7 +243,7 @@ function SelectionView({
             What are we drilling?
           </legend>
           {TYPES.map(({ key, label, glyph, tone }) => {
-            const locked = key === "KANJI" && !kanjiUnlocked;
+            const locked = LOCKABLE_TYPES.includes(key) && !unlocked[key];
             const isOn = selected.has(key);
             return (
               <button
@@ -238,7 +251,7 @@ function SelectionView({
                 onClick={() => toggle(key)}
                 disabled={locked}
                 aria-pressed={isOn}
-                title={locked ? "Master the kana used in a kanji\u2019s reading to unlock it" : undefined}
+                title={locked ? "Master more kana to unlock this" : undefined}
                 className={cn(
                   "w-full flex items-center gap-4 p-4 rounded-card border text-left elevated",
                   "transition-colors duration-150",
@@ -459,6 +472,7 @@ function PracticeView({
   const size = items.length;
   const item = queue[0];
   const isKanji = item.contentType === ContentType.KANJI;
+  const isWordy = item.contentType === ContentType.VOCABULARY || item.contentType === ContentType.PHRASE;
   const exampleWords = parseExampleWords(item.exampleWords);
   const readings = isKanji ? kanjiReadings(item.onyomi, item.kunyomi) : [];
   const turn = cleared + putBack;
@@ -609,7 +623,16 @@ function PracticeView({
           <CardScroller>
           <Card className="overflow-hidden">
             <div className="p-8 flex items-center justify-center min-h-[12rem]">
-              <span className={cn("jp leading-none font-bold", isKanji ? "text-[5rem]" : "text-mega")}>
+              <span
+                className={cn(
+                  "jp font-bold text-center",
+                  isKanji
+                    ? "text-[5rem] leading-none"
+                    : isWordy
+                      ? "text-4xl sm:text-5xl leading-snug break-words"
+                      : "text-mega leading-none"
+                )}
+              >
                 {item.character}
               </span>
             </div>
@@ -666,6 +689,19 @@ function PracticeView({
                           </div>
                         </div>
                       )}
+                    </>
+                  ) : isWordy ? (
+                    <>
+                      <div className="flex items-center gap-2.5">
+                        <p className="font-display text-2xl font-extrabold tracking-tight text-center max-w-xs">
+                          {item.english}
+                        </p>
+                        <AudioButton text={speechText(item.contentType, item)} />
+                      </div>
+                      {item.kana && item.kana !== item.character && (
+                        <p className="jp text-[15px] text-text-muted text-center">{item.kana}</p>
+                      )}
+                      <p className="font-display text-[14px] text-text-subtle">{item.romaji}</p>
                     </>
                   ) : (
                     <div className="flex items-center gap-2.5">
@@ -830,7 +866,7 @@ function SummaryView({
 
 type View = "loading" | "selection" | "practice" | "summary";
 
-const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI"];
+const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI", "VOCABULARY", "PHRASE"];
 
 function PracticePageInner() {
   const searchParams = useSearchParams();

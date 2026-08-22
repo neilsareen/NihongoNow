@@ -5,7 +5,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ChevronRight, Lock, Zap } from "lucide-react";
 import { getStartOfDayInTimezone } from "@/lib/utils";
-import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji, getConversationGate } from "@/lib/progression";
+import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, getConversationGate } from "@/lib/progression";
 import { CONVERSATIONS } from "@/lib/conversations";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
 import { SpeakingCta } from "./speaking-cta";
@@ -57,8 +57,10 @@ async function getDashboardData(userId: string, timeZone: string) {
   }
   const reviewsDue = unlockedDue.length;
   const kanjiUnlocked = (await getUnlockedKanji(masteredKana)).length > 0;
+  const vocabUnlocked = (await getUnlockedVocabulary(masteredKana)).length > 0;
+  const phraseUnlocked = (await getUnlockedPhrases(masteredKana)).length > 0;
 
-  return { profile, stats, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, conversationGate };
+  return { profile, stats, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, vocabUnlocked, phraseUnlocked, conversationGate };
 }
 
 // What symbol best represents the makeup of a lesson: for an in-progress
@@ -100,7 +102,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, conversationGate } = await getDashboardData(session.userId, timeZone);
+  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, vocabUnlocked, phraseUnlocked, conversationGate } = await getDashboardData(session.userId, timeZone);
   if (!profile) redirect("/onboarding");
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
@@ -121,8 +123,8 @@ export default async function DashboardPage() {
     { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", practiceType: "HIRAGANA" },
     { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", practiceType: "KATAKANA" },
     { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", practiceType: "KANJI" },
-    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", practiceType: null },
-    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: null },
+    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", practiceType: "VOCABULARY" },
+    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: "PHRASE" },
     // Survival speaking. Sealed until every kana is at Learning, because every
     // line in it is written in kana the learner is meant to be able to read.
     { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", practiceType: null },
@@ -263,11 +265,14 @@ export default async function DashboardPage() {
             const mastered = progressMap[track.stage]?.masteredItems ?? 0;
             const pct = Math.min(100, Math.round((mastered / track.total) * 100));
 
-            // Kanji stays sealed — including its glyph — until at least one
-            // kanji is readable, so no kanji character appears here early on.
+            // Kanji, vocabulary and phrases stay sealed — including their
+            // glyph — until at least one item is readable, so no content
+            // whose kana the learner hasn't mastered appears here early on.
             // Conversation is sealed the same way until its own gate opens.
             const locked =
               (track.practiceType === "KANJI" && !kanjiUnlocked) ||
+              (track.practiceType === "VOCABULARY" && !vocabUnlocked) ||
+              (track.practiceType === "PHRASE" && !phraseUnlocked) ||
               (track.stage === "CONVERSATION" && !conversationGate.unlocked);
             const href = !locked && track.practiceType ? `/practice?type=${track.practiceType}` : null;
             // A padlock with no reason next to it reads as a bug. Conversation
@@ -335,7 +340,7 @@ export default async function DashboardPage() {
                     ? undefined
                     : track.stage === "CONVERSATION"
                       ? "Take every hiragana and katakana to Learning to unlock conversation"
-                      : "Master the kana used in a kanji\u2019s reading to unlock it"
+                      : "Master more kana to unlock this"
                 }
               >
                 {body}

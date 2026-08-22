@@ -64,11 +64,16 @@ export async function getMasteredKana(userId: string): Promise<MasteredKana> {
   return { hiragana, katakana };
 }
 
+// Sentence punctuation that turns up in phrase readings (full-width comma,
+// period, exclamation and question marks, the wave dash used for a blank to
+// fill in) — none of it is a kana, so none of it should gate a reading.
+const READING_PUNCTUATION = /[-・\s、。！？~〜]/g;
+
 // A reading is unlocked once every standalone kana in it is already mastered.
 // Modifiers are stripped first, so しゃ needs し and nothing else.
 export function isReadingUnlocked(reading: string, mastered: MasteredKana): boolean {
   if (!reading) return false;
-  const stripped = reading.replace(MODIFIER_KANA, "").replace(/[-・\s]/g, "");
+  const stripped = reading.replace(MODIFIER_KANA, "").replace(READING_PUNCTUATION, "");
   if (!stripped) return false;
 
   for (const ch of stripped) {
@@ -182,6 +187,18 @@ export async function getUnlockedPhrases(mastered: MasteredKana, excludeIds: str
 export async function hasAnyUnlockedKanji(userId: string): Promise<boolean> {
   const mastered = await getMasteredKana(userId);
   const unlocked = await getUnlockedKanji(mastered);
+  return unlocked.length > 0;
+}
+
+export async function hasAnyUnlockedVocabulary(userId: string): Promise<boolean> {
+  const mastered = await getMasteredKana(userId);
+  const unlocked = await getUnlockedVocabulary(mastered);
+  return unlocked.length > 0;
+}
+
+export async function hasAnyUnlockedPhrases(userId: string): Promise<boolean> {
+  const mastered = await getMasteredKana(userId);
+  const unlocked = await getUnlockedPhrases(mastered);
   return unlocked.length > 0;
 }
 

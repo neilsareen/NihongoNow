@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
-import { getMasteredKana, getUnlockedKanji } from "@/lib/progression";
+import { getMasteredKana, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases } from "@/lib/progression";
 import { ContentType } from "@prisma/client";
 import { getSessionUser } from "@/lib/simulation";
 
@@ -71,16 +71,27 @@ export async function GET(request: Request) {
   const charTypes = requestedTypes.filter(
     (t) => t === ContentType.HIRAGANA || t === ContentType.KATAKANA
   );
-  // Only kanji the learner can already read is practisable. Enforced here
-  // rather than only in the UI, since the type comes off the query string.
+  // Kanji, vocabulary and phrases are only practisable once their reading is
+  // readable. Enforced here rather than only in the UI, since the type comes
+  // off the query string.
   const wantsKanji = requestedTypes.includes(ContentType.KANJI);
-  const masteredKana = wantsKanji ? await getMasteredKana(session.userId) : null;
+  const wantsVocab = requestedTypes.includes(ContentType.VOCABULARY);
+  const wantsPhrase = requestedTypes.includes(ContentType.PHRASE);
+  const masteredKana =
+    wantsKanji || wantsVocab || wantsPhrase ? await getMasteredKana(session.userId) : null;
   const unlockedKanji = masteredKana ? await getUnlockedKanji(masteredKana) : [];
   const includeKanji = wantsKanji && unlockedKanji.length > 0;
 
-  if (charTypes.length === 0 && !includeKanji) {
+  // The unlocked helpers return only what they need to test readability, so
+  // the handful actually being served is re-read in full below.
+  const unlockedVocabStubs = wantsVocab && masteredKana ? await getUnlockedVocabulary(masteredKana) : [];
+  const unlockedPhraseStubs = wantsPhrase && masteredKana ? await getUnlockedPhrases(masteredKana) : [];
+  const includeVocab = wantsVocab && unlockedVocabStubs.length > 0;
+  const includePhrase = wantsPhrase && unlockedPhraseStubs.length > 0;
+
+  if (charTypes.length === 0 && !includeKanji && !includeVocab && !includePhrase) {
     return NextResponse.json(
-      { error: "Master the kana used in a kanji's reading to unlock it.", kanjiLocked: true },
+      { error: "Master more kana to unlock this content.", locked: true },
       { status: 403 }
     );
   }
@@ -95,6 +106,8 @@ export async function GET(request: Request) {
     kunyomi?: string[];
     exampleWords?: unknown;
     mnemonicHint?: string | null;
+    kana?: string;
+    english?: string;
   }[] = [];
 
   if (charTypes.length > 0) {
@@ -133,6 +146,38 @@ export async function GET(request: Request) {
         kunyomi: k.kunyomi,
         exampleWords: k.exampleWords,
         mnemonicHint: k.mnemonicHint,
+      });
+    }
+  }
+
+  if (includeVocab) {
+    const vocab = await prisma.vocabulary.findMany({
+      where: { id: { in: unlockedVocabStubs.map((v) => v.id) } },
+    });
+    for (const v of vocab) {
+      items.push({
+        id: v.id,
+        contentType: ContentType.VOCABULARY,
+        character: v.japanese,
+        romaji: v.romaji,
+        kana: v.kana,
+        english: v.english,
+      });
+    }
+  }
+
+  if (includePhrase) {
+    const phrases = await prisma.phrase.findMany({
+      where: { id: { in: unlockedPhraseStubs.map((p) => p.id) } },
+    });
+    for (const p of phrases) {
+      items.push({
+        id: p.id,
+        contentType: ContentType.PHRASE,
+        character: p.japanese,
+        romaji: p.romaji,
+        kana: p.kana,
+        english: p.english,
       });
     }
   }
