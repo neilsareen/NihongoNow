@@ -374,7 +374,11 @@ export function TopBar({
  *
  * 行 sits directly beside the roman letters rather than boxed as a separate
  * icon, and a coral rule ties the two together underneath — one fused mark
- * instead of an icon-plus-label pair.
+ * instead of an icon-plus-label pair. The pill it sits in reuses the header's
+ * own streak-badge treatment (`--surface` fill, a whisper of coral at the
+ * edge) rather than a bespoke colour, so it reads as one step up from
+ * whatever's behind it — the dark bar, the ink page — in either theme,
+ * without introducing a colour that only exists for this one mark.
  */
 export function Wordmark({
   className,
@@ -385,7 +389,13 @@ export function Wordmark({
 }) {
   const sm = size === "sm";
   return (
-    <span className={cn("inline-flex flex-col items-center", className)}>
+    <span
+      className={cn(
+        "inline-flex flex-col items-center rounded-full bg-surface border-2 border-coral/25",
+        sm ? "px-3 py-1" : "px-4 py-1.5",
+        className
+      )}
+    >
       <span className={cn("inline-flex items-baseline", sm ? "gap-[5px]" : "gap-[7px]")}>
         <span className={cn("jp text-coral font-bold leading-none", sm ? "text-[22px]" : "text-[30px]")}>
           行
