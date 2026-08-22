@@ -180,6 +180,7 @@ export default async function DashboardPage() {
         <h1 className="font-display font-extrabold text-[22px] leading-tight tracking-tight truncate">
           <span className="jp font-medium text-text-subtle">{getGreeting(timeZone)}、</span>
           {profile.displayName || "Learner"}
+          <span className="jp font-medium text-text-subtle">さん</span>
         </h1>
       </header>
 
