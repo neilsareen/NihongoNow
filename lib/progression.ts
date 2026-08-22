@@ -1,13 +1,24 @@
 import { prisma } from "./prisma";
 import { ContentType } from "@prisma/client";
 import { pickPrimaryKanjiReading } from "./utils";
+import { effectiveSrsLevel, srsRank, type SRSLevel } from "./srs";
 
 export const KANA_TYPES: ContentType[] = [ContentType.HIRAGANA, ContentType.KATAKANA];
 
 // Content with no Japanese reading to gate on. Kana is what the gate is built
 // from, and social conventions are taught in English, so neither can ever be
-// locked behind kana the learner hasn't mastered.
-const UNGATED_TYPES: ContentType[] = [...KANA_TYPES, ContentType.CULTURE];
+// locked behind kana the learner hasn't mastered. Conversation carries its own,
+// stricter gate (every kana at Learning before the track opens at all), so once
+// a learner holds a conversation review the reading gate has nothing to add.
+const UNGATED_TYPES: ContentType[] = [
+  ...KANA_TYPES,
+  ContentType.CULTURE,
+  ContentType.CONVERSATION,
+];
+
+// What every kana has to reach before the conversation track opens. Level 1 on
+// the scale the cards draw: New → Learning → Familiar → Strong → Mastered.
+export const CONVERSATION_KANA_LEVEL: SRSLevel = "LEARNING";
 
 // How many candidates to consider when looking for content the learner can
 // already read. The corpus is ordered by frequency, so the readable items
@@ -172,4 +183,76 @@ export async function hasAnyUnlockedKanji(userId: string): Promise<boolean> {
   const mastered = await getMasteredKana(userId);
   const unlocked = await getUnlockedKanji(mastered);
   return unlocked.length > 0;
+}
+
+export interface ConversationGate {
+  unlocked: boolean;
+  /** Every kana in the curriculum. */
+  total: number;
+  /** How many of them are at CONVERSATION_KANA_LEVEL or above. */
+  ready: number;
+  /** How many are still short of it. */
+  remaining: number;
+}
+
+/**
+ * The conversation track's gate: every hiragana and katakana character has to
+ * be at Learning or better before a single exchange is offered.
+ *
+ * Why that bar, and why it is measured through `effectiveSrsLevel` rather than
+ * the stored column: the level a card shows the learner is the effective one,
+ * so a gate read off anything else would disagree with the app's own mastery
+ * pips — "every kana says at least Learning" has to mean exactly what it looks
+ * like it means. Learning is also the first level an answered character can
+ * never fall below, which makes the gate monotonic: once conversation opens it
+ * stays open, and reviews written against it can never be stranded.
+ *
+ * The bar is on the kana rather than on reading each line because every
+ * conversation card is written in kana — clearing the whole alphabet is
+ * precisely the point at which the learner can read all of them.
+ */
+export async function getConversationGate(userId: string): Promise<ConversationGate> {
+  const [kana, reviews] = await Promise.all([
+    prisma.japaneseCharacter.findMany({
+      where: { type: { in: KANA_TYPES } },
+      select: { id: true },
+    }),
+    prisma.review.findMany({
+      where: { userId, contentType: { in: KANA_TYPES } },
+      select: {
+        contentId: true,
+        srsLevel: true,
+        consecutiveSuccesses: true,
+        interval: true,
+        correctCount: true,
+        totalAttempts: true,
+      },
+    }),
+  ]);
+
+  const total = kana.length;
+  const kanaIds = new Set(kana.map((k) => k.id));
+  const bar = srsRank(CONVERSATION_KANA_LEVEL);
+
+  // Deduplicated by contentId: hiragana and katakana are separate content
+  // types, so a row can only ever match one character, but counting rows
+  // rather than characters would still be the wrong thing to say out loud.
+  const ready = new Set(
+    reviews
+      .filter((r) => kanaIds.has(r.contentId) && srsRank(effectiveSrsLevel(r)) >= bar)
+      .map((r) => r.contentId)
+  ).size;
+
+  return {
+    // A database with no kana seeded must not read as "everything is ready".
+    unlocked: total > 0 && ready >= total,
+    total,
+    ready,
+    remaining: Math.max(0, total - ready),
+  };
+}
+
+/** Whether the conversation track is open — drives its locked states in the UI. */
+export async function isConversationUnlocked(userId: string): Promise<boolean> {
+  return (await getConversationGate(userId)).unlocked;
 }

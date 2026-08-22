@@ -85,6 +85,8 @@
     --blossom-deep: 332 70% 48%;
     --rose: 352 85% 63%;          /* incorrect */
     --rose-deep: 350 72% 44%;
+    --teal: 168 72% 47%;          /* conversation */
+    --teal-deep: 172 68% 31%;
 
     /* Text that sits ON a saturated fill. Bright fills take ink, not white:
        white on lime or sun fails contrast and looks washed out. */
@@ -108,6 +110,7 @@
     --track-kanji: var(--sun);
     --track-vocab: var(--grape);
     --track-phrase: var(--lime);
+    --track-conversation: var(--teal);
 
     color-scheme: dark;
   }
@@ -164,6 +167,8 @@
     --blossom-deep: 332 74% 33%;
     --rose: 351 76% 43%;
     --rose-deep: 350 74% 32%;
+    --teal: 174 82% 26%;
+    --teal-deep: 176 80% 19%;
 
     /* Warm paper, the light-ground counterpart of the dark bar: enough tint
        to separate the chrome from the near-white canvas without a border. */

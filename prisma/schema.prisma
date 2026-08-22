@@ -15,6 +15,7 @@ enum ContentType {
   VOCABULARY
   PHRASE
   CULTURE
+  CONVERSATION
 }
 
 enum SRSLevel {
@@ -33,6 +34,7 @@ enum LearningStage {
   DAILY_CONVERSATION
   ADVANCED_SURVIVAL
   CULTURE
+  CONVERSATION
 }
 
 enum ExerciseType {

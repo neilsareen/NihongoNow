@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
+import { CONVERSATIONS } from "@/lib/conversations";
 import { SCRIPT_INTRO_LIST } from "@/lib/script-intros";
 import { effectiveSrsLevel } from "@/lib/srs";
 import { getSessionUser } from "@/lib/simulation";
@@ -28,12 +29,20 @@ export async function GET(
 
   const culturalTipMap = new Map(CULTURAL_TIPS.map((t) => [t.id, t]));
   const scriptIntroMap = new Map(SCRIPT_INTRO_LIST.map((t) => [t.id, t]));
+  const conversationMap = new Map(CONVERSATIONS.map((c) => [c.id, c]));
 
+  // Three kinds of content live in code rather than in the database — social
+  // conventions, explainer cards and conversation rehearsals — and each is
+  // recognisable from its id prefix.
   const realItems = lesson.items.filter(
-    (i) => !i.contentId.startsWith("cultural-") && !i.contentId.startsWith("intro-")
+    (i) =>
+      !i.contentId.startsWith("cultural-") &&
+      !i.contentId.startsWith("intro-") &&
+      !i.contentId.startsWith("conv-")
   );
   const culturalItems = lesson.items.filter((i) => i.contentId.startsWith("cultural-"));
   const scriptIntroItems = lesson.items.filter((i) => i.contentId.startsWith("intro-"));
+  const conversationItems = lesson.items.filter((i) => i.contentId.startsWith("conv-"));
 
   const itemsByType = realItems.reduce<Record<string, typeof realItems>>(
     (acc, item) => {
@@ -53,7 +62,11 @@ export async function GET(
   // Cultural tips carry mastery too, so their reviews are fetched alongside.
   // They are always keyed under CULTURE, including on lesson items written
   // before that content type existed and stored the tip as a PHRASE.
-  const reviewContentIds = [...allRealContentIds, ...culturalItems.map((i) => i.contentId)];
+  const reviewContentIds = [
+    ...allRealContentIds,
+    ...culturalItems.map((i) => i.contentId),
+    ...conversationItems.map((i) => i.contentId),
+  ];
 
   const [hiragana, katakana, kanji, vocabulary, phrases, reviews] = await Promise.all([
     hiraganaIds.length
@@ -98,13 +111,33 @@ export async function GET(
     if (intro) contentMap.set(item.contentId, { isScriptIntro: true, ...intro });
   }
 
+  // The line the learner says is lifted to the top level as japanese/kana/
+  // romaji/english, so the say-it-back and listening cards — which know
+  // nothing about conversations — can read a rehearsal like any other item,
+  // and so lib/speech pronounces it from the kana rather than guessing.
+  for (const item of conversationItems) {
+    const exchange = conversationMap.get(item.contentId);
+    if (exchange) {
+      contentMap.set(item.contentId, {
+        isConversation: true,
+        ...exchange,
+        japanese: exchange.say.japanese,
+        kana: exchange.say.kana,
+        romaji: exchange.say.romaji,
+        english: exchange.say.english,
+      });
+    }
+  }
+
   const reviewMap = new Map<string, (typeof reviews)[0]>();
   for (const r of reviews) reviewMap.set(`${r.contentType}:${r.contentId}`, r);
 
   const enrichedItems = lesson.items.map((item) => {
     const lookupType = item.contentId.startsWith("cultural-")
       ? ContentType.CULTURE
-      : item.contentType;
+      : item.contentId.startsWith("conv-")
+        ? ContentType.CONVERSATION
+        : item.contentType;
     const r = reviewMap.get(`${lookupType}:${item.contentId}`) ?? null;
     return {
       ...item,

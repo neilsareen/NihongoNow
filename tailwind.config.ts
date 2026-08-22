@@ -51,6 +51,7 @@ const config: Config = {
         grape: { DEFAULT: token("grape"), deep: token("grape-deep") },
         blossom: { DEFAULT: token("blossom"), deep: token("blossom-deep") },
         rose: { DEFAULT: token("rose"), deep: token("rose-deep") },
+        teal: { DEFAULT: token("teal"), deep: token("teal-deep") },
 
         on: {
           light: token("on-light"),

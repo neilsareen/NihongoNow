@@ -10,8 +10,21 @@ import { cn } from "@/lib/utils";
 import { SpeakCard } from "@/app/components/speak-card";
 import { SilentModeButton, useSilentMode } from "@/app/components/silent-mode";
 import { Card, CardScroller, Chip, buttonStyles, buttonVars } from "@/app/components/ui";
+import {
+  SCENE_LABELS,
+  type ConversationLine,
+  type ConversationPattern,
+  type ConversationScene,
+} from "@/lib/conversations";
 
-type ContentType = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE" | "CULTURE";
+type ContentType =
+  | "HIRAGANA"
+  | "KATAKANA"
+  | "KANJI"
+  | "VOCABULARY"
+  | "PHRASE"
+  | "CULTURE"
+  | "CONVERSATION";
 
 interface LessonItem {
   id: string;
@@ -42,6 +55,16 @@ interface LessonItem {
     question?: string;
     body?: string;
     category?: string;
+    isConversation?: boolean;
+    scene?: ConversationScene;
+    canDo?: string;
+    situation?: string;
+    theySpeakFirst?: boolean;
+    say?: ConversationLine;
+    hear?: ConversationLine[];
+    reply?: ConversationLine[];
+    pattern?: ConversationPattern;
+    tip?: string;
   } | null;
   review: {
     srsLevel: string;
@@ -79,6 +102,7 @@ const CONTENT_LABEL: Record<ContentType, { label: string; tone: string }> = {
   VOCABULARY: { label: "Vocabulary", tone: "var(--track-vocab)" },
   PHRASE: { label: "Phrase", tone: "var(--track-phrase)" },
   CULTURE: { label: "Culture", tone: "var(--sun)" },
+  CONVERSATION: { label: "Conversation", tone: "var(--track-conversation)" },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -98,6 +122,20 @@ function isCulturalTipItem(item: LessonItem): boolean {
 
 function isScriptIntroItem(item: LessonItem): boolean {
   return !!item.content?.isScriptIntro;
+}
+
+function isConversationItem(item: LessonItem): boolean {
+  return !!item.content?.isConversation;
+}
+
+/**
+ * A rehearsal card: the situation, then what you would say. The other exercise
+ * types a conversation item can be dealt (say-it-back, listening) are handled
+ * by the player's existing cards, which read the `say` line lifted to the top
+ * of the content object by the lesson API.
+ */
+function isConversationScenario(item: LessonItem): boolean {
+  return isConversationItem(item) && item.exerciseType === "SCENARIO";
 }
 
 function AudioButton({
@@ -403,7 +441,9 @@ function CardBack({ item }: { item: LessonItem }) {
   // out what they were listening to.
   if (isListening(item)) {
     const japanese = content.japanese ?? content.character ?? "";
-    const isPhrase = contentType === "PHRASE";
+    // Whole lines rather than single words — set smaller so they don't wrap
+    // into a wall. A conversation card's Japanese is a whole line too.
+    const isPhrase = contentType === "PHRASE" || contentType === "CONVERSATION";
     return (
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex items-center gap-2.5">
@@ -434,7 +474,7 @@ function CardBack({ item }: { item: LessonItem }) {
         </div>
       );
     }
-    if (contentType === "PHRASE") {
+    if (contentType === "PHRASE" || contentType === "CONVERSATION") {
       return (
         <div className="flex flex-col items-center gap-2.5 text-center">
           <div className="flex items-center gap-2.5">
@@ -576,6 +616,174 @@ function CulturalTipAnswer({ item }: { item: LessonItem }) {
     <div className="flex flex-col gap-3 w-full animate-fade">
       <h3 className="text-xl">{content.title}</h3>
       <p className="text-[15px] text-text-muted leading-relaxed">{content.body}</p>
+    </div>
+  );
+}
+
+/** One line of a dialogue: the Japanese, its romaji, its meaning, and audio. */
+function DialogueLine({
+  line,
+  tone,
+  emphasis = false,
+  hideEnglish = false,
+}: {
+  line: ConversationLine;
+  tone: string;
+  emphasis?: boolean;
+  /** Withhold the meaning, for a line the learner is being asked to decode. */
+  hideEnglish?: boolean;
+}) {
+  return (
+    <div className="flex items-start gap-2.5 w-full">
+      <span
+        className="w-1 self-stretch rounded-full shrink-0 mt-0.5"
+        style={{ background: `hsl(${tone})` }}
+        aria-hidden="true"
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start gap-2">
+          <p
+            className={cn(
+              "jp font-bold leading-snug flex-1 min-w-0",
+              emphasis ? "text-[1.6rem]" : "text-[17px]"
+            )}
+          >
+            {line.japanese}
+          </p>
+          <AudioButton text={readingSpeechText(line.kana)} size={emphasis ? "md" : "sm"} />
+        </div>
+        <p className={cn("text-text-subtle mt-0.5", emphasis ? "text-[14px]" : "text-[12px]")}>
+          {line.romaji}
+        </p>
+        {!hideEnglish && (
+          <p
+            className={cn(
+              "text-text-muted font-medium mt-1",
+              emphasis ? "text-[15px]" : "text-[13px]"
+            )}
+          >
+            {line.english}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Conversation rehearsals.
+
+   The question side puts the learner in the moment and stops there — being
+   asked "what would you say?" before the answer exists is the whole exercise,
+   and it is what makes the line available when the counter is real rather than
+   only recognisable on a card.
+
+   The answer side is laid out in the order a real exchange arrives: your line,
+   then what comes back at you, then how to answer that, then the frame the
+   line came from, then the one thing worth knowing about the situation.
+   --------------------------------------------------------------------------- */
+
+function ConversationQuestion({ item }: { item: LessonItem }) {
+  const { content } = item;
+  if (!content) return null;
+  const scene = SCENE_LABELS[content.scene as ConversationScene] ?? "Conversation";
+  const opener = content.theySpeakFirst ? content.hear?.[0] : undefined;
+
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex items-center justify-between gap-3">
+        <Masthead kicker={`Out loud · ${scene}`} tone="var(--track-conversation)" />
+        <MasteryPips review={item.review} />
+      </div>
+
+      {content.canDo && (
+        <p
+          className="font-display text-[11px] font-bold uppercase tracking-[0.12em]"
+          style={{ color: "hsl(var(--track-conversation))" }}
+        >
+          {content.canDo}
+        </p>
+      )}
+
+      <p className="text-[16px] leading-relaxed text-text-muted font-medium">
+        {content.situation}
+      </p>
+
+      {/* When they speak first, their line is the prompt. Its meaning is
+          withheld here on purpose: working out what was asked is half of what
+          strands a traveller, and the answer side hands it over a tap later. */}
+      {opener && (
+        <div className="rounded-tile bg-surface-raised p-3.5">
+          <DetailLabel>They say</DetailLabel>
+          <div className="mt-2.5">
+            <DialogueLine line={opener} tone="var(--sky)" hideEnglish />
+          </div>
+        </div>
+      )}
+
+      <p className="font-display font-extrabold text-[19px] tracking-tight">
+        {content.theySpeakFirst ? "What do you say back?" : "What do you say?"}
+      </p>
+    </div>
+  );
+}
+
+function ConversationAnswer({ item }: { item: LessonItem }) {
+  const { content } = item;
+  if (!content?.say) return null;
+  const hear = content.hear ?? [];
+  const reply = content.reply ?? [];
+
+  return (
+    <div className="flex flex-col gap-5 w-full animate-fade">
+      <div>
+        <DetailLabel>You say</DetailLabel>
+        <div className="mt-2.5">
+          <DialogueLine line={content.say} tone="var(--track-conversation)" emphasis />
+        </div>
+      </div>
+
+      {hear.length > 0 && (
+        <div>
+          <DetailLabel>{hear.length > 1 ? "You might hear" : "You'll hear"}</DetailLabel>
+          <div className="mt-2.5 flex flex-col gap-3">
+            {hear.map((line, i) => (
+              <DialogueLine key={i} line={line} tone="var(--sky)" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {reply.length > 0 && (
+        <div>
+          <DetailLabel>Then you can say</DetailLabel>
+          <div className="mt-2.5 flex flex-col gap-3">
+            {reply.map((line, i) => (
+              <DialogueLine key={i} line={line} tone="var(--track-conversation)" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {content.pattern && (
+        <div className="rounded-tile bg-surface-raised p-3.5">
+          <DetailLabel>The pattern</DetailLabel>
+          <p className="jp text-[17px] font-bold mt-2">{content.pattern.frame}</p>
+          <p className="text-[13px] text-text-subtle mt-0.5">{content.pattern.gloss}</p>
+          <ul className="mt-3 flex flex-col gap-2">
+            {content.pattern.swaps.map((swap, i) => (
+              <li key={i} className="flex flex-col">
+                <span className="jp text-[15px] font-medium">{swap.japanese}</span>
+                <span className="text-[12px] text-text-subtle">{swap.english}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {content.tip && (
+        <p className="text-[14px] text-text-muted leading-relaxed">{content.tip}</p>
+      )}
     </div>
   );
 }
@@ -738,7 +946,13 @@ export default function LessonPage() {
     if (isScriptIntroItem(item)) return;
     // Conventions are always scored as CULTURE, including on lesson items
     // written before that content type existed and stored them as PHRASE.
-    const contentType = isCulturalTipItem(item) ? "CULTURE" : item.contentType;
+    // Rehearsals score as CONVERSATION for the same reason: the content type
+    // that owns the card, not whatever the item row happens to carry.
+    const contentType = isCulturalTipItem(item)
+      ? "CULTURE"
+      : isConversationItem(item)
+        ? "CONVERSATION"
+        : item.contentType;
     fetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -965,7 +1179,10 @@ export default function LessonPage() {
   const progressPct = totalUnanswered > 0 ? Math.round((currentIndex / totalUnanswered) * 100) : 0;
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
   const isScriptIntro = currentItem ? isScriptIntroItem(currentItem) : false;
-  const isEditorial = isCultural || isScriptIntro;
+  const isRehearsal = currentItem ? isConversationScenario(currentItem) : false;
+  // All three are read-then-self-assess cards, so they share the reveal flow
+  // below and differ only in what they put on the two faces.
+  const isEditorial = isCultural || isScriptIntro || isRehearsal;
 
   return (
     <div className="screen-fixed flex flex-col">
@@ -1064,6 +1281,12 @@ export default function LessonPage() {
                   <Card className="p-6 flex flex-col justify-center min-h-[13rem]">
                     {isScriptIntro ? (
                       <ScriptIntroCard item={currentItem} />
+                    ) : isRehearsal ? (
+                      revealed ? (
+                        <ConversationAnswer item={currentItem} />
+                      ) : (
+                        <ConversationQuestion item={currentItem} />
+                      )
                     ) : revealed ? (
                       <CulturalTipAnswer item={currentItem} />
                     ) : (

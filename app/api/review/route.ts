@@ -98,6 +98,7 @@ export async function POST(request: Request) {
     KANJI: LearningStage.ESSENTIAL_KANJI,
     PHRASE: LearningStage.DAILY_CONVERSATION,
     CULTURE: LearningStage.CULTURE,
+    CONVERSATION: LearningStage.CONVERSATION,
   };
 
   const stage = contentTypeToStage[contentType];

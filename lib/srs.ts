@@ -34,6 +34,16 @@ function rank(level: SRSLevel): number {
   return i === -1 ? 0 : i;
 }
 
+/**
+ * A level's position on the scale, as the learner sees it: NEW is 0, LEARNING
+ * is 1, up to MASTERED at 4 — the same steps the mastery pips draw. Exported
+ * so gates elsewhere can be stated in the levels shown on the cards rather
+ * than in a private ordering of their own.
+ */
+export function srsRank(level: SRSLevel | string): number {
+  return rank(level as SRSLevel);
+}
+
 function strongest(...levels: SRSLevel[]): SRSLevel {
   return levels.reduce((best, l) => (rank(l) > rank(best) ? l : best), "NEW");
 }

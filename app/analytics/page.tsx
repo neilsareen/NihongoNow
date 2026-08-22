@@ -18,8 +18,9 @@ import {
   VolumeX,
   type LucideIcon,
 } from "lucide-react";
-import { hasAnyUnlockedKanji } from "@/lib/progression";
+import { hasAnyUnlockedKanji, getConversationGate } from "@/lib/progression";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
+import { CONVERSATIONS } from "@/lib/conversations";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, TopBar } from "@/app/components/ui";
 
@@ -82,12 +83,13 @@ export default async function AnalyticsPage() {
   if (!session) redirect("/login");
   const { userId } = session;
 
-  const [profile, stats, progress, lessonsCompleted, kanjiUnlocked] = await Promise.all([
+  const [profile, stats, progress, lessonsCompleted, kanjiUnlocked, conversationGate] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
     prisma.lesson.count({ where: { userId, completedAt: { not: null } } }),
     hasAnyUnlockedKanji(userId),
+    getConversationGate(userId),
   ]);
 
   if (!profile) redirect("/onboarding");
@@ -108,6 +110,7 @@ export default async function AnalyticsPage() {
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", locked: false },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", locked: false },
     { label: "Culture", stage: "CULTURE", total: CULTURAL_TIPS.length, glyph: "礼", tone: "var(--sun)", locked: false },
+    { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", locked: !conversationGate.unlocked },
   ];
 
   const masteredByStage = (stage: string, total: number) => {

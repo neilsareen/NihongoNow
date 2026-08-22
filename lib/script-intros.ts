@@ -13,7 +13,8 @@ export type ScriptIntroKey =
   | "dakuten"
   | "kanji"
   | "vocabulary"
-  | "phrases";
+  | "phrases"
+  | "conversation";
 
 // One-time explainer cards. Each is shown the first time a learner is about to
 // meet a new script, sound-modifier system, or kind of content — before any
@@ -50,6 +51,12 @@ export const SCRIPT_INTROS: Record<ScriptIntroKey, ScriptIntro> = {
     kicker: "Something new",
     title: "Your First Real Words",
     body: "From here on, actual Japanese words start appearing between the characters — and you'll be able to read every one of them, because a word is only offered once you've mastered all the kana in its reading. Each word is shown three ways: the Japanese as it's really written, the kana reading, and the English. Say them out loud. Japanese has a small, steady sound inventory, so pronunciation gets easier fast, and hearing yourself is what moves a word from \"recognised\" to \"usable\".",
+  },
+  conversation: {
+    id: "intro-conversation",
+    kicker: "New track unlocked",
+    title: "Conversation: Getting Through the Day",
+    body: "You can now read every kana, which means every line in this track is one you can sound out — so from here the goal stops being recognition and starts being understood. These cards work differently on purpose. Each one drops you into a real moment (a konbini counter, a taxi, a platform) and asks what you would say, because rehearsing the situation is what makes the words available when the situation is real. Each teaches one whole chunk rather than words to assemble under pressure — that is how fluent speakers actually talk, in ready-made pieces. And each shows you what will be said back, because the half of a conversation that strands travellers is never their own line, it is the reply. Learn the chunk, recognise the reply, and swap new words into the pattern underneath. Politeness beats precision every time: すみません and おねがいします, said warmly, will carry you further than perfect grammar.",
   },
   phrases: {
     id: "intro-phrases",

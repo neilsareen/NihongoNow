@@ -11,6 +11,9 @@ const EXERCISE_FOR_TYPE: Record<string, ExerciseType> = {
   VOCABULARY: ExerciseType.ENGLISH_TO_JAPANESE,
   PHRASE: ExerciseType.JAPANESE_TO_ENGLISH,
   CULTURE: ExerciseType.SCENARIO,
+  // A weak rehearsal is re-run as the full situation card, not as a say-it-back:
+  // the point of drilling it again is the moment, not the microphone.
+  CONVERSATION: ExerciseType.SCENARIO,
 };
 
 export async function POST() {

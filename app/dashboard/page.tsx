@@ -5,7 +5,8 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ChevronRight, Lock, Zap } from "lucide-react";
 import { getStartOfDayInTimezone } from "@/lib/utils";
-import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji } from "@/lib/progression";
+import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji, getConversationGate } from "@/lib/progression";
+import { CONVERSATIONS } from "@/lib/conversations";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
 import { SpeakingCta } from "./speaking-cta";
 
@@ -16,6 +17,7 @@ const LESSON_TYPE_SYMBOL: Record<string, string> = {
   VOCABULARY: "語",
   PHRASE: "話",
   CULTURE: "礼",
+  CONVERSATION: "会",
 };
 
 async function getDashboardData(userId: string, timeZone: string) {
@@ -26,7 +28,7 @@ async function getDashboardData(userId: string, timeZone: string) {
   // "due" would promise work they can't actually be given.
   const masteredKana = await getMasteredKana(userId);
 
-  const [profile, stats, progress, fetchedDueReviews, inProgressLesson, todayStudy, todayLessons] = await Promise.all([
+  const [profile, stats, progress, fetchedDueReviews, inProgressLesson, todayStudy, todayLessons, conversationGate] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
@@ -45,6 +47,7 @@ async function getDashboardData(userId: string, timeZone: string) {
       _sum: { durationSeconds: true },
     }),
     prisma.lesson.count({ where: { userId, completedAt: { gte: todayStart } } }),
+    getConversationGate(userId),
   ]);
 
   const unlockedDue = await filterUnlockedReviews(fetchedDueReviews, masteredKana);
@@ -55,7 +58,7 @@ async function getDashboardData(userId: string, timeZone: string) {
   const reviewsDue = unlockedDue.length;
   const kanjiUnlocked = (await getUnlockedKanji(masteredKana)).length > 0;
 
-  return { profile, stats, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked };
+  return { profile, stats, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, conversationGate };
 }
 
 // What symbol best represents the makeup of a lesson: for an in-progress
@@ -97,7 +100,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked } = await getDashboardData(session.userId, timeZone);
+  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, conversationGate } = await getDashboardData(session.userId, timeZone);
   if (!profile) redirect("/onboarding");
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
@@ -120,6 +123,9 @@ export default async function DashboardPage() {
     { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", practiceType: "KANJI" },
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", practiceType: null },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: null },
+    // Survival speaking. Sealed until every kana is at Learning, because every
+    // line in it is written in kana the learner is meant to be able to read.
+    { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", practiceType: null },
   ];
 
   const masteredByStage = (stage: string, total: number) => {
@@ -259,8 +265,17 @@ export default async function DashboardPage() {
 
             // Kanji stays sealed — including its glyph — until at least one
             // kanji is readable, so no kanji character appears here early on.
-            const locked = track.practiceType === "KANJI" && !kanjiUnlocked;
+            // Conversation is sealed the same way until its own gate opens.
+            const locked =
+              (track.practiceType === "KANJI" && !kanjiUnlocked) ||
+              (track.stage === "CONVERSATION" && !conversationGate.unlocked);
             const href = !locked && track.practiceType ? `/practice?type=${track.practiceType}` : null;
+            // A padlock with no reason next to it reads as a bug. Conversation
+            // says what is left to do and how far along it already is.
+            const lockedNote =
+              track.stage === "CONVERSATION"
+                ? `${conversationGate.ready}/${conversationGate.total} kana`
+                : null;
 
             const body = (
               <>
@@ -287,7 +302,9 @@ export default async function DashboardPage() {
                       {track.label}
                     </span>
                     <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
-                      {locked ? "LOCKED" : `${mastered.toLocaleString()} / ${track.total.toLocaleString()}`}
+                      {locked
+                        ? lockedNote ?? "LOCKED"
+                        : `${mastered.toLocaleString()} / ${track.total.toLocaleString()}`}
                     </span>
                   </span>
                   <ProgressBar
@@ -313,7 +330,13 @@ export default async function DashboardPage() {
               <div
                 key={track.label}
                 className={rowClass}
-                title={locked ? "Master the kana used in a kanji\u2019s reading to unlock it" : undefined}
+                title={
+                  !locked
+                    ? undefined
+                    : track.stage === "CONVERSATION"
+                      ? "Take every hiragana and katakana to Learning to unlock conversation"
+                      : "Master the kana used in a kanji\u2019s reading to unlock it"
+                }
               >
                 {body}
               </div>

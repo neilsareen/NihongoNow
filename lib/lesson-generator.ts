@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import { ContentType, ExerciseType } from "@prisma/client";
 import { CULTURAL_TIPS, getRandomCulturalTip } from "./cultural-tips";
+import { CONVERSATIONS } from "./conversations";
 import { SCRIPT_INTROS, type ScriptIntroKey } from "./script-intros";
 import {
   getMasteredKana,
@@ -8,6 +9,7 @@ import {
   getUnlockedKanji,
   getUnlockedVocabulary,
   getUnlockedPhrases,
+  isConversationUnlocked,
   type MasteredKana,
 } from "./progression";
 
@@ -61,9 +63,15 @@ const AVG_SECONDS_BY_CONTENT: Record<ContentType, number> = {
   [ContentType.VOCABULARY]: 30, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SPEAKING
   [ContentType.PHRASE]:     32, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SPEAKING/SCENARIO
   [ContentType.CULTURE]:    40, // always SCENARIO: read the situation, then self-assess
+  [ContentType.CONVERSATION]: 45, // a rehearsal card carries a line, a reply and a pattern
 };
 
 const AVG_SECONDS_PER_ITEM = 25;
+
+// Content types that get dedicated slots in every lesson, and so must be kept
+// out of the general review pool: drawing them twice would put the same card
+// in front of the learner twice in one sitting.
+const OWN_SLOT_TYPES: ContentType[] = [ContentType.CULTURE, ContentType.CONVERSATION];
 
 // LISTENING included for vocab/phrase — auto-plays audio, user self-assesses comprehension.
 // SPEAKING is the mirror of it: the learner says the word and the browser's
@@ -76,6 +84,10 @@ const EXERCISE_TYPES_BY_CONTENT: Record<ContentType, ExerciseType[]> = {
   VOCABULARY: [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING],
   PHRASE:     [ExerciseType.ENGLISH_TO_JAPANESE, ExerciseType.JAPANESE_TO_ENGLISH, ExerciseType.LISTENING, ExerciseType.SPEAKING, ExerciseType.SCENARIO],
   CULTURE:    [ExerciseType.SCENARIO],
+  // SCENARIO first, so a first encounter is always the full rehearsal card
+  // (see pickExerciseType). Reviews then rotate through saying it back and
+  // hearing it cold, which is the skill the track exists to build.
+  CONVERSATION: [ExerciseType.SCENARIO, ExerciseType.SPEAKING, ExerciseType.LISTENING],
 };
 
 export async function generateDailyLesson(config: LessonConfig) {
@@ -83,8 +95,16 @@ export async function generateDailyLesson(config: LessonConfig) {
   const now = new Date();
 
   const cultureCardIds = await pickCultureCards(userId, now);
+  // Conversation is the only track with a gate of its own, so it is resolved
+  // here rather than in getNewContent: until every kana is at Learning the
+  // picker returns nothing and the lesson is exactly what it was before.
+  const conversation = await pickConversationCards(userId, now);
   const cultureSeconds = cultureCardIds.length * SECONDS_PER_EXERCISE[ExerciseType.SCENARIO];
-  const effectiveBudget = TARGET_LESSON_SECONDS - cultureSeconds;
+  const conversationSeconds = conversation.items.reduce(
+    (sum, item) => sum + SECONDS_PER_EXERCISE[item.exerciseType],
+    0
+  );
+  const effectiveBudget = TARGET_LESSON_SECONDS - cultureSeconds - conversationSeconds;
   const reviewBudget = Math.floor(effectiveBudget * 0.7);
 
   const masteredKana = await getMasteredKana(userId);
@@ -93,14 +113,14 @@ export async function generateDailyLesson(config: LessonConfig) {
   // to content the learner can actually read: someone who studied kanji before
   // this gate existed still has those reviews on file, and they must not keep
   // resurfacing while their readings use kana that isn't mastered yet.
-  // Culture has its own slots below, so it stays out of the general pool —
-  // otherwise a due convention could land in the lesson twice.
+  // Culture and conversation have their own slots below, so they stay out of
+  // the general pool — otherwise a due card could land in the lesson twice.
   const fetchedReviews = await prisma.review.findMany({
     where: {
       userId,
       nextReviewAt: { lte: now },
       srsLevel: { not: "MASTERED" },
-      contentType: { not: ContentType.CULTURE },
+      contentType: { notIn: OWN_SLOT_TYPES },
     },
     orderBy: [{ srsLevel: "asc" }, { nextReviewAt: "asc" }],
     take: 60,
@@ -148,11 +168,14 @@ export async function generateDailyLesson(config: LessonConfig) {
     contentId: id,
     exerciseType: ExerciseType.SCENARIO,
   }));
+  // Conversation rides along the same way: a rehearsal or two placed among the
+  // drills rather than bolted onto the end, where a tiring lesson would eat it.
+  const ridealongItems: LessonItemSpec[] = [...cultureItems, ...conversation.items];
   const firstSlot = 2 + Math.floor(Math.random() * 4);
-  const slotGap = Math.max(2, Math.floor(baseItems.length / (cultureItems.length + 1)));
+  const slotGap = Math.max(2, Math.floor(baseItems.length / (ridealongItems.length + 1)));
   const withCulture: LessonItemSpec[] = [...baseItems];
-  for (let i = cultureItems.length - 1; i >= 0; i--) {
-    withCulture.splice(Math.min(withCulture.length, firstSlot + slotGap * i), 0, cultureItems[i]);
+  for (let i = ridealongItems.length - 1; i >= 0; i--) {
+    withCulture.splice(Math.min(withCulture.length, firstSlot + slotGap * i), 0, ridealongItems[i]);
   }
 
   // Explainer cards, each shown once: the very first time the learner opens a
@@ -184,6 +207,9 @@ export async function generateDailyLesson(config: LessonConfig) {
   if (!learned.KANJI && introduces(ContentType.KANJI)) scriptIntroItems.push(introCard("kanji"));
   if (!learned.VOCABULARY && introduces(ContentType.VOCABULARY)) scriptIntroItems.push(introCard("vocabulary"));
   if (!learned.PHRASE && introduces(ContentType.PHRASE)) scriptIntroItems.push(introCard("phrases"));
+  // Conversation's items come from their own picker rather than newItems, so
+  // its explainer is triggered by that picker having found a first exchange.
+  if (!learned.CONVERSATION && conversation.introducesFirst) scriptIntroItems.push(introCard("conversation"));
 
   const finalItems = [...scriptIntroItems, ...withCulture];
 
@@ -241,7 +267,7 @@ async function padToMinimumDuration(
         userId,
         nextReviewAt: { gt: now },
         ...srsFilter,
-        contentType: { not: ContentType.CULTURE },
+        contentType: { notIn: OWN_SLOT_TYPES },
       },
       orderBy: { nextReviewAt: "asc" },
       take: 30,
@@ -293,6 +319,71 @@ async function pickCultureCards(userId: string, now: Date): Promise<string[]> {
   if (cards.length === 0) cards.push(scheduled[0]?.contentId ?? getRandomCulturalTip().id);
 
   return cards;
+}
+
+/**
+ * The conversation cards a lesson should carry, and whether one of them is the
+ * learner's very first — which is what triggers the track's explainer.
+ *
+ * Locked until every kana is at Learning, so this returns nothing at all for
+ * most of a learner's first weeks. Once open it works like the culture picker:
+ * the most overdue rehearsal plus one exchange never met, so the track always
+ * moves forward and never only backwards.
+ *
+ * Exercise types differ between the two. A first encounter is always the full
+ * SCENARIO rehearsal — situation, line, the reply coming back, the pattern
+ * underneath — because that is the teaching card. A review rotates onto saying
+ * it back or hearing it cold, since recognising and producing the chunk under
+ * time pressure is what the track is actually for.
+ */
+async function pickConversationCards(
+  userId: string,
+  now: Date
+): Promise<{ items: LessonItemSpec[]; introducesFirst: boolean }> {
+  if (!(await isConversationUnlocked(userId))) {
+    return { items: [], introducesFirst: false };
+  }
+
+  const reviews = await prisma.review.findMany({
+    where: { userId, contentType: ContentType.CONVERSATION },
+    select: { contentId: true, nextReviewAt: true, srsLevel: true },
+  });
+
+  const seen = new Set(reviews.map((r) => r.contentId));
+  const scheduled = reviews
+    .filter((r) => r.srsLevel !== "MASTERED")
+    .sort((a, b) => a.nextReviewAt.getTime() - b.nextReviewAt.getTime());
+  // Curriculum order, not random: the chunks that carry an entire trip come
+  // before the ones for a single counter.
+  const unseen = CONVERSATIONS.filter((c) => !seen.has(c.id));
+
+  const items: LessonItemSpec[] = [];
+  const due = scheduled.find((r) => r.nextReviewAt <= now);
+  if (due) {
+    items.push({
+      contentType: ContentType.CONVERSATION,
+      contentId: due.contentId,
+      exerciseType: pickExerciseType(ContentType.CONVERSATION, due.srsLevel),
+    });
+  }
+  if (unseen.length > 0) {
+    items.push({
+      contentType: ContentType.CONVERSATION,
+      contentId: unseen[0].id,
+      exerciseType: ExerciseType.SCENARIO,
+    });
+  }
+  // Everything met and nothing due yet: pull the next one forward rather than
+  // letting a newly opened track go quiet.
+  if (items.length === 0 && scheduled.length > 0) {
+    items.push({
+      contentType: ContentType.CONVERSATION,
+      contentId: scheduled[0].contentId,
+      exerciseType: pickExerciseType(ContentType.CONVERSATION, scheduled[0].srsLevel),
+    });
+  }
+
+  return { items, introducesFirst: seen.size === 0 && items.length > 0 };
 }
 
 function interleaveItems<T>(a: T[], b: T[]): T[] {
