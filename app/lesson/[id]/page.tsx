@@ -592,16 +592,6 @@ function ScriptIntroCard({ item }: { item: LessonItem }) {
   );
 }
 
-/** Keyboard affordance shown beside the answer buttons on pointer-and-keyboard
-    devices. Study sessions are long; hands should be able to stay on the keys. */
-function Key({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="hidden sm:inline-grid place-items-center min-w-[1.25rem] h-[1.25rem] px-1.5 rounded-md bg-black/15 text-[10px] font-sans font-bold opacity-80">
-      {children}
-    </kbd>
-  );
-}
-
 function Spinner({ label = "Preparing lesson…" }: { label?: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4">
@@ -1100,7 +1090,6 @@ export default function LessonPage() {
                     style={buttonVars("primary")}
                   >
                     Reveal
-                    <Key>space</Key>
                   </button>
                 ) : (
                   <div className="flex gap-2.5 shrink-0">
@@ -1111,7 +1100,6 @@ export default function LessonPage() {
                     >
                       <RotateCcw className="w-[18px] h-[18px]" strokeWidth={2.5} />
                       Again
-                      <Key>1</Key>
                     </button>
                     <button
                       onClick={() => handleAnswer(true)}
@@ -1120,7 +1108,6 @@ export default function LessonPage() {
                     >
                       <Check className="w-[18px] h-[18px]" strokeWidth={3} />
                       Got it
-                      <Key>2</Key>
                     </button>
                   </div>
                 )}
@@ -1262,7 +1249,6 @@ export default function LessonPage() {
                     style={buttonVars("primary")}
                   >
                     Reveal
-                    <Key>space</Key>
                   </button>
                 ) : (
                   <div className="flex gap-2.5 shrink-0">
@@ -1273,7 +1259,6 @@ export default function LessonPage() {
                     >
                       <RotateCcw className="w-[18px] h-[18px]" strokeWidth={2.5} />
                       Again
-                      <Key>1</Key>
                     </button>
                     <button
                       onClick={() => handleAnswer(true)}
@@ -1282,7 +1267,6 @@ export default function LessonPage() {
                     >
                       <Check className="w-[18px] h-[18px]" strokeWidth={3} />
                       Got it
-                      <Key>2</Key>
                     </button>
                   </div>
                 )}

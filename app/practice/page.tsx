@@ -139,14 +139,6 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function Key({ children }: { children: React.ReactNode }) {
-  return (
-    <kbd className="hidden sm:inline-grid place-items-center min-w-[1.25rem] h-[1.25rem] px-1.5 rounded-md bg-black/15 text-[10px] font-sans font-bold opacity-80">
-      {children}
-    </kbd>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Selection view
 // ---------------------------------------------------------------------------
@@ -669,7 +661,6 @@ function PracticeView({
               style={buttonVars("primary")}
             >
               Reveal
-              <Key>space</Key>
             </button>
           ) : (
             <div className="flex gap-2.5 shrink-0">
@@ -681,7 +672,6 @@ function PracticeView({
               >
                 <RotateCcw className="w-[18px] h-[18px]" strokeWidth={2.5} />
                 Missed it
-                <Key>1</Key>
               </button>
               <button
                 onClick={() => advance(true)}
@@ -691,7 +681,6 @@ function PracticeView({
               >
                 <Check className="w-[18px] h-[18px]" strokeWidth={3} />
                 Got it
-                <Key>2</Key>
               </button>
             </div>
           )}
