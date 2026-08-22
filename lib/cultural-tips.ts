@@ -417,21 +417,21 @@ export const CULTURAL_TIPS: CulturalTip[] = [
     id: "cultural-56",
     title: "Family name plus -san",
     question: "Should you call a Japanese colleague by their first name?",
-    body: "Family name plus -san is safe for everyone, and you never attach -san to your own name. First names are for close friends and children; -chan and -kun are affectionate and can sound patronising used upwards.",
+    body: "Family name plus -san (e.g. 'Tanaka-san') is safe for everyone, and you never attach -san to your own name. First names are for close friends and children; -chan ('Yuki-chan', for a young girl or close female friend) and -kun ('Taro-kun', for a boy or junior colleague) are affectionate and can sound patronising used upwards.",
     category: "communication",
   },
   {
     id: "cultural-57",
     title: "Don't say 'anata'",
     question: "'Anata' is in every textbook as 'you'. Should you use it?",
-    body: "Rarely. It can sound distant, or — between couples — oddly intimate. Use the person's name with -san, or their title (sensei, buchou), and drop the subject entirely when it's obvious.",
+    body: "Rarely. It can sound distant, or — between couples — oddly intimate. Use the person's name with -san (e.g. 'Suzuki-san'), or their title alone — sensei for a teacher or doctor, buchou for a department manager — and drop the subject entirely when it's obvious.",
     category: "communication",
   },
   {
     id: "cultural-58",
     title: "Reading the air",
     question: "What does it mean to 'read the air' (kuuki wo yomu)?",
-    body: "It's the expectation that you'll sense the mood and the unstated position of a group and adjust without being told. Someone who misses it gets called KY — kuuki yomenai — which is a joke with a real edge.",
+    body: "It's the expectation that you'll sense the mood and the unstated position of a group and adjust without being told — noticing a boss's silence means 'no' before they say a word, or catching a lull in conversation as the cue to leave. Someone who misses it gets called KY — kuuki yomenai — a joke with a real edge.",
     category: "communication",
   },
   {
@@ -452,7 +452,7 @@ export const CULTURAL_TIPS: CulturalTip[] = [
     id: "cultural-61",
     title: "Tatemae and honne",
     question: "Why does a Japanese friend seem to say one thing and mean another?",
-    body: "Tatemae is the socially appropriate face, honne the private feeling. Keeping them apart is considered courteous rather than dishonest — honne comes out with close friends, and famously over drinks.",
+    body: "Tatemae is the socially appropriate face, honne the private feeling — agreeing a tight deadline is doable in a meeting (tatemae), then admitting it's unrealistic once you're alone with a trusted colleague (honne). Keeping them apart is considered courteous rather than dishonest, and honne comes out most famously over drinks.",
     category: "communication",
   },
   {
