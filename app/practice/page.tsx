@@ -220,8 +220,8 @@ function SelectionView({
         <div className="space-y-2">
           <h1 className="text-hero leading-none">Drill<br />mode</h1>
           <p className="text-[15px] text-text-muted leading-relaxed font-medium max-w-[32ch]">
-            Free-form flashcards. Nothing here touches your review schedule — warm up,
-            or hammer one script until it sticks.
+            Free-form flashcards that count toward mastery, same as a lesson —
+            warm up, or hammer one script until it sticks.
           </p>
         </div>
 
@@ -392,6 +392,16 @@ function LoadingView() {
  */
 const RETRY_GAP = 3;
 
+/** Records a drill answer against the same review schedule lessons use, so
+ * drilling a card is real practice rather than a schedule-free rehearsal. */
+function submitReview(item: PracticeItem, quality: 1 | 5) {
+  fetch("/api/review", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ contentType: item.contentType, contentId: item.id, quality }),
+  });
+}
+
 interface SessionResults {
   /** Cards in the stack. Every one of them is cleared by the end. */
   size: number;
@@ -439,6 +449,8 @@ function PracticeView({
     (wasCorrect: boolean) => {
       const current = queue[0];
       const rest = queue.slice(1);
+
+      submitReview(current, wasCorrect ? 5 : 1);
 
       if (wasCorrect) {
         const clean = !missedIds.has(current.id);
