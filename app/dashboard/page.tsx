@@ -74,11 +74,15 @@ function dominantLessonSymbol(counts: Partial<Record<string, number>>, fallbackS
   return LESSON_TYPE_SYMBOL[best ?? fallbackStage ?? "VOCABULARY"] ?? "行";
 }
 
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning";
-  if (h < 17) return "Good afternoon";
-  return "Good evening";
+// Time-of-day greeting in the learner's own timezone rather than the
+// server's (which runs in UTC): using the server clock would call it
+// morning for someone well into their evening.
+function getGreeting(timeZone: string): string {
+  const hourStr = new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone }).format(new Date());
+  const h = Number(hourStr) % 24;
+  if (h < 12) return "おはよう";
+  if (h < 17) return "こんにちは";
+  return "こんばんは";
 }
 
 function lessonOrdinal(n: number): string {
@@ -174,7 +178,7 @@ export default async function DashboardPage() {
           headline. */}
       <header>
         <h1 className="font-display font-extrabold text-[22px] leading-tight tracking-tight truncate">
-          <span className="font-medium text-text-subtle">{getGreeting()}, </span>
+          <span className="jp font-medium text-text-subtle">{getGreeting(timeZone)}、</span>
           {profile.displayName || "Learner"}
         </h1>
       </header>
