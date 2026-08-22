@@ -369,11 +369,12 @@ export function TopBar({
 }
 
 /**
- * The 行 wordmark — the one brand lockup, used identically on every screen
+ * The Ikou wordmark — the one brand lockup, used identically on every screen
  * that shows it (landing, auth, onboarding, the dashboard's app header).
  *
- * `sm` is the chrome size: it drops the ledge, because a 4px block under a
- * 28px tile inside a 64px bar reads as a misalignment rather than as depth.
+ * 行 sits directly beside the roman letters rather than boxed as a separate
+ * icon, and a coral rule ties the two together underneath — one fused mark
+ * instead of an icon-plus-label pair.
  */
 export function Wordmark({
   className,
@@ -384,26 +385,24 @@ export function Wordmark({
 }) {
   const sm = size === "sm";
   return (
-    <span className={cn("inline-flex items-center", sm ? "gap-2" : "gap-2.5", className)}>
-      <span
-        className={cn(
-          "rounded-tile grid place-items-center shrink-0",
-          sm ? "w-7 h-7" : "w-9 h-9 card-ledge"
-        )}
-        style={{ background: "hsl(var(--coral))", ["--ledge" as string]: "var(--coral-deep)" }}
-      >
-        <span className={cn("jp text-on-dark font-bold leading-none", sm ? "text-[14px]" : "text-[17px]")}>
+    <span className={cn("inline-flex flex-col items-center", className)}>
+      <span className={cn("inline-flex items-baseline", sm ? "gap-[5px]" : "gap-[7px]")}>
+        <span className={cn("jp text-coral font-bold leading-none", sm ? "text-[22px]" : "text-[30px]")}>
           行
+        </span>
+        <span
+          className={cn(
+            "font-display font-extrabold tracking-tight leading-none",
+            sm ? "text-[16px]" : "text-[21px]"
+          )}
+        >
+          Ikou
         </span>
       </span>
       <span
-        className={cn(
-          "font-display font-extrabold tracking-tight",
-          sm ? "text-[17px]" : "text-[19px]"
-        )}
-      >
-        Ikou
-      </span>
+        aria-hidden="true"
+        className={cn("bg-coral rounded-full", sm ? "w-[54px] h-[2px] mt-1" : "w-[76px] h-[3px] mt-1.5")}
+      />
     </span>
   );
 }
