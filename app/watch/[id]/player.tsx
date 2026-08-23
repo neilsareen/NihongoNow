@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Gauge, Pause, Play, RotateCcw, VolumeX } from "lucide-react";
-import { estimateSpeechMs, speakAs, stopSpeaking } from "@/lib/speech";
+import { estimateSpeechMs, playLine, stopSpeaking } from "@/lib/speech";
 import { SilentModeButton, useSilentMode } from "@/app/components/silent-mode";
 import { YOU_GLYPH, type Dialogue } from "@/lib/dialogues";
 import { cn } from "@/lib/utils";
@@ -15,18 +15,17 @@ import { TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
    Plays a scene the way a subtitled clip plays: one line at a time, each side
    in its own voice, the transcript filling in underneath as it goes.
 
-   Two things decide the shape of this component.
+   Pacing is the whole problem, and it is decided by how the line was actually
+   played. `lib/speech` guarantees its promise resolves and reports which
+   engine got there, because the engines are not equally trustworthy: a
+   pre-rendered clip has a real duration and a real end, while synthesis on a
+   device with no Japanese voice reports success having made no sound at all.
+   So a clip is timed by its own playback, and synthesis is held to a readable
+   floor in case it did nothing.
 
-   First, timing cannot be trusted to the speech engine alone. `onend` is not
-   reliably delivered — some Android WebViews never fire it, and a cancelled
-   utterance fires it late — so every line also carries a watchdog. Whichever
-   arrives first advances the scene, and a `settled` flag makes sure only one
-   of them ever does.
-
-   Second, the whole thing has to work with the sound off. Silent mode is a
-   first-class state in this app, not an error, so when nothing can be spoken
-   the scene plays on estimated timings instead and becomes a silent subtitled
-   clip. That is also the fallback for a device with no speech synthesis at all.
+   Silent mode is a first-class state here, not an error: with nothing audible
+   the scene runs on estimated timings and becomes a silent subtitled clip.
+   That is also what a device with no synthesis and no clips falls back to.
    =========================================================================== */
 
 /** The beat between one line ending and the next beginning. */
@@ -36,20 +35,24 @@ const TURN_GAP_MS = 420;
 const STAGE_LEAD_MS = 900;
 
 /**
- * The shortest a line may hold the screen, as a fraction of its estimated
- * spoken length — regardless of what the speech engine says it did.
+ * The shortest a *synthesised* line may hold the screen, as a fraction of its
+ * estimated spoken length — regardless of what the engine says it did.
  *
  * This is not a nicety. An engine with no Japanese voice installed accepts an
- * utterance, makes no sound, and fires `onend` immediately; so does one that
+ * utterance, makes no sound, and reports that it finished; so does one that
  * errors. Advancing on that signal alone runs the whole scene in a couple of
  * seconds, which is precisely the case a learner cannot read. With a floor, a
  * device that cannot speak degrades into the silent subtitled version instead
  * of a flicker. Set below 1 so that speech which genuinely runs long — the
  * estimate deliberately errs generous — is never padded with dead air.
+ *
+ * A pre-rendered clip needs none of this: it reports a real end because it had
+ * a real duration, so its timing is used as-is.
  */
 const MIN_LINE_FRACTION = 0.7;
 
-const RATES = [0.7, 0.85, 1] as const;
+/** Multiples of natural pace. */
+const RATES = [0.75, 1, 1.25] as const;
 
 const YOU_TONE = "var(--track-conversation)";
 const THEM_TONE = "var(--sun)";
@@ -60,7 +63,7 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [finished, setFinished] = useState(false);
-  const [rate, setRate] = useState<number>(0.85);
+  const [rate, setRate] = useState<number>(1);
   const [showEnglish, setShowEnglish] = useState(true);
 
   const total = dialogue.turns.length;
@@ -74,9 +77,8 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
     const current = dialogue.turns[index];
     if (!current) return;
 
-    // Doubles as the cleanup flag and the once-only guard: whichever of
-    // `onEnd` and the watchdog gets here first wins, and neither fires after
-    // the effect has been torn down.
+    // Doubles as the cleanup flag and the once-only guard: nothing advances
+    // twice, and nothing advances after the effect has been torn down.
     let settled = false;
     const timers: ReturnType<typeof setTimeout>[] = [];
     const after = (ms: number, fn: () => void) => {
@@ -100,27 +102,30 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
     after(lead, () => {
       if (settled) return;
       const startedAt = Date.now();
-      const floor = estimate * MIN_LINE_FRACTION;
 
-      const spoke = speakAs(current.kana, current.speaker, {
-        rate,
-        onEnd: () => {
-          if (settled) return;
-          // An engine that finished instantly did not actually say anything;
-          // hold the line on screen for its readable minimum either way.
+      // The audio layer guarantees this resolves — no watchdog needed here.
+      // What it resolves *to* is how the line should be paced.
+      void playLine(current.kana, { role: current.speaker, speed: rate }).then((outcome) => {
+        if (settled) return;
+
+        if (outcome === "clip") {
+          // A real file with a real duration finished. Trust it.
+          after(TURN_GAP_MS, advance);
+          return;
+        }
+
+        if (outcome === "silent" || outcome === "unsupported") {
+          // Nothing was audible, so the clock is the pacing and the line has
+          // to stay up long enough to read.
           const elapsed = Date.now() - startedAt;
-          after(Math.max(TURN_GAP_MS, floor - elapsed), advance);
-        },
-      });
+          after(Math.max(TURN_GAP_MS, estimate - elapsed), advance);
+          return;
+        }
 
-      if (spoke) {
-        // Generous, because it is a backstop and not the pacing: it should
-        // only ever fire on an engine that has gone quiet without saying so.
-        after(estimate * 2 + 4000, advance);
-      } else {
-        // Muted, or no synthesis. The clock is the pacing now.
-        after(estimate + TURN_GAP_MS, advance);
-      }
+        // Synthesis, which may have finished instantly without making a sound.
+        const elapsed = Date.now() - startedAt;
+        after(Math.max(TURN_GAP_MS, estimate * MIN_LINE_FRACTION - elapsed), advance);
+      });
     });
 
     return () => {

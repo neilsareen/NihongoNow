@@ -50,10 +50,46 @@ self.addEventListener("fetch", (e) => {
   if (url.pathname === "/sw.js") return;
 
   // Cache-first for static assets (JS, CSS, fonts, images)
+  // The clip map is a mutable pointer at immutable files, so it cannot be
+  // cache-first the way the clips themselves are: one stale copy would keep
+  // pointing at a previous deploy's set forever, and a learner who had ever
+  // been online would never see a new line's audio. Network first, falling
+  // back to the cached copy so offline still resolves clips.
+  if (url.pathname === "/audio/manifest.json") {
+    e.respondWith(
+      fetch(e.request)
+        .then((r) => {
+          if (isCacheable(r)) {
+            const clone = r.clone();
+            caches.open(CACHE).then((c) => c.put(e.request, clone)).catch(() => {});
+          }
+          return r;
+        })
+        .catch(() =>
+          caches.match(e.request).then(
+            (cached) =>
+              cached ||
+              // An empty map is a valid answer: every reading then misses and
+              // the app falls through to device synthesis, as it did before
+              // any audio was shipped.
+              new Response('{"version":0,"format":"none","clips":{}}', {
+                headers: { "Content-Type": "application/json" },
+              })
+          )
+        )
+    );
+    return;
+  }
+
+  // Pre-rendered speech is cached like any other static asset, which is what
+  // makes it work offline and on a device whose speech engine has no Japanese
+  // voice. Clip filenames are content-addressed, so a cached one is by
+  // definition still correct.
   const isStaticAsset =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/_next/image") ||
-    /\.(js|css|woff2?|ttf|otf|svg|png|jpg|jpeg|ico|webp)$/.test(url.pathname);
+    url.pathname.startsWith("/audio/ja/") ||
+    /\.(js|css|woff2?|ttf|otf|svg|png|jpg|jpeg|ico|webp|mp3|opus|ogg|m4a|wav)$/.test(url.pathname);
 
   if (isStaticAsset) {
     e.respondWith(

@@ -6,6 +6,7 @@
 // utterance is built from the kana reading, which is unambiguous.
 
 import { isSilentNow } from "./silent-mode";
+import { clipUrlFor, loadAudioManifest } from "./audio-manifest";
 
 export interface SpeechContent {
   character?: string;
@@ -73,102 +74,240 @@ if (typeof window !== "undefined" && window.speechSynthesis) {
 // Index advances per speak() call to cycle through available voices
 let _voiceIdx = 0;
 
+/**
+ * Play a reading. Fire-and-forget — for play buttons, which have nothing to do
+ * with the outcome.
+ *
+ * Kept at its original signature so the call sites that predate the clip layer
+ * did not have to change. It now goes through `playLine` like everything else,
+ * so a shipped clip is preferred here too and only the fallback is synthesis.
+ */
 export function speak(text: string, lang = "ja-JP", rate = 0.85) {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  if (!text) return;
-  // Silent mode is enforced here rather than at each call site: every play
-  // button, autoplay and repeat in the app comes through this function, so one
-  // guard covers the ones nobody remembered to think about.
-  if (isSilentNow()) return;
-  window.speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = lang;
-  u.rate = rate;
-  if (_jpVoices.length > 0) {
-    // Cycle through available Japanese voices for variety
-    u.voice = _jpVoices[_voiceIdx % _jpVoices.length];
-    _voiceIdx++;
-  }
-  window.speechSynthesis.speak(u);
+  // `rate` was historically a raw synthesis rate whose neutral value was 0.85;
+  // `playLine` speaks in multiples of natural pace instead. Converting here
+  // keeps every existing caller sounding exactly as it did.
+  void playLine(text, { speed: rate / TTS_BASE_RATE, lang });
 }
 
+
 /* ---------------------------------------------------------------------------
-   Two-speaker playback.
+   Playback.
    ---------------------------------------------------------------------------
-   A dialogue is only followable if you can hear which side is talking, so the
-   two roles are pinned to different voices rather than cycled like `speak`
-   does. Where the device has two or more Japanese voices installed they get one
-   each; where it has one (or none, and the engine falls back), they are pulled
-   apart by pitch instead — a difference the ear reads as two people even when
-   the timbre is identical.
+   One entry point, three possible engines, and a contract the callers can
+   actually build on.
+
+   The contract is: `playLine` ALWAYS resolves, never rejects, and never hangs.
+   That is the whole point of it. Every engine underneath lies in a different
+   way — a synthesis engine with no Japanese voice reports success and makes no
+   sound; `onend` is simply never delivered by some Android WebViews; an
+   <audio> element can stall forever on a truncated file — so each one gets a
+   watchdog here rather than at every call site. What a caller gets back is how
+   playback actually went, which is the one thing it needs to pace itself.
+
+   Preferring a shipped clip over synthesis is what makes the app portable: it
+   is the same audio on every device, it survives having no voice data
+   installed, and it works offline. Synthesis stays as the fallback for
+   anything not yet rendered — the 3,500 vocabulary and kanji readings, say,
+   while only the conversation corpus has been generated.
    --------------------------------------------------------------------------- */
+
+/** How playback actually went, for callers that pace themselves against it. */
+export type PlaybackOutcome =
+  | "clip" // a pre-rendered file played to completion — timing is exact
+  | "tts" // device synthesis ran; it may or may not have made a sound
+  | "silent" // muted by silent mode, deliberately
+  | "unsupported"; // nothing on this device could play it
+
+/**
+ * The synthesis rate that reads as natural pace. Speeds elsewhere in the app
+ * are multiples of this, so `speed: 1` means "normal" whether the line ends up
+ * coming from a clip or from the synthesiser.
+ */
+const TTS_BASE_RATE = 0.85;
+
+export interface PlayOptions {
+  /** 1 is natural pace; 0.75 is slower, 1.25 faster. */
+  speed?: number;
+  /** Which side of a two-person exchange this is, so the voices differ. */
+  role?: DialogueRole;
+  lang?: string;
+}
 
 export type DialogueRole = "you" | "them";
 
 const ROLE_PITCH: Record<DialogueRole, number> = { you: 0.92, them: 1.12 };
 
 /**
- * Roughly how long a line will take to say, in milliseconds.
+ * Roughly how long a line takes to say, in milliseconds, at a given speed.
  *
- * Used two ways, both of which need it to err long rather than short: as the
- * pacing when nothing is actually speaking (silent mode, a device with no
- * synthesis), and as the watchdog behind a real utterance — `onend` is not
- * reliably delivered by every engine, and a dialogue that waits forever on an
- * event that never arrives looks like a crash.
+ * Errs generous on purpose. It is the pacing whenever nothing is audible —
+ * silent mode, or a device with no synthesis — where it has to be long enough
+ * to read, and it is the watchdog behind everything else, where firing early
+ * would cut a line off mid-word.
  */
-export function estimateSpeechMs(text: string, rate = 0.85): number {
+export function estimateSpeechMs(text: string, speed = 1): number {
   const chars = readingSpeechText(text).replace(/[、。！？\s]/g, "").length;
-  return Math.max(1200, Math.round((chars * 190) / Math.max(0.3, rate)) + 550);
+  return Math.max(1200, Math.round((chars * 224) / Math.max(0.35, speed)) + 550);
+}
+
+/* Everything currently making noise, so `stopSpeaking` can end all of it and
+   stale callbacks from a cancelled line can be told to shut up. The counter is
+   what does the telling: a resolver checks the generation it was created in
+   and does nothing if playback has moved on. */
+let generation = 0;
+let currentAudio: HTMLAudioElement | null = null;
+
+/** Stops anything this module is playing, from either engine. */
+export function stopSpeaking() {
+  generation++;
+  if (typeof window === "undefined") return;
+  if (currentAudio) {
+    currentAudio.pause();
+    // Detaching the source stops a pending network fetch as well as playback.
+    currentAudio.removeAttribute("src");
+    currentAudio.load();
+    currentAudio = null;
+  }
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
 }
 
 /**
- * Speak one line as one of two speakers.
+ * Warm the clip map.
  *
- * Returns `true` when an utterance was actually handed to the engine, so the
- * caller knows whether `onEnd` is coming. It returns `false` while muted or
- * without speech support — playback then has to run on `estimateSpeechMs`
- * instead, which is what keeps a dialogue watchable with the sound off.
- *
- * Deliberately does NOT call `cancel()` the way `speak` does: the caller owns
- * the sequence and cancels once when it stops, and cancelling here would race
- * with the queue on engines that report `onend` asynchronously.
+ * Called once when this module loads, which is the earliest useful moment:
+ * every screen that can play audio imports it, and nothing else does. Without
+ * this the first play of a session always misses its clip and falls back to
+ * synthesis, because the lookup is deliberately synchronous.
  */
-export function speakAs(
-  text: string,
-  role: DialogueRole,
-  { rate = 0.85, onEnd }: { rate?: number; onEnd?: () => void } = {}
-): boolean {
-  if (typeof window === "undefined" || !window.speechSynthesis) return false;
-  if (!text) return false;
-  if (isSilentNow()) return false;
-
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "ja-JP";
-  u.rate = rate;
-  u.pitch = ROLE_PITCH[role];
-
-  if (_jpVoices.length > 1) {
-    // Two voices, one per side. Index 0/1 rather than anything cleverer: the
-    // list order is stable within a session, so a speaker keeps their voice
-    // for the whole scene.
-    u.voice = _jpVoices[role === "you" ? 0 : 1];
-  } else if (_jpVoices.length === 1) {
-    u.voice = _jpVoices[0];
-  }
-
-  // Fired for both outcomes: an engine that errors mid-line must not strand
-  // the sequence on a line that has stopped making noise.
-  if (onEnd) {
-    u.onend = () => onEnd();
-    u.onerror = () => onEnd();
-  }
-
-  window.speechSynthesis.speak(u);
-  return true;
+export function preloadAudio() {
+  void loadAudioManifest();
 }
 
-/** Stops anything this module has queued. */
-export function stopSpeaking() {
-  if (typeof window === "undefined" || !window.speechSynthesis) return;
-  window.speechSynthesis.cancel();
+if (typeof window !== "undefined") preloadAudio();
+
+/**
+ * Speak one line, resolving when it has finished.
+ *
+ * Resolves — always. See the contract at the top of this section.
+ */
+export function playLine(text: string, opts: PlayOptions = {}): Promise<PlaybackOutcome> {
+  const { speed = 1, role, lang = "ja-JP" } = opts;
+
+  if (!text) return Promise.resolve("unsupported");
+  // Enforced here rather than at each call site: every play button, autoplay
+  // and repeat in the app comes through this function, so one guard covers the
+  // ones nobody remembered to think about.
+  if (isSilentNow()) return Promise.resolve("silent");
+  if (typeof window === "undefined") return Promise.resolve("unsupported");
+
+  stopSpeaking();
+  const mine = generation;
+
+  const clip = clipUrlFor(readingSpeechText(text));
+  if (clip) {
+    return playClip(clip, speed, mine).then((outcome) => {
+      // A clip that 404s or will not decode leaves the line unheard, which is
+      // worse than an imperfect voice — so a failed clip falls through to the
+      // device rather than being treated as played. Guarded on the generation
+      // so a clip cancelled by the next line does not resurrect itself here.
+      if (outcome === "unsupported" && generation === mine && !isSilentNow()) {
+        return playSynthesis(text, lang, speed, role);
+      }
+      return outcome;
+    });
+  }
+
+  // Nothing rendered for this line yet, so fall back to the device.
+  void loadAudioManifest();
+  return playSynthesis(text, lang, speed, role);
+}
+
+function playClip(url: string, speed: number, mine: number): Promise<PlaybackOutcome> {
+  return new Promise((resolve) => {
+    let settled = false;
+    // Declared before `finish` so there is no window in which clearing it
+    // would touch a binding that does not exist yet.
+    let watchdog: ReturnType<typeof setTimeout> | undefined;
+
+    const finish = (outcome: PlaybackOutcome) => {
+      if (settled) return;
+      settled = true;
+      if (watchdog !== undefined) clearTimeout(watchdog);
+      if (generation === mine) currentAudio = null;
+      resolve(outcome);
+    };
+
+    const audio = new Audio(url);
+    audio.playbackRate = speed;
+    currentAudio = audio;
+
+    audio.addEventListener("ended", () => finish("clip"));
+    // A missing or undecodable file reports "unsupported", which sends the
+    // caller back to synthesis rather than leaving the line silent.
+    audio.addEventListener("error", () => finish("unsupported"));
+
+    // Backstop for a stall that never errors. `duration` is unknown until
+    // metadata loads, so this starts generous and tightens once it is known.
+    watchdog = setTimeout(() => finish("unsupported"), 20_000);
+    audio.addEventListener("loadedmetadata", () => {
+      if (settled || !Number.isFinite(audio.duration)) return;
+      if (watchdog !== undefined) clearTimeout(watchdog);
+      watchdog = setTimeout(
+        () => finish("clip"),
+        (audio.duration * 1000) / Math.max(0.35, speed) + 2000
+      );
+    });
+
+    audio.play().catch(() => {
+      // Autoplay policy, or no codec support. Either way it made no sound.
+      finish("unsupported");
+    });
+  });
+}
+
+function playSynthesis(
+  text: string,
+  lang: string,
+  speed: number,
+  role: DialogueRole | undefined
+): Promise<PlaybackOutcome> {
+  if (!window.speechSynthesis) return Promise.resolve("unsupported");
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    // Generous, because it is a backstop and not the pacing: it should only
+    // ever fire on an engine that has gone quiet without saying so. Scheduled
+    // above `finish` so it can be a const; the timer cannot possibly fire
+    // before the next statement has run.
+    const watchdog = setTimeout(() => finish("tts"), estimateSpeechMs(text, speed) * 2 + 4000);
+
+    const finish = (outcome: PlaybackOutcome) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(watchdog);
+      resolve(outcome);
+    };
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang;
+    u.rate = TTS_BASE_RATE * speed;
+
+    if (role) {
+      // Two speakers need to sound like two people. Where the device has two
+      // Japanese voices they get one each; where it has one, pitch alone has
+      // to carry the distinction.
+      u.pitch = ROLE_PITCH[role];
+      if (_jpVoices.length > 1) u.voice = _jpVoices[role === "you" ? 0 : 1];
+      else if (_jpVoices.length === 1) u.voice = _jpVoices[0];
+    } else if (_jpVoices.length > 0) {
+      u.voice = _jpVoices[_voiceIdx % _jpVoices.length];
+      _voiceIdx++;
+    }
+
+    u.onend = () => finish("tts");
+    u.onerror = () => finish("tts");
+
+    window.speechSynthesis.speak(u);
+  });
 }
