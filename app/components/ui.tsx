@@ -374,11 +374,21 @@ export function TopBar({
  *
  * 行 sits directly beside the roman letters rather than boxed as a separate
  * icon, and a coral rule ties the two together underneath — one fused mark
- * instead of an icon-plus-label pair. The pill it sits in reuses the header's
- * own streak-badge treatment (`--surface` fill, a whisper of coral at the
- * edge) rather than a bespoke colour, so it reads as one step up from
- * whatever's behind it — the dark bar, the ink page — in either theme,
- * without introducing a colour that only exists for this one mark.
+ * instead of an icon-plus-label pair. That rule is an arrow rather than a
+ * plain underline: a stroke that starts as a hairline, thickens and lifts as
+ * it travels right, and lands on a solid head — a brush stroke with somewhere
+ * to be. 行こう is "let's go", so the mark goes.
+ *
+ * Both halves are plain filled paths in `currentColor`: the taper is built
+ * into the outline rather than faked with a gradient, because a gradient
+ * needs an id, this file is hook-free (no `useId`) so server pages can import
+ * it, and the landing page renders two of these on one screen.
+ *
+ * The pill it sits in reuses the header's own streak-badge treatment
+ * (`--surface` fill, a whisper of coral at the edge) rather than a bespoke
+ * colour, so it reads as one step up from whatever's behind it — the dark
+ * bar, the ink page — in either theme, without introducing a colour that
+ * only exists for this one mark.
  */
 export function Wordmark({
   className,
@@ -409,10 +419,17 @@ export function Wordmark({
           Ikou
         </span>
       </span>
-      <span
+      <svg
         aria-hidden="true"
-        className={cn("bg-coral rounded-full", sm ? "w-[54px] h-[2px] mt-1" : "w-[76px] h-[3px] mt-1.5")}
-      />
+        viewBox="0 0 76 10"
+        fill="none"
+        className={cn("text-coral", sm ? "w-[54px] mt-[3px]" : "w-[76px] mt-[5px]")}
+      >
+        <g fill="currentColor">
+          <path d="M2.4 8.9 C 26.2 8.6, 48 6.4, 65.9 2.5 L 66.7 5.2 C 48 8.2, 26.2 9.6, 2.6 9.4 Z" />
+          <path d="M61.6 0.9 L 72.5 2.2 L 65.6 6.6 Z" />
+        </g>
+      </svg>
     </span>
   );
 }
