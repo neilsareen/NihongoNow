@@ -394,11 +394,10 @@ export function TopBar({
  *   `pr-*` instead. The aircraft therefore costs the lockup no height: it
  *   flies through the empty space beside the word, not below it.
  *
- * The pill it sits in reuses the header's own streak-badge treatment
- * (`--surface` fill, a whisper of coral at the edge) rather than a bespoke
- * colour, so it reads as one step up from whatever's behind it — the dark
- * bar, the ink page — in either theme, without introducing a colour that
- * only exists for this one mark.
+ * The pill is a bare `--surface` fill with no border: the mark separates
+ * itself from what's behind it by tone alone — one step up from the dark
+ * bar or the ink page — rather than by being outlined. No bespoke colour
+ * either, so nothing here exists only for this one mark.
  */
 export function Wordmark({
   className,
@@ -411,7 +410,7 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "inline-flex flex-col items-start rounded-full bg-surface border border-coral/25",
+        "inline-flex flex-col items-start rounded-full bg-surface",
         // The right padding reserves the runway the jet flies out into; the
         // aircraft is positioned out of flow, so it never pushes the pill taller.
         sm ? "py-1 pl-3 pr-[40px]" : "py-1.5 pl-4 pr-[54px]",
