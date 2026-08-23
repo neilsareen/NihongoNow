@@ -104,6 +104,14 @@
        enough that it never competes with the coral action card beneath it. */
     --brand-bar: 14 42% 9%;
 
+    /* The plate behind the wordmark. Its own token rather than --surface
+       because the mark has to clear two grounds at once — the violet page
+       and the warmed --brand-bar — and it carries no border to fall back
+       on, so it needs a little more lift than a card sitting on one known
+       background does. Nudging --surface itself would drag every card and
+       badge in the app along with it. */
+    --wordmark-plate: 264 33% 17%;
+
     /* Track hues, aliased so screens name the content, not the colour. */
     --track-hiragana: var(--blossom);
     --track-katakana: var(--sky);
@@ -173,6 +181,12 @@
     /* Warm paper, the light-ground counterpart of the dark bar: enough tint
        to separate the chrome from the near-white canvas without a border. */
     --brand-bar: 26 78% 96%;
+
+    /* Light-side wordmark plate. Here it goes *down* from the near-white
+       ground rather than up — white on a 97% canvas is the one case where
+       there is no headroom left to lift into — so the mark reads as a soft
+       lavender chip against both the page and the warm bar. */
+    --wordmark-plate: 267 38% 94%;
 
     --on-light: 0 0% 100%;
     --on-dark: 0 0% 100%;

@@ -32,6 +32,8 @@ const config: Config = {
         },
         // The app header's band — see globals.css.
         brand: { bar: token("brand-bar") },
+        // The plate behind the wordmark — see globals.css.
+        wordmark: { plate: token("wordmark-plate") },
 
         // The backdrop behind a modal. Its own token because the light theme
         // still wants a dark scrim, so it cannot just be the deepest ground.

@@ -394,10 +394,12 @@ export function TopBar({
  *   `pr-*` instead. The aircraft therefore costs the lockup no height: it
  *   flies through the empty space beside the word, not below it.
  *
- * The pill is a bare `--surface` fill with no border: the mark separates
- * itself from what's behind it by tone alone — one step up from the dark
- * bar or the ink page — rather than by being outlined. No bespoke colour
- * either, so nothing here exists only for this one mark.
+ * The pill is a bare `--wordmark-plate` fill with no border: the mark
+ * separates itself from what's behind it by tone alone rather than by being
+ * outlined. That plate is its own token because this mark has to clear two
+ * grounds — the page and the warmed `--brand-bar` — with no border to fall
+ * back on, and because nudging `--surface` to suit it would drag every card
+ * and badge in the app along too.
  */
 export function Wordmark({
   className,
@@ -410,7 +412,7 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "inline-flex flex-col items-start rounded-full bg-surface",
+        "inline-flex flex-col items-start rounded-full bg-wordmark-plate",
         // The right padding reserves the runway the jet flies out into; the
         // aircraft is positioned out of flow, so it never pushes the pill taller.
         sm ? "py-1 pl-3 pr-[40px]" : "py-1.5 pl-4 pr-[54px]",
