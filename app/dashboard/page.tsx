@@ -9,6 +9,7 @@ import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji, getUnlockedVo
 import { CONVERSATIONS } from "@/lib/conversations";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
 import { SpeakingCta } from "./speaking-cta";
+import { LockedTrack } from "./locked-track";
 
 const LESSON_TYPE_SYMBOL: Record<string, string> = {
   HIRAGANA: "あ",
@@ -323,6 +324,13 @@ export default async function DashboardPage() {
             const rowClass =
               "flex items-center gap-4 p-3.5 rounded-card border border-line bg-surface elevated";
 
+            // What a tap says back, since a locked row with no explanation and
+            // no destination reads as a bug rather than a gate.
+            const lockedMessage =
+              track.stage === "CONVERSATION"
+                ? `Take every hiragana and katakana to Learning to unlock conversation — ${conversationGate.ready}/${conversationGate.total} kana ready so far.`
+                : "Master more kana to unlock this.";
+
             return href ? (
               <Link
                 key={track.label}
@@ -331,18 +339,12 @@ export default async function DashboardPage() {
               >
                 {body}
               </Link>
+            ) : locked ? (
+              <LockedTrack key={track.label} message={lockedMessage}>
+                {body}
+              </LockedTrack>
             ) : (
-              <div
-                key={track.label}
-                className={rowClass}
-                title={
-                  !locked
-                    ? undefined
-                    : track.stage === "CONVERSATION"
-                      ? "Take every hiragana and katakana to Learning to unlock conversation"
-                      : "Master more kana to unlock this"
-                }
-              >
+              <div key={track.label} className={rowClass}>
                 {body}
               </div>
             );
