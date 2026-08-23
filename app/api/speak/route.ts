@@ -6,6 +6,7 @@ import {
   getUnlockedVocabulary,
   getUnlockedPhrases,
 } from "@/lib/progression";
+import { findPhrasesByIds } from "@/lib/phrases";
 import { getSessionUser } from "@/lib/simulation";
 
 // Words for the speaking drill. Weakest first, because saying a word is the
@@ -82,9 +83,7 @@ export async function GET() {
     learnedVocabIds.length
       ? prisma.vocabulary.findMany({ where: { id: { in: learnedVocabIds } } })
       : [],
-    learnedPhraseIds.length
-      ? prisma.phrase.findMany({ where: { id: { in: learnedPhraseIds } } })
-      : [],
+    findPhrasesByIds(learnedPhraseIds),
     // Same gate as the lesson generator: nothing is offered whose reading uses
     // kana the learner hasn't mastered.
     getUnlockedVocabulary(masteredKana, learnedVocabIds),
@@ -125,9 +124,7 @@ export async function GET() {
     freshVocabIds.length
       ? prisma.vocabulary.findMany({ where: { id: { in: freshVocabIds } } })
       : [],
-    freshPhraseIds.length
-      ? prisma.phrase.findMany({ where: { id: { in: freshPhraseIds } } })
-      : [],
+    findPhrasesByIds(freshPhraseIds),
   ]);
 
   const fresh: SpeakItem[] = [

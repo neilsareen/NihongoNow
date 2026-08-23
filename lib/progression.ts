@@ -1,5 +1,6 @@
 import { prisma } from "./prisma";
 import { ContentType } from "@prisma/client";
+import { findPhrasesByIds, getPhraseCandidates } from "./phrases";
 import { pickPrimaryKanjiReading } from "./utils";
 import { effectiveSrsLevel, srsRank, type SRSLevel } from "./srs";
 
@@ -125,9 +126,10 @@ export async function filterUnlockedReviews<
           select: { id: true, character: true, onyomi: true, kunyomi: true },
         })
       : Promise.resolve([]),
-    phraseIds.length
-      ? prisma.phrase.findMany({ where: { id: { in: phraseIds } }, select: { id: true, kana: true } })
-      : Promise.resolve([]),
+    // Phrases come from both the table and the conversation cards, so the
+    // lookup goes through the corpus helper rather than straight to Prisma —
+    // otherwise a review written against a card's line would read as locked.
+    findPhrasesByIds(phraseIds),
   ]);
 
   const unlocked = new Set<string>();
@@ -174,12 +176,7 @@ export async function getUnlockedVocabulary(mastered: MasteredKana, excludeIds: 
 
 export async function getUnlockedPhrases(mastered: MasteredKana, excludeIds: string[] = []) {
   if (mastered.hiragana.size === 0 && mastered.katakana.size === 0) return [];
-  const candidates = await prisma.phrase.findMany({
-    where: excludeIds.length ? { id: { notIn: excludeIds } } : undefined,
-    orderBy: { difficulty: "asc" },
-    take: CANDIDATE_POOL,
-    select: { id: true, kana: true },
-  });
+  const candidates = await getPhraseCandidates(excludeIds, CANDIDATE_POOL);
   return candidates.filter((p) => isReadingUnlocked(p.kana, mastered));
 }
 

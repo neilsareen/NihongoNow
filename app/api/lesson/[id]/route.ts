@@ -5,6 +5,7 @@ import { ContentType } from "@prisma/client";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { CONVERSATIONS } from "@/lib/conversations";
 import { SCRIPT_INTRO_LIST } from "@/lib/script-intros";
+import { findPhrasesByIds } from "@/lib/phrases";
 import { effectiveSrsLevel } from "@/lib/srs";
 import { getSessionUser } from "@/lib/simulation";
 import { nextStreak } from "@/lib/utils";
@@ -77,7 +78,7 @@ export async function GET(
       : [],
     kanjiIds.length ? prisma.kanji.findMany({ where: { id: { in: kanjiIds } } }) : [],
     vocabularyIds.length ? prisma.vocabulary.findMany({ where: { id: { in: vocabularyIds } } }) : [],
-    phraseIds.length ? prisma.phrase.findMany({ where: { id: { in: phraseIds } } }) : [],
+    findPhrasesByIds(phraseIds),
     reviewContentIds.length
       ? prisma.review.findMany({
           where: { userId, contentId: { in: reviewContentIds } },

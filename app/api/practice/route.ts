@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
 import { getMasteredKana, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, isConversationUnlocked } from "@/lib/progression";
+import { findPhrasesByIds } from "@/lib/phrases";
 import { CONVERSATIONS, type ConversationExchange } from "@/lib/conversations";
 import { ContentType } from "@prisma/client";
 import { getSessionUser } from "@/lib/simulation";
@@ -171,9 +172,7 @@ export async function GET(request: Request) {
   }
 
   if (includePhrase) {
-    const phrases = await prisma.phrase.findMany({
-      where: { id: { in: unlockedPhraseStubs.map((p) => p.id) } },
-    });
+    const phrases = await findPhrasesByIds(unlockedPhraseStubs.map((p) => p.id));
     for (const p of phrases) {
       items.push({
         id: p.id,
