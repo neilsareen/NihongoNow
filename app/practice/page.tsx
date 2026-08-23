@@ -687,7 +687,7 @@ function PracticeView({
                         </p>
                         <AudioButton text={speechText(item.contentType, item)} />
                       </div>
-                      <p className="text-[13px] text-text-subtle text-center">
+                      <p className="text-[15px] text-text-muted font-medium text-center">
                         {item.conversation.say.romaji} — {item.conversation.say.english}
                       </p>
 
