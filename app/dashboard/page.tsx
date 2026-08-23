@@ -128,7 +128,7 @@ export default async function DashboardPage() {
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: "PHRASE" },
     // Survival speaking. Sealed until every kana is at Learning, because every
     // line in it is written in kana the learner is meant to be able to read.
-    { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", practiceType: null },
+    { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", practiceType: "CONVERSATION" },
   ];
 
   const masteredByStage = (stage: string, total: number) => {

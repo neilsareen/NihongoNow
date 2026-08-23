@@ -10,6 +10,7 @@ import { useSilentMode } from "@/app/components/silent-mode";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { Card, CardScroller, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
+import { SCENE_LABELS, type ConversationExchange } from "@/lib/conversations";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -27,6 +28,7 @@ interface PracticeItem {
   mnemonicHint?: string | null;
   kana?: string;
   english?: string;
+  conversation?: ConversationExchange;
 }
 
 type ExampleWord = {
@@ -145,7 +147,7 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
 // Selection view
 // ---------------------------------------------------------------------------
 
-type TypeKey = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE";
+type TypeKey = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE" | "CONVERSATION";
 
 const TYPES: { key: TypeKey; label: string; glyph: string; tone: string }[] = [
   { key: "HIRAGANA", label: "Hiragana", glyph: "あ", tone: "var(--track-hiragana)" },
@@ -153,10 +155,17 @@ const TYPES: { key: TypeKey; label: string; glyph: string; tone: string }[] = [
   { key: "KANJI", label: "Kanji", glyph: "漢", tone: "var(--track-kanji)" },
   { key: "VOCABULARY", label: "Vocabulary", glyph: "語", tone: "var(--track-vocab)" },
   { key: "PHRASE", label: "Phrases", glyph: "話", tone: "var(--track-phrase)" },
+  { key: "CONVERSATION", label: "Conversation", glyph: "会", tone: "var(--track-conversation)" },
 ];
 
 /** Types whose availability depends on how much kana the learner has mastered. */
-const LOCKABLE_TYPES: TypeKey[] = ["KANJI", "VOCABULARY", "PHRASE"];
+const LOCKABLE_TYPES: TypeKey[] = ["KANJI", "VOCABULARY", "PHRASE", "CONVERSATION"];
+
+/** Why a type is still sealed — conversation's bar is the whole alphabet, not
+ * just the kana inside one reading, so it gets its own line. */
+const LOCKED_HINT: Partial<Record<TypeKey, string>> = {
+  CONVERSATION: "Unlocks once every hiragana and katakana reaches Learning",
+};
 
 /** Stack sizes on offer. The middle one is the default — a few minutes' worth. */
 const COUNTS = [10, 25, 50, 100] as const;
@@ -185,6 +194,7 @@ function SelectionView({
             KANJI: !!d.kanjiUnlocked,
             VOCABULARY: !!d.vocabUnlocked,
             PHRASE: !!d.phraseUnlocked,
+            CONVERSATION: !!d.conversation?.unlocked,
           });
         }
       })
@@ -298,7 +308,7 @@ function SelectionView({
                   </span>
                   {locked && (
                     <span className="block text-[13px] text-text-subtle mt-0.5 font-medium">
-                      Unlocks as you master the kana in its readings
+                      {LOCKED_HINT[key] ?? "Unlocks as you master the kana in its readings"}
                     </span>
                   )}
                 </span>
@@ -473,6 +483,7 @@ function PracticeView({
   const item = queue[0];
   const isKanji = item.contentType === ContentType.KANJI;
   const isWordy = item.contentType === ContentType.VOCABULARY || item.contentType === ContentType.PHRASE;
+  const isConversation = item.contentType === ContentType.CONVERSATION && !!item.conversation;
   const exampleWords = parseExampleWords(item.exampleWords);
   const readings = isKanji ? kanjiReadings(item.onyomi, item.kunyomi) : [];
   const turn = cleared + putBack;
@@ -623,23 +634,37 @@ function PracticeView({
           <CardScroller>
           <Card className="overflow-hidden">
             <div className="p-8 flex flex-col items-center justify-center gap-2 min-h-[12rem]">
-              <span
-                className={cn(
-                  "jp font-bold text-center",
-                  isKanji
-                    ? "text-[5rem] leading-none"
-                    : isWordy
-                      ? "text-4xl sm:text-5xl leading-snug break-words"
-                      : "text-mega leading-none"
-                )}
-              >
-                {item.character}
-              </span>
-              {isWordy && item.kana && item.kana !== item.character && (
-                <span className="jp text-lg text-text-muted font-medium">{item.kana}</span>
-              )}
-              {isWordy && item.romaji && (
-                <span className="text-sm text-text-subtle font-medium tracking-wide">{item.romaji}</span>
+              {isConversation && item.conversation ? (
+                <div className="w-full flex flex-col items-center gap-2.5 text-center">
+                  <Chip hue="var(--track-conversation)">{SCENE_LABELS[item.conversation.scene]}</Chip>
+                  <p className="font-display text-[19px] font-extrabold tracking-tight max-w-xs">
+                    {item.conversation.canDo}
+                  </p>
+                  <p className="text-[13px] text-text-muted leading-relaxed max-w-xs">
+                    {item.conversation.situation}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <span
+                    className={cn(
+                      "jp font-bold text-center",
+                      isKanji
+                        ? "text-[5rem] leading-none"
+                        : isWordy
+                          ? "text-4xl sm:text-5xl leading-snug break-words"
+                          : "text-mega leading-none"
+                    )}
+                  >
+                    {item.character}
+                  </span>
+                  {isWordy && item.kana && item.kana !== item.character && (
+                    <span className="jp text-lg text-text-muted font-medium">{item.kana}</span>
+                  )}
+                  {isWordy && item.romaji && (
+                    <span className="text-sm text-text-subtle font-medium tracking-wide">{item.romaji}</span>
+                  )}
+                </>
               )}
             </div>
 
@@ -654,7 +679,59 @@ function PracticeView({
                 </button>
               ) : (
                 <div className="w-full flex flex-col items-center gap-4 animate-pop-in">
-                  {isKanji ? (
+                  {isConversation && item.conversation ? (
+                    <>
+                      <div className="flex items-center gap-2.5">
+                        <p className="jp text-2xl font-bold tracking-tight text-center max-w-xs">
+                          {item.conversation.say.japanese}
+                        </p>
+                        <AudioButton text={speechText(item.contentType, item)} />
+                      </div>
+                      <p className="text-[13px] text-text-subtle text-center">
+                        {item.conversation.say.romaji} — {item.conversation.say.english}
+                      </p>
+
+                      {item.conversation.hear.length > 0 && (
+                        <div className="w-full space-y-2 text-center">
+                          <DetailLabel>You might hear</DetailLabel>
+                          <div className="flex flex-col items-center gap-1.5">
+                            {item.conversation.hear.map((l, i) => (
+                              <SpeakChip key={i} text={readingSpeechText(l.kana)} className="text-[13px]">
+                                <span className="jp">{l.japanese}</span>
+                                <span className="text-text-muted">{l.english}</span>
+                              </SpeakChip>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {item.conversation.reply.length > 0 && (
+                        <div className="w-full space-y-2 text-center">
+                          <DetailLabel>You could reply</DetailLabel>
+                          <div className="flex flex-col items-center gap-1.5">
+                            {item.conversation.reply.map((l, i) => (
+                              <SpeakChip key={i} text={readingSpeechText(l.kana)} className="text-[13px]">
+                                <span className="jp">{l.japanese}</span>
+                                <span className="text-text-muted">{l.english}</span>
+                              </SpeakChip>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {item.conversation.pattern && (
+                        <div className="w-full space-y-2 text-center">
+                          <DetailLabel>Pattern</DetailLabel>
+                          <p className="jp text-[15px] font-medium">{item.conversation.pattern.frame}</p>
+                          <p className="text-[12px] text-text-subtle">{item.conversation.pattern.gloss}</p>
+                        </div>
+                      )}
+
+                      <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs">
+                        {item.conversation.tip}
+                      </p>
+                    </>
+                  ) : isKanji ? (
                     <>
                       <div className="flex items-center gap-2.5">
                         {item.meanings && item.meanings.length > 0 && (
@@ -872,7 +949,7 @@ function SummaryView({
 
 type View = "loading" | "selection" | "practice" | "summary";
 
-const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI", "VOCABULARY", "PHRASE"];
+const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI", "VOCABULARY", "PHRASE", "CONVERSATION"];
 
 function PracticePageInner() {
   const searchParams = useSearchParams();

@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
-import { getMasteredKana, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases } from "@/lib/progression";
+import { getMasteredKana, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, isConversationUnlocked } from "@/lib/progression";
+import { CONVERSATIONS, type ConversationExchange } from "@/lib/conversations";
 import { ContentType } from "@prisma/client";
 import { getSessionUser } from "@/lib/simulation";
 
@@ -77,6 +78,7 @@ export async function GET(request: Request) {
   const wantsKanji = requestedTypes.includes(ContentType.KANJI);
   const wantsVocab = requestedTypes.includes(ContentType.VOCABULARY);
   const wantsPhrase = requestedTypes.includes(ContentType.PHRASE);
+  const wantsConversation = requestedTypes.includes(ContentType.CONVERSATION);
   const masteredKana =
     wantsKanji || wantsVocab || wantsPhrase ? await getMasteredKana(session.userId) : null;
   const unlockedKanji = masteredKana ? await getUnlockedKanji(masteredKana) : [];
@@ -88,8 +90,9 @@ export async function GET(request: Request) {
   const unlockedPhraseStubs = wantsPhrase && masteredKana ? await getUnlockedPhrases(masteredKana) : [];
   const includeVocab = wantsVocab && unlockedVocabStubs.length > 0;
   const includePhrase = wantsPhrase && unlockedPhraseStubs.length > 0;
+  const includeConversation = wantsConversation && (await isConversationUnlocked(session.userId));
 
-  if (charTypes.length === 0 && !includeKanji && !includeVocab && !includePhrase) {
+  if (charTypes.length === 0 && !includeKanji && !includeVocab && !includePhrase && !includeConversation) {
     return NextResponse.json(
       { error: "Master more kana to unlock this content.", locked: true },
       { status: 403 }
@@ -108,6 +111,7 @@ export async function GET(request: Request) {
     mnemonicHint?: string | null;
     kana?: string;
     english?: string;
+    conversation?: ConversationExchange;
   }[] = [];
 
   if (charTypes.length > 0) {
@@ -178,6 +182,20 @@ export async function GET(request: Request) {
         romaji: p.romaji,
         kana: p.kana,
         english: p.english,
+      });
+    }
+  }
+
+  if (includeConversation) {
+    for (const c of CONVERSATIONS) {
+      items.push({
+        id: c.id,
+        contentType: ContentType.CONVERSATION,
+        character: c.say.japanese,
+        romaji: c.say.romaji,
+        kana: c.say.kana,
+        english: c.say.english,
+        conversation: c,
       });
     }
   }
