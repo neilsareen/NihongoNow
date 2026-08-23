@@ -374,15 +374,25 @@ export function TopBar({
  *
  * 行 sits directly beside the roman letters rather than boxed as a separate
  * icon, and a coral rule ties the two together underneath — one fused mark
- * instead of an icon-plus-label pair. That rule is an arrow rather than a
- * plain underline: a stroke that starts as a hairline, thickens and lifts as
- * it travels right, and lands on a solid head — a brush stroke with somewhere
- * to be. 行こう is "let's go", so the mark goes.
+ * instead of an icon-plus-label pair. That rule is a contrail: it fades in
+ * out of nothing under 行, runs flat beneath the word, then banks up off the
+ * final "u" and becomes an airliner climbing away to the right. 行こう is
+ * "let's go", and this app is for people going to Japan, so the mark leaves.
  *
- * Both halves are plain filled paths in `currentColor`: the taper is built
- * into the outline rather than faked with a gradient, because a gradient
- * needs an id, this file is hook-free (no `useId`) so server pages can import
- * it, and the landing page renders two of these on one screen.
+ * Three details keep it honest:
+ *
+ * - The flat run is a CSS gradient on a `w-full` bar, not an SVG path, so it
+ *   measures itself against the letters above it. Outfit renders at different
+ *   widths across platforms and weights; a hardcoded rule width would drift
+ *   off the end of the word, and this cannot. It also means the fade needs no
+ *   gradient id — this file is hook-free (no `useId`) so server pages can
+ *   import it, and the landing page renders two wordmarks on one screen.
+ * - The jet hangs off `left-full`, i.e. pinned to the bar's right edge, which
+ *   is the word's right edge. Its diagonal starts at its own bottom-left
+ *   corner at the bar's exact thickness, so the two meet as one stroke.
+ * - It is positioned out of flow and the pill reserves its width in
+ *   `pr-*` instead. The aircraft therefore costs the lockup no height: it
+ *   flies through the empty space beside the word, not below it.
  *
  * The pill it sits in reuses the header's own streak-badge treatment
  * (`--surface` fill, a whisper of coral at the edge) rather than a bespoke
@@ -401,8 +411,10 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "inline-flex flex-col items-center rounded-full bg-surface border border-coral/25",
-        sm ? "px-3 py-1" : "px-4 py-1.5",
+        "inline-flex flex-col items-start rounded-full bg-surface border border-coral/25",
+        // The right padding reserves the runway the jet flies out into; the
+        // aircraft is positioned out of flow, so it never pushes the pill taller.
+        sm ? "py-1 pl-3 pr-[40px]" : "py-1.5 pl-4 pr-[54px]",
         className
       )}
     >
@@ -419,17 +431,34 @@ export function Wordmark({
           Ikou
         </span>
       </span>
-      <svg
+
+      {/* `w-full` is the whole trick: the contrail is exactly as wide as the
+          letters above it whatever the face does, and the jet hangs off
+          `left-full`, so the climb always begins on the final "u". */}
+      <span
         aria-hidden="true"
-        viewBox="0 0 76 10"
-        fill="none"
-        className={cn("text-coral", sm ? "w-[54px] mt-[3px]" : "w-[76px] mt-[5px]")}
+        className={cn("relative w-full", sm ? "h-[1.5px] mt-1" : "h-[2px] mt-1.5")}
       >
-        <g fill="currentColor">
-          <path d="M2.4 8.9 C 26.2 8.6, 48 6.4, 65.9 2.5 L 66.7 5.2 C 48 8.2, 26.2 9.6, 2.6 9.4 Z" />
-          <path d="M61.6 0.9 L 72.5 2.2 L 65.6 6.6 Z" />
-        </g>
-      </svg>
+        <span className="absolute inset-x-0 bottom-0 h-full rounded-l-full bg-gradient-to-r from-coral/0 to-coral" />
+        <svg
+          viewBox="0 0 38 17.91"
+          fill="none"
+          className={cn("absolute left-full bottom-0 text-coral", sm ? "w-[28px]" : "w-[38px]")}
+        >
+          <path
+            d="M0 16.86 L22.57 6.88"
+            stroke="currentColor"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+          />
+          <g fill="currentColor" transform="translate(29.51 3.9) rotate(-24) scale(0.66)">
+            <path d="M12 0.2 C10.4 -1.3 7 -1.9 2.6 -1.95 L-3.4 -1.95 L-8.2 -7.0 L-10.4 -7.0 L-9.6 -2.0 L-12.4 -1.5 L-12.4 1.0 L-6 1.95 L3.4 1.9 C7.6 1.75 10.6 1.2 12 0.2 Z" />
+            <path d="M4.2 1.4 L-3.2 6.6 L-7.4 6.6 L-2.2 1.4 Z" />
+            <path d="M-9.2 0.3 L-13.2 3.0 L-14.8 3.0 L-11.4 0.3 Z" />
+            <path d="M2.0 1.6 C4.0 1.6 4.2 3.9 2.0 3.9 L-1.6 3.9 C-3.4 3.9 -3.2 1.6 -1.6 1.6 Z" />
+          </g>
+        </svg>
+      </span>
     </span>
   );
 }
