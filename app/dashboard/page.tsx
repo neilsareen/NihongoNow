@@ -3,7 +3,7 @@ import { getSessionUser } from "@/lib/simulation";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { ChevronRight, Lock, Zap } from "lucide-react";
+import { ChevronRight, Clapperboard, Lock, Zap } from "lucide-react";
 import { getStartOfDayInTimezone } from "@/lib/utils";
 import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, getConversationGate } from "@/lib/progression";
 import { CONVERSATIONS } from "@/lib/conversations";
@@ -385,6 +385,24 @@ export default async function DashboardPage() {
             understood saying it are different skills, so it gets its own way in
             rather than only turning up inside a lesson. */}
         <SpeakingCta />
+
+        {/* Only once conversation is open: the scenes are written in the same
+            kana the track is gated on, and a dead control here would say less
+            than the padlocked Conversation row above already does. */}
+        {conversationGate.unlocked && (
+          <Link
+            href="/watch"
+            className={buttonStyles({ variant: "secondary", full: true, size: "lg" })}
+            style={buttonVars("secondary")}
+          >
+            <Clapperboard
+              className="w-[18px] h-[18px]"
+              strokeWidth={2.5}
+              style={{ color: "hsl(var(--track-conversation))" }}
+            />
+            Watch a conversation play out
+          </Link>
+        )}
 
         <Link
           href="/review/weakest"
