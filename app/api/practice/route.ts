@@ -193,6 +193,11 @@ export async function GET(request: Request) {
 
   if (includeConversation) {
     for (const c of CONVERSATIONS) {
+      // Half the deck is multiple-choice, half is recall-then-reveal — always
+      // being handed four options never makes the learner produce the line
+      // themselves. The split is decided per card per session, not stored, so
+      // the same exchange trains both skills across repeat sessions.
+      const isQuizCard = Math.random() < 0.5;
       items.push({
         id: c.id,
         contentType: ContentType.CONVERSATION,
@@ -203,7 +208,7 @@ export async function GET(request: Request) {
         conversation: c,
         // Built here rather than in the browser so the whole deck can be drawn
         // on for distractors without shipping it to the client a second time.
-        choices: buildResponseChoices(c),
+        choices: isQuizCard ? buildResponseChoices(c) : undefined,
       });
     }
   }

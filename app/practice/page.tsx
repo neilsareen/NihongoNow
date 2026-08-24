@@ -791,7 +791,7 @@ function PracticeView({
                     {item.conversation.situation}
                   </p>
 
-                  {isQuiz && opener && (
+                  {opener && (
                     <div className="w-full rounded-tile bg-surface-raised p-3 mt-1 text-left">
                       <DetailLabel>They say</DetailLabel>
                       <div className="mt-1.5 flex items-start gap-2">
@@ -809,11 +809,9 @@ function PracticeView({
                     </div>
                   )}
 
-                  {isQuiz && (
-                    <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
-                      {opener ? "What do you say back?" : "What do you say?"}
-                    </p>
-                  )}
+                  <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
+                    {opener ? "What do you say back?" : "What do you say?"}
+                  </p>
                 </div>
               ) : (
                 <>
