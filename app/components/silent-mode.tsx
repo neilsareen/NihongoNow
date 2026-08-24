@@ -144,9 +144,8 @@ export function SilentModeButton({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
 
   // While the dialog is open it owns the keyboard. Captured before anything
-  // else sees the key, because the screens this button sits on are driven by
-  // bare keys — space reveals a card, 1 and 2 answer it — and those must not
-  // fire at a lesson hidden behind an open dialog.
+  // else sees the key, so Escape closes this dialog rather than also
+  // triggering whatever Escape does on the screen behind it.
   useEffect(() => {
     if (!open) return;
     function onKeyDown(event: KeyboardEvent) {

@@ -166,21 +166,6 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
     setPlaying(true);
   }, []);
 
-  // Space plays and pauses, the way it does in any player.
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const target = e.target as HTMLElement | null;
-      if (target && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(target.tagName)) return;
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        togglePlay();
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [togglePlay]);
-
   const tone = turn.speaker === "you" ? YOU_TONE : THEM_TONE;
 
   return (

@@ -707,48 +707,6 @@ function PracticeView({
     return () => clearTimeout(t);
   }, [flash]);
 
-  // Same shortcuts as the lesson player, so the two flows feel like one app.
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const target = e.target as HTMLElement | null;
-      if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
-
-      // A quiz card grades itself, so the number keys pick a line and there is
-      // no self-assessment to key at the end — only "on to the next one".
-      if (isQuiz) {
-        if (!answered) {
-          const n = Number(e.key);
-          if (Number.isInteger(n) && n >= 1 && n <= choices.length) {
-            e.preventDefault();
-            setChosen(n - 1);
-          }
-          return;
-        }
-        if (e.key === " " || e.key === "Enter") {
-          e.preventDefault();
-          advance(gotItRight);
-        }
-        return;
-      }
-
-      if (!flipped) {
-        if (e.key === " " || e.key === "Enter") {
-          e.preventDefault();
-          setFlipped(true);
-        }
-        return;
-      }
-      if (e.key === "1") advance(false);
-      if (e.key === "2" || e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        advance(true);
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [flipped, advance, isQuiz, answered, choices.length, gotItRight]);
-
   return (
     <div className="screen-fixed flex flex-col">
       <header className="shrink-0 z-30 bg-ink/90 backdrop-blur-xl">

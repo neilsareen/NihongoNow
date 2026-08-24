@@ -1090,42 +1090,24 @@ export default function LessonPage() {
     window.location.href = "/dashboard";
   }
 
-  // Keyboard control. A review session is dozens of identical decisions in a
-  // row; requiring a pointer for every one of them is the single biggest drag
-  // on the desktop experience.
-  const canUseShortcuts =
-    !loading && !finalResults && !!currentItem && !isListeningMC && !isSpeakingItem && !isFillInBlankItem;
+  // Escape backs out to the leave-lesson confirmation, or closes it. This is
+  // the only keyboard binding the lesson player keeps — reveal/answer is
+  // touch-only, since the target is a mobile app rather than a desktop one.
+  const canUseShortcuts = !loading && !finalResults;
   useEffect(() => {
     if (!canUseShortcuts) return;
     function onKeyDown(e: KeyboardEvent) {
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
+      if (e.key !== "Escape") return;
 
-      if (showDoneDialog) {
-        if (e.key === "Escape") setShowDoneDialog(false);
-        return;
-      }
-      if (e.key === "Escape") {
-        setShowDoneDialog(true);
-        return;
-      }
-      if (!revealed) {
-        if (e.key === " " || e.key === "Enter") {
-          e.preventDefault();
-          setRevealed(true);
-        }
-        return;
-      }
-      if (e.key === "1") handleAnswer(false);
-      if (e.key === "2" || e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        handleAnswer(true);
-      }
+      if (showDoneDialog) setShowDoneDialog(false);
+      else setShowDoneDialog(true);
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [canUseShortcuts, revealed, showDoneDialog, handleAnswer]);
+  }, [canUseShortcuts, showDoneDialog]);
 
   if (loading) return <Spinner />;
 
