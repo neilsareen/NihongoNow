@@ -3,7 +3,12 @@ import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
 import { getMasteredKana, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, isConversationUnlocked } from "@/lib/progression";
 import { findPhrasesByIds } from "@/lib/phrases";
-import { CONVERSATIONS, type ConversationExchange } from "@/lib/conversations";
+import {
+  CONVERSATIONS,
+  buildResponseChoices,
+  type ConversationExchange,
+  type ConversationLine,
+} from "@/lib/conversations";
 import { ContentType } from "@prisma/client";
 import { getSessionUser } from "@/lib/simulation";
 
@@ -113,6 +118,7 @@ export async function GET(request: Request) {
     kana?: string;
     english?: string;
     conversation?: ConversationExchange;
+    choices?: ConversationLine[];
   }[] = [];
 
   if (charTypes.length > 0) {
@@ -195,6 +201,9 @@ export async function GET(request: Request) {
         kana: c.say.kana,
         english: c.say.english,
         conversation: c,
+        // Built here rather than in the browser so the whole deck can be drawn
+        // on for distractors without shipping it to the client a second time.
+        choices: buildResponseChoices(c),
       });
     }
   }

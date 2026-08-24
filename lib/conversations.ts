@@ -1024,3 +1024,62 @@ export function isConversationId(id: string): boolean {
 export function getRandomConversation(): ConversationExchange {
   return CONVERSATIONS[Math.floor(Math.random() * CONVERSATIONS.length)];
 }
+
+/* ---------------------------------------------------------------------------
+   Quiz choices.
+
+   A rehearsal card asks "what would you say?" and then shows the answer, which
+   is exposure, not recall — the learner grades themselves and a shrug passes.
+   Choices turn the same card into a question that can actually be got wrong:
+   the situation (or the line that comes at you) on one side, four lines on the
+   other, only one of which belongs in that moment.
+
+   Distractors are drawn from the same scene first, because the point is to
+   read the line rather than to spot the odd topic out — at a konbini counter,
+   "cash, please" and "a bag, please" both look plausible until you read them.
+   The pool is topped up from the rest of the deck when a scene is too small.
+   --------------------------------------------------------------------------- */
+
+const CHOICE_COUNT = 4;
+
+function shuffled<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * The lines to offer for one exchange: the one the learner should say, plus
+ * plausible wrong ones, shuffled. Fewer than `CHOICE_COUNT` come back only if
+ * the deck itself is too small — the caller should treat one choice as "no
+ * quiz for this card" rather than as a question with a single answer.
+ */
+export function buildResponseChoices(exchange: ConversationExchange): ConversationLine[] {
+  const answer = exchange.say;
+  const taken = new Set([answer.kana, answer.english]);
+
+  const candidates = CONVERSATIONS.filter((c) => {
+    if (c.id === exchange.id) return false;
+    // だいじょうぶです is the right answer on three different cards. A distractor
+    // that is the same line — or means the same thing — is not a wrong answer.
+    if (taken.has(c.say.kana) || taken.has(c.say.english)) return false;
+    return true;
+  });
+
+  const sameScene = shuffled(candidates.filter((c) => c.scene === exchange.scene));
+  const elsewhere = shuffled(candidates.filter((c) => c.scene !== exchange.scene));
+
+  const distractors: ConversationLine[] = [];
+  for (const c of [...sameScene, ...elsewhere]) {
+    if (distractors.length >= CHOICE_COUNT - 1) break;
+    if (taken.has(c.say.kana) || taken.has(c.say.english)) continue;
+    taken.add(c.say.kana);
+    taken.add(c.say.english);
+    distractors.push(c.say);
+  }
+
+  return shuffled([answer, ...distractors]);
+}

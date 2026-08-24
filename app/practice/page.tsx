@@ -10,7 +10,7 @@ import { useSilentMode } from "@/app/components/silent-mode";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { Card, CardScroller, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
-import { SCENE_LABELS, type ConversationExchange } from "@/lib/conversations";
+import { SCENE_LABELS, type ConversationExchange, type ConversationLine } from "@/lib/conversations";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,6 +29,8 @@ interface PracticeItem {
   kana?: string;
   english?: string;
   conversation?: ConversationExchange;
+  /** Lines to choose between on a rehearsal card. The right one is in here. */
+  choices?: ConversationLine[];
 }
 
 type ExampleWord = {
@@ -140,6 +142,158 @@ function DetailLabel({ children }: { children: React.ReactNode }) {
     <p className="font-display text-[11px] font-bold uppercase tracking-[0.12em] text-text-subtle">
       {children}
     </p>
+  );
+}
+
+/**
+ * The lines around the one the learner says — what comes back at them, and how
+ * they could answer it. Each carries its own romaji: these are lines to say and
+ * to recognise out loud, so leaving them as bare kana asked the learner to work
+ * out the pronunciation of the very thing the card is teaching. The lesson
+ * player's dialogue lines have always shown it; this is the same information in
+ * a chip.
+ */
+/**
+ * Everything a rehearsal card teaches beyond the line itself. It is the flip
+ * side of a reveal card and the debrief under an answered quiz, so it lives in
+ * one place: the two must not drift into telling the learner different things.
+ */
+function ConversationDetail({
+  conversation,
+  /** The line has already been shown — after a quiz, by the choice the learner
+   *  picked out. Repeating it at headline size says nothing twice, so it comes
+   *  back as a chip, which is really there to carry the audio. */
+  compact = false,
+}: {
+  conversation: ConversationExchange;
+  compact?: boolean;
+}) {
+  return (
+    <>
+      {compact ? (
+        <LineChips label="Your line" lines={[conversation.say]} />
+      ) : (
+        <>
+          <div className="flex items-center gap-2.5">
+            <p className="jp text-2xl font-bold tracking-tight text-center max-w-xs">
+              {conversation.say.japanese}
+            </p>
+            <AudioButton text={readingSpeechText(conversation.say.kana)} />
+          </div>
+          <p className="text-[15px] text-text-muted font-medium text-center">
+            {conversation.say.romaji} — {conversation.say.english}
+          </p>
+        </>
+      )}
+
+      {conversation.hear.length > 0 && (
+        <LineChips label="You might hear" lines={conversation.hear} />
+      )}
+
+      {conversation.reply.length > 0 && (
+        <LineChips label="You could reply" lines={conversation.reply} />
+      )}
+
+      {conversation.pattern && (
+        <div className="w-full space-y-2 text-center">
+          <DetailLabel>Pattern</DetailLabel>
+          <p className="jp text-[15px] font-medium">{conversation.pattern.frame}</p>
+          <p className="text-[12px] text-text-subtle">{conversation.pattern.gloss}</p>
+        </div>
+      )}
+
+      <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs">
+        {conversation.tip}
+      </p>
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   The rehearsal quiz.
+
+   A flip card asks "what would you say?" and then shows you — which you can
+   pass by shrugging. These cards put the moment on one side and four lines on
+   the other, so the card is answered rather than admired, and the drill's own
+   scoring does the rest: right clears it, wrong puts it back in the stack.
+
+   The lines are offered in Japanese and romaji only. Their meanings arrive
+   with the answer, because a card that shows every English gloss up front is
+   a reading test with the reading already done.
+   --------------------------------------------------------------------------- */
+
+function ChoiceRow({
+  line,
+  index,
+  state,
+  onPick,
+}: {
+  line: ConversationLine;
+  index: number;
+  /** "open" before an answer; afterwards, what this line turned out to be. */
+  state: "open" | "correct" | "wrong" | "passed-over";
+  onPick: () => void;
+}) {
+  const settled = state !== "open";
+  return (
+    <button
+      type="button"
+      onClick={onPick}
+      disabled={settled}
+      className={cn(
+        "w-full flex items-start gap-3 p-3.5 rounded-tile border text-left",
+        "transition-colors duration-150 touch-manipulation",
+        state === "open" && "border-line bg-surface hover:border-line-strong",
+        state === "correct" && "border-lime/70 bg-lime/[0.14]",
+        state === "wrong" && "border-rose/70 bg-rose/[0.14]",
+        state === "passed-over" && "border-line bg-surface opacity-45"
+      )}
+    >
+      <span
+        className={cn(
+          "w-6 h-6 rounded-full shrink-0 grid place-items-center mt-0.5",
+          "font-display text-[12px] font-bold tnum",
+          state === "correct"
+            ? "bg-lime text-on-light"
+            : state === "wrong"
+              ? "bg-rose text-on-light"
+              : "bg-surface-raised text-text-subtle"
+        )}
+        aria-hidden="true"
+      >
+        {state === "correct" ? (
+          <Check className="w-3.5 h-3.5" strokeWidth={3} />
+        ) : (
+          index + 1
+        )}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="jp block text-[17px] font-bold leading-snug">{line.japanese}</span>
+        <span className="block text-[12px] text-text-subtle leading-snug mt-0.5">{line.romaji}</span>
+        {settled && (
+          <span className="block text-[13px] text-text-muted font-medium mt-1">{line.english}</span>
+        )}
+      </span>
+    </button>
+  );
+}
+
+function LineChips({ label, lines }: { label: string; lines: ConversationLine[] }) {
+  return (
+    <div className="w-full space-y-2 text-center">
+      <DetailLabel>{label}</DetailLabel>
+      <div className="flex flex-col items-center gap-1.5">
+        {lines.map((l, i) => (
+          <SpeakChip key={i} text={readingSpeechText(l.kana)} className="max-w-full text-[13px]">
+            <span className="flex flex-col items-start min-w-0 py-1.5 text-left">
+              <span className="jp leading-snug">{l.japanese}</span>
+              <span className="text-[11px] leading-snug text-text-subtle">{l.romaji}</span>
+            </span>
+            <span className="text-text-muted text-left">{l.english}</span>
+          </SpeakChip>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -465,6 +619,8 @@ function PracticeView({
   // session ends when it is empty rather than after a fixed number of turns.
   const [queue, setQueue] = useState<PracticeItem[]>(items);
   const [flipped, setFlipped] = useState(false);
+  // Which line was picked on a rehearsal quiz, before it is graded and cleared.
+  const [chosen, setChosen] = useState<number | null>(null);
   const [cleared, setCleared] = useState(0);
   const [firstTry, setFirstTry] = useState(0);
   const [putBack, setPutBack] = useState(0);
@@ -484,6 +640,20 @@ function PracticeView({
   const isKanji = item.contentType === ContentType.KANJI;
   const isWordy = item.contentType === ContentType.VOCABULARY || item.contentType === ContentType.PHRASE;
   const isConversation = item.contentType === ContentType.CONVERSATION && !!item.conversation;
+  // A rehearsal with lines to choose between is answered, not revealed. One
+  // choice means the deck was too small to build a question from.
+  const choices = isConversation ? (item.choices ?? []) : [];
+  const isQuiz = choices.length > 1;
+  const answered = chosen !== null;
+  const answerKana = item.conversation?.say.kana;
+  const gotItRight = answered && choices[chosen]?.kana === answerKana;
+  // The detail — the line, what comes back, the pattern, the tip — is what the
+  // flip side shows, and what an answered quiz shows underneath its choices.
+  const showDetail = isQuiz ? answered : flipped;
+  // The heard line is the prompt when the other person opens; the situation
+  // alone would leave the learner answering a question nobody asked.
+  const opener = item.conversation?.theySpeakFirst ? item.conversation.hear[0] : undefined;
+  const quizButtonVariant = !answered ? "primary" : gotItRight ? "affirm" : "reject";
   const exampleWords = parseExampleWords(item.exampleWords);
   const readings = isKanji ? kanjiReadings(item.onyomi, item.kunyomi) : [];
   const turn = cleared + putBack;
@@ -525,6 +695,7 @@ function PracticeView({
 
       setFlash({ turn: turn + 1, correct: wasCorrect });
       setFlipped(false);
+      setChosen(null);
     },
     [queue, missedIds, streak, best, firstTry, putBack, size, turn, onFinish]
   );
@@ -543,6 +714,24 @@ function PracticeView({
       const target = e.target as HTMLElement | null;
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return;
 
+      // A quiz card grades itself, so the number keys pick a line and there is
+      // no self-assessment to key at the end — only "on to the next one".
+      if (isQuiz) {
+        if (!answered) {
+          const n = Number(e.key);
+          if (Number.isInteger(n) && n >= 1 && n <= choices.length) {
+            e.preventDefault();
+            setChosen(n - 1);
+          }
+          return;
+        }
+        if (e.key === " " || e.key === "Enter") {
+          e.preventDefault();
+          advance(gotItRight);
+        }
+        return;
+      }
+
       if (!flipped) {
         if (e.key === " " || e.key === "Enter") {
           e.preventDefault();
@@ -558,7 +747,7 @@ function PracticeView({
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [flipped, advance]);
+  }, [flipped, advance, isQuiz, answered, choices.length, gotItRight]);
 
   return (
     <div className="screen-fixed flex flex-col">
@@ -643,6 +832,30 @@ function PracticeView({
                   <p className="text-[13px] text-text-muted leading-relaxed max-w-xs">
                     {item.conversation.situation}
                   </p>
+
+                  {isQuiz && opener && (
+                    <div className="w-full rounded-tile bg-surface-raised p-3 mt-1 text-left">
+                      <DetailLabel>They say</DetailLabel>
+                      <div className="mt-1.5 flex items-start gap-2">
+                        <div className="min-w-0 flex-1">
+                          <p className="jp text-[17px] font-bold leading-snug">{opener.japanese}</p>
+                          <p className="text-[12px] text-text-subtle leading-snug mt-0.5">
+                            {opener.romaji}
+                          </p>
+                          <p className="text-[13px] text-text-muted font-medium mt-1">
+                            {opener.english}
+                          </p>
+                        </div>
+                        <AudioButton text={readingSpeechText(opener.kana)} />
+                      </div>
+                    </div>
+                  )}
+
+                  {isQuiz && (
+                    <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
+                      {opener ? "What do you say back?" : "What do you say?"}
+                    </p>
+                  )}
                 </div>
               ) : (
                 <>
@@ -669,7 +882,35 @@ function PracticeView({
             </div>
 
             <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
-              {!flipped ? (
+              {isQuiz ? (
+                <div className="w-full flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    {choices.map((line, i) => (
+                      <ChoiceRow
+                        key={i}
+                        line={line}
+                        index={i}
+                        state={
+                          !answered
+                            ? "open"
+                            : line.kana === answerKana
+                              ? "correct"
+                              : chosen === i
+                                ? "wrong"
+                                : "passed-over"
+                        }
+                        onPick={() => setChosen(i)}
+                      />
+                    ))}
+                  </div>
+
+                  {answered && item.conversation && (
+                    <div className="w-full flex flex-col items-center gap-4 pt-1 animate-pop-in">
+                      <ConversationDetail conversation={item.conversation} compact />
+                    </div>
+                  )}
+                </div>
+              ) : !flipped ? (
                 <button
                   onClick={() => setFlipped(true)}
                   className="jp text-[2rem] text-text-subtle/35 tracking-[0.3em] select-none hover:text-text-subtle/60 transition-colors"
@@ -680,57 +921,7 @@ function PracticeView({
               ) : (
                 <div className="w-full flex flex-col items-center gap-4 animate-pop-in">
                   {isConversation && item.conversation ? (
-                    <>
-                      <div className="flex items-center gap-2.5">
-                        <p className="jp text-2xl font-bold tracking-tight text-center max-w-xs">
-                          {item.conversation.say.japanese}
-                        </p>
-                        <AudioButton text={speechText(item.contentType, item)} />
-                      </div>
-                      <p className="text-[15px] text-text-muted font-medium text-center">
-                        {item.conversation.say.romaji} — {item.conversation.say.english}
-                      </p>
-
-                      {item.conversation.hear.length > 0 && (
-                        <div className="w-full space-y-2 text-center">
-                          <DetailLabel>You might hear</DetailLabel>
-                          <div className="flex flex-col items-center gap-1.5">
-                            {item.conversation.hear.map((l, i) => (
-                              <SpeakChip key={i} text={readingSpeechText(l.kana)} className="text-[13px]">
-                                <span className="jp">{l.japanese}</span>
-                                <span className="text-text-muted">{l.english}</span>
-                              </SpeakChip>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {item.conversation.reply.length > 0 && (
-                        <div className="w-full space-y-2 text-center">
-                          <DetailLabel>You could reply</DetailLabel>
-                          <div className="flex flex-col items-center gap-1.5">
-                            {item.conversation.reply.map((l, i) => (
-                              <SpeakChip key={i} text={readingSpeechText(l.kana)} className="text-[13px]">
-                                <span className="jp">{l.japanese}</span>
-                                <span className="text-text-muted">{l.english}</span>
-                              </SpeakChip>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
-                      {item.conversation.pattern && (
-                        <div className="w-full space-y-2 text-center">
-                          <DetailLabel>Pattern</DetailLabel>
-                          <p className="jp text-[15px] font-medium">{item.conversation.pattern.frame}</p>
-                          <p className="text-[12px] text-text-subtle">{item.conversation.pattern.gloss}</p>
-                        </div>
-                      )}
-
-                      <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs">
-                        {item.conversation.tip}
-                      </p>
-                    </>
+                    <ConversationDetail conversation={item.conversation} />
                   ) : isKanji ? (
                     <>
                       <div className="flex items-center gap-2.5">
@@ -797,10 +988,25 @@ function PracticeView({
             </div>
           </Card>
 
-          {flipped && item.mnemonicHint && <MnemonicButton key={item.id} hint={item.mnemonicHint} />}
+          {showDetail && item.mnemonicHint && <MnemonicButton key={item.id} hint={item.mnemonicHint} />}
           </CardScroller>
 
-          {!flipped ? (
+          {isQuiz ? (
+            // No self-assessment to offer: the card was answered, and the
+            // answer is what goes to the SRS.
+            <button
+              onClick={() => advance(gotItRight)}
+              disabled={!answered}
+              className={buttonStyles({ variant: quizButtonVariant, size: "lg", full: true, className: "shrink-0" })}
+              style={buttonVars(quizButtonVariant)}
+            >
+              {!answered
+                ? "Pick a line"
+                : gotItRight
+                  ? "Right — next card"
+                  : "Back in the stack"}
+            </button>
+          ) : !flipped ? (
             <button
               onClick={() => setFlipped(true)}
               className={buttonStyles({ size: "lg", full: true, className: "shrink-0" })}
