@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff, Gauge, Pause, Play, RotateCcw, VolumeX } from "lucide-react";
-import { estimateSpeechMs, playLine, stopSpeaking } from "@/lib/speech";
+import { estimateSpeechMs, playLine, speechReading, stopSpeaking } from "@/lib/speech";
 import { SilentModeButton, useSilentMode } from "@/app/components/silent-mode";
 import { YOU_GLYPH, type Dialogue } from "@/lib/dialogues";
 import { cn } from "@/lib/utils";
@@ -105,7 +105,7 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
 
       // The audio layer guarantees this resolves — no watchdog needed here.
       // What it resolves *to* is how the line should be paced.
-      void playLine(current.kana, { role: current.speaker, speed: rate }).then((outcome) => {
+      void playLine(speechReading(current.japanese, current.kana), { role: current.speaker, speed: rate }).then((outcome) => {
         if (settled) return;
 
         if (outcome === "clip") {

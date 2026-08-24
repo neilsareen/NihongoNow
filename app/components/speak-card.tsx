@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Check, Mic, RotateCcw, Volume2 } from "lucide-react";
-import { readingSpeechText, speak } from "@/lib/speech";
+import { readingSpeechText, speak, speechReading } from "@/lib/speech";
 import {
   gradePronunciation,
   kanaToRomaji,
@@ -103,7 +103,7 @@ export function SpeakCard({
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const speechTextForPrompt =
-    readingSpeechText(prompt.kana ?? "") || prompt.japanese || "";
+    readingSpeechText(speechReading(prompt.japanese, prompt.kana)) || prompt.japanese || "";
   const romaji = prompt.romaji || (prompt.kana ? kanaToRomaji(prompt.kana) : "");
 
   const handleResult = useCallback(

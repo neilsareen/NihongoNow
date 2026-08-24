@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ContentType } from "@prisma/client";
 import { Check, Flame, Lightbulb, Lock, RotateCcw, Volume2, VolumeX } from "lucide-react";
-import { readingSpeechText, speak, speechText } from "@/lib/speech";
+import { readingSpeechText, speak, speechReading, speechText } from "@/lib/speech";
 import { useSilentMode } from "@/app/components/silent-mode";
 import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
@@ -178,7 +178,7 @@ function ConversationDetail({
             <p className="jp text-2xl font-bold tracking-tight text-center max-w-xs">
               {conversation.say.japanese}
             </p>
-            <AudioButton text={readingSpeechText(conversation.say.kana)} />
+            <AudioButton text={readingSpeechText(speechReading(conversation.say.japanese, conversation.say.kana))} />
           </div>
           <p className="text-[15px] text-text-muted font-medium text-center">
             {conversation.say.romaji} — {conversation.say.english}
@@ -284,7 +284,7 @@ function LineChips({ label, lines }: { label: string; lines: ConversationLine[] 
       <DetailLabel>{label}</DetailLabel>
       <div className="flex flex-col items-center gap-1.5">
         {lines.map((l, i) => (
-          <SpeakChip key={i} text={readingSpeechText(l.kana)} className="max-w-full text-[13px]">
+          <SpeakChip key={i} text={readingSpeechText(speechReading(l.japanese, l.kana))} className="max-w-full text-[13px]">
             <span className="flex flex-col items-start min-w-0 py-1.5 text-left">
               <span className="jp leading-snug">{l.japanese}</span>
               <span className="text-[11px] leading-snug text-text-subtle">{l.romaji}</span>
@@ -804,7 +804,7 @@ function PracticeView({
                             {opener.english}
                           </p>
                         </div>
-                        <AudioButton text={readingSpeechText(opener.kana)} />
+                        <AudioButton text={readingSpeechText(speechReading(opener.japanese, opener.kana))} />
                       </div>
                     </div>
                   )}

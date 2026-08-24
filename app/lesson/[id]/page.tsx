@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Check, Flame, Lightbulb, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
-import { readingSpeechText, speak, speechText } from "@/lib/speech";
+import { readingSpeechText, speak, speechReading, speechText } from "@/lib/speech";
 import { gradePronunciation, kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { SpeakCard } from "@/app/components/speak-card";
@@ -527,7 +527,7 @@ function CardBack({ item }: { item: LessonItem }) {
         <div className="flex flex-col items-center gap-2.5 text-center">
           <div className="flex items-center gap-2.5">
             <p className="jp text-2xl font-bold leading-snug">{content.japanese}</p>
-            {content.kana && <AudioButton text={readingSpeechText(content.kana)} size="md" />}
+            {content.kana && <AudioButton text={readingSpeechText(speechReading(content.japanese, content.kana))} size="md" />}
           </div>
           {content.kana && <p className="jp text-[15px] text-text-muted">{content.kana}</p>}
           {content.romaji && <p className="text-[13px] text-text-subtle">{content.romaji}</p>}
@@ -698,7 +698,7 @@ function DialogueLine({
           >
             {line.japanese}
           </p>
-          <AudioButton text={readingSpeechText(line.kana)} size={emphasis ? "md" : "sm"} />
+          <AudioButton text={readingSpeechText(speechReading(line.japanese, line.kana))} size={emphasis ? "md" : "sm"} />
         </div>
         <p className={cn("text-text-subtle mt-0.5", emphasis ? "text-[14px]" : "text-[12px]")}>
           {line.romaji}

@@ -42,6 +42,54 @@ export function readingSpeechText(kana: string): string {
   return stripOkuriganaMarkers(kana ?? "");
 }
 
+// A chunk boundary in the spaced kana of conversations.ts and dialogues.ts:
+// whitespace, or punctuation that a line is allowed to carry.
+const CHUNK_BOUNDARY = /[\s、。！？!?]/;
+
+/**
+ * Correct は for speech: as the topic (or contrastive) particle it is
+ * pronounced "wa", not its literal "ha" — a rule every learner knows and a
+ * device TTS voice routinely gets wrong on bare kana, with no kanji left to
+ * anchor word boundaries.
+ *
+ * conversations.ts and dialogues.ts write `japanese` in kana spaced into
+ * chunks specifically so this can be told apart from `kana`'s own reading:
+ * a は directly before a chunk boundary (or at the end of the line) is
+ * always the particle; a は in the middle of a chunk is always part of the
+ * word itself (おしはらい, はなせ). `kana` carries the same は's, in the same
+ * order, just without the spacing — so which of `japanese`'s は's are
+ * chunk-final tells us which of `kana`'s to convert.
+ *
+ * Falls back to `kana` unchanged when `japanese` is not spaced kana (no は
+ * at all, or kanji hiding the word boundaries some other way) — under-fixing
+ * rather than risking a wrong guess.
+ */
+export function speechReading(japanese: string | null | undefined, kana: string | null | undefined): string {
+  const reading = kana || japanese || "";
+  if (!reading.includes("は")) return reading;
+  const source = japanese || reading;
+  if (!source.includes("は")) return reading;
+
+  const isParticle: boolean[] = [];
+  for (let i = 0; i < source.length; i++) {
+    if (source[i] !== "は") continue;
+    const next = source[i + 1];
+    isParticle.push(next === undefined || CHUNK_BOUNDARY.test(next));
+  }
+
+  let seen = 0;
+  let out = "";
+  for (const ch of reading) {
+    if (ch === "は") {
+      out += isParticle[seen] ? "わ" : "は";
+      seen++;
+    } else {
+      out += ch;
+    }
+  }
+  return out;
+}
+
 // The text to speak for a study item. Kana characters are already unambiguous;
 // vocabulary and phrases carry a full kana reading; kanji fall back to a reading.
 export function speechText(contentType: string, content: SpeechContent | null | undefined): string {
@@ -52,7 +100,7 @@ export function speechText(contentType: string, content: SpeechContent | null | 
   if (contentType === "KANJI") {
     return kanjiSpeechText(content) || content.character || "";
   }
-  return readingSpeechText(content.kana ?? "") || content.japanese || "";
+  return readingSpeechText(speechReading(content.japanese, content.kana)) || content.japanese || "";
 }
 
 // Pick Japanese voices once, with variety across gender/accent.
