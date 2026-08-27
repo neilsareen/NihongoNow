@@ -117,6 +117,12 @@ function LoginForm() {
             Sign up
           </Link>
         </p>
+
+        <p className="text-center text-[13px] text-text-subtle font-medium">
+          <Link href="/privacy" className="hover:text-text transition-colors">
+            Privacy Policy
+          </Link>
+        </p>
       </div>
     </div>
   );
