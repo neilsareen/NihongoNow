@@ -15,6 +15,20 @@ import { Card, ProgressBar, SectionLabel, TopBar } from "@/app/components/ui";
    once the whole alphabet is at Learning.
    =========================================================================== */
 
+/**
+ * "Six scenes" rather than "6 scenes": a heading with a digit in it reads like
+ * a statistic, and this is a shelf, not a score. Falls back to the numeral past
+ * the point where a word is shorter than the number it spells.
+ */
+const COUNT_WORDS = [
+  "No", "One", "Two", "Three", "Four", "Five", "Six",
+  "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve",
+];
+
+function sceneCount(n: number): string {
+  return `${COUNT_WORDS[n] ?? n} ${n === 1 ? "scene" : "scenes"}`;
+}
+
 export default async function WatchIndexPage() {
   const session = await getSessionUser();
   if (!session) redirect("/login");
@@ -36,7 +50,7 @@ export default async function WatchIndexPage() {
 
         {gate.unlocked ? (
           <section className="space-y-3">
-            <SectionLabel>Two scenes</SectionLabel>
+            <SectionLabel>{sceneCount(DIALOGUES.length)}</SectionLabel>
             <div className="space-y-2.5 stagger">
               {DIALOGUES.map((d) => (
                 <Link
