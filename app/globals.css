@@ -202,6 +202,10 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    /* Painted behind the safe areas and behind an iOS rubber-band overscroll,
+       both of which sit outside <body>. Without it those strips fall back to
+       white and flash against the dark ground on every drag. */
+    @apply bg-ink;
   }
 
   body {
@@ -256,12 +260,54 @@
   @apply jp;
 }
 
+/* ---------------------------------------------------------------------------
+   Safe areas — the installed app runs edge to edge.
+   ---------------------------------------------------------------------------
+   Installed on a phone, Ikou draws into every pixel of the display: the page
+   starts at the physical top of the screen and the status bar sits *over* it
+   (iOS via `black-translucent` + `viewport-fit=cover`; Android 15's Chrome
+   shell does the same for a standalone PWA). That is what makes it read as an
+   app rather than as a web page in a frame.
+
+   The cost is that the top of the page is now underneath the clock and the
+   battery, so every bar pinned up there has to hold its content clear of them
+   while its *background* keeps painting all the way up. One class does that —
+   `.top-chrome` — and it goes on the element carrying the bar's fill, never on
+   an inner content box, or the fill stops short and leaves a strip of ground
+   showing above it.
+
+   The insets are lifted into custom properties so the whole app reads them the
+   same way, and so `--chrome-t` can be zeroed for the one case below.
+   --------------------------------------------------------------------------- */
+:root {
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  /* What a top bar insets by. Normally the real inset — but see `.top-strip`. */
+  --chrome-t: var(--safe-t);
+}
+
+/* A full-width strip stacked *above* the app's own bar (today: the simulation
+   notice). It clears the status bar itself, so the bar beneath it must not
+   clear it a second time or the two insets stack into a visible gap. */
+:root[data-top-strip="1"] {
+  --chrome-t: 0px;
+}
+
+.top-chrome {
+  padding-top: var(--chrome-t);
+}
+
+.top-strip {
+  padding-top: var(--safe-t);
+}
+
 .safe-top {
-  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-top: max(1rem, var(--safe-t));
 }
 
 .safe-bottom {
-  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  padding-bottom: max(0.75rem, var(--safe-b));
 }
 
 /* ---------------------------------------------------------------------------

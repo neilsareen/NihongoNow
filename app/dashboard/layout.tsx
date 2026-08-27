@@ -29,7 +29,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       />
       <PWAInstallBanner />
       {/* pb clears the 64px tab bar plus the home indicator inset */}
-      <main className="max-w-lg mx-auto px-4 pt-6 pb-[calc(5.5rem+env(safe-area-inset-bottom))]">
+      <main className="max-w-lg mx-auto px-4 pt-6 pb-[calc(5.5rem+var(--safe-b))]">
         {children}
       </main>
       <BottomNav />

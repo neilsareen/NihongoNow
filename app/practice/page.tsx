@@ -709,7 +709,7 @@ function PracticeView({
 
   return (
     <div className="screen-fixed flex flex-col">
-      <header className="shrink-0 z-30 bg-ink/90 backdrop-blur-xl">
+      <header className="shrink-0 z-30 top-chrome bg-ink/90 backdrop-blur-xl">
         <div className="max-w-md mx-auto h-16 px-4 flex items-center gap-3">
           <Link
             href="/dashboard"

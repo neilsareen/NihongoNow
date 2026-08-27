@@ -40,7 +40,7 @@ export default async function HomePage() {
 
   return (
     <main className="min-h-screen flex flex-col">
-      <header className="border-b border-line">
+      <header className="top-chrome border-b border-line">
         <div className="max-w-2xl mx-auto px-6 h-20 flex items-center justify-between">
           <Wordmark />
           <Link

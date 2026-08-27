@@ -51,8 +51,22 @@ export const metadata: Metadata = {
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
+    // The one setting that makes an installed Ikou fill the display: the web
+    // view is laid out behind the status bar instead of starting beneath it,
+    // so the chrome band runs to the physical top edge. It only works
+    // alongside `viewportFit: "cover"` below, and it hands every top bar the
+    // job of insetting its own contents by `var(--safe-t)` — see
+    // the `.top-chrome` block in globals.css.
     statusBarStyle: "black-translucent",
     title: "Ikou",
+  },
+  other: {
+    // `appleWebApp.capable` above now emits only the unprefixed
+    // `mobile-web-app-capable`. iOS reads the prefixed spelling, and it is the
+    // gate on the status-bar style: without this tag an older iPhone ignores
+    // `black-translucent` and hands the app a web view that starts below the
+    // status bar, which is the whole thing we are trying to avoid.
+    "apple-mobile-web-app-capable": "yes",
   },
   icons: {
     apple: "/icon-192.png",
@@ -69,6 +83,9 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
+  // Lets the page extend into the display's rounded corners and under the
+  // status bar and home indicator, and is what makes the `env(safe-area-inset-*)`
+  // values non-zero so bars can hold their contents clear of them.
   viewportFit: "cover",
 };
 

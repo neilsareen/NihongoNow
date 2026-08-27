@@ -1288,7 +1288,7 @@ export default function LessonPage() {
           measure of the session is always in view without taking up a row. */}
       {/* Session bar. The progress track is thick and lime because watching it
           fill is a large part of why anyone finishes a set. */}
-      <header className="shrink-0 z-30 bg-ink/90 backdrop-blur-xl">
+      <header className="shrink-0 z-30 top-chrome bg-ink/90 backdrop-blur-xl">
         <div className="max-w-md mx-auto h-16 px-4 flex items-center gap-3">
           <button
             onClick={() => setShowDoneDialog(true)}

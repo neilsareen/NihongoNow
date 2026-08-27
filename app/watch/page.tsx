@@ -39,7 +39,7 @@ export default async function WatchIndexPage() {
     <div className="min-h-screen">
       <TopBar title="Watch" />
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-7 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-7 pb-[calc(6rem+var(--safe-b))]">
         <div className="space-y-2">
           <h1 className="text-hero leading-none">Watch<br />it happen</h1>
           <p className="text-[15px] text-text-muted leading-relaxed font-medium max-w-[34ch]">

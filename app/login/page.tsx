@@ -46,7 +46,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 pt-[calc(3rem+var(--safe-t))]">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-3">
           <Link href="/" className="inline-block">

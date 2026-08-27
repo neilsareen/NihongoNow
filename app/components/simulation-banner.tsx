@@ -20,6 +20,18 @@ export function SimulationBanner() {
       .catch(() => {});
   }, []);
 
+  // While the strip is up it is the topmost thing on screen, so it clears the
+  // status bar and every bar beneath it must stop doing so — otherwise the two
+  // insets stack and open a gap under the strip. `--chrome-t` reads this flag.
+  useEffect(() => {
+    if (!isSimulating) return;
+    const root = document.documentElement;
+    root.dataset.topStrip = "1";
+    return () => {
+      delete root.dataset.topStrip;
+    };
+  }, [isSimulating]);
+
   if (!isSimulating) return null;
 
   async function stop() {
@@ -35,7 +47,7 @@ export function SimulationBanner() {
   return (
     <div
       className={cn(
-        "sticky top-0 z-50 flex items-center justify-center gap-2 px-4 py-2",
+        "sticky top-0 z-50 top-strip flex items-center justify-center gap-2 px-4 py-2",
         "text-[12px] font-display font-bold uppercase tracking-wider"
       )}
       style={{ background: "hsl(var(--sun))", color: "hsl(var(--on-light))" }}

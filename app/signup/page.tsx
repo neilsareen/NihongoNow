@@ -50,7 +50,7 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4">
+      <div className="min-h-screen flex items-center justify-center px-4 pt-[var(--safe-t)]">
         <Card className="w-full max-w-sm p-6 text-center space-y-3 animate-pop-in">
           <span className="w-14 h-14 rounded-tile bg-lime text-on-light grid place-items-center mx-auto elevated">
             <MailCheck className="w-7 h-7" strokeWidth={2.5} />
@@ -72,7 +72,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 pt-[calc(3rem+var(--safe-t))]">
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center space-y-3">
           <Link href="/" className="inline-block">

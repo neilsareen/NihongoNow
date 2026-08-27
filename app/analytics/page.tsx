@@ -167,7 +167,7 @@ export default async function AnalyticsPage() {
     <div className="min-h-screen">
       <TopBar title="Progress" />
 
-      <main className="max-w-lg mx-auto px-4 py-6 space-y-8 pb-[calc(6rem+env(safe-area-inset-bottom))]">
+      <main className="max-w-lg mx-auto px-4 py-6 space-y-8 pb-[calc(6rem+var(--safe-b))]">
         {/* Readiness leads, as a block of its own colour. */}
         <section className="space-y-3">
           <ColorCard hue={travelLevel.tone} className="relative">

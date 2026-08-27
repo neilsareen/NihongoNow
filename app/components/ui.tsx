@@ -343,7 +343,7 @@ export function TopBar({
   trailing?: ReactNode;
 }) {
   return (
-    <header className="sticky top-0 z-40 bg-ink/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 top-chrome bg-ink/90 backdrop-blur-xl">
       <div className="max-w-lg mx-auto h-16 px-4 flex items-center gap-3">
         <Link
           href={backHref}

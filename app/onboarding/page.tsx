@@ -54,7 +54,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="border-b border-line">
+      <header className="top-chrome border-b border-line">
         <div className="max-w-lg mx-auto h-16 px-4 flex items-center">
           <Link href="/">
             <Wordmark />

@@ -47,7 +47,7 @@ export function AppHeader({
 }) {
   return (
     <header className="sticky top-0 z-40">
-      <div className="bg-brand-bar/95 backdrop-blur-xl pt-[env(safe-area-inset-top)]">
+      <div className="top-chrome bg-brand-bar/95 backdrop-blur-xl">
         <div className="max-w-lg mx-auto h-16 px-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
           {avatar ? (
             <Link

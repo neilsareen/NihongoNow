@@ -28,7 +28,7 @@ export function BottomNav() {
       className="fixed bottom-0 inset-x-0 z-50 border-t border-line bg-ink/95 backdrop-blur-xl"
       aria-label="Primary"
     >
-      <div className="max-w-lg mx-auto grid grid-cols-5 px-2 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+      <div className="max-w-lg mx-auto grid grid-cols-5 px-2 pt-2 pb-[max(0.5rem,var(--safe-b))]">
         {ITEMS.map(({ href, icon: Icon, label, tone, match }) => {
           const active = match(pathname);
           return (
