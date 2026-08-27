@@ -97,7 +97,7 @@ export const AVATAR_OPTIONS = [
   { key: "sushi",      label: "Sushi chef",  caption: "Itamae",         tone: "216 88% 70%" },
   { key: "kimono",     label: "Kimono",      caption: "Festivalgoer",   tone: "172 62% 54%" },
   { key: "taiko",      label: "Taiko",       caption: "Drummer",        tone: "268 78% 74%" },
-  { key: "student",    label: "Student",     caption: "Gakusei",        tone: "24 94% 64%" },
+  { key: "nigiri",     label: "Sushi",       caption: "Nigiri",         tone: "232 68% 74%" },
   { key: "shiba",      label: "Shiba Inu",   caption: "Good dog",       tone: "96 58% 60%" },
   { key: "maneki",     label: "Maneki-neko", caption: "Lucky cat",      tone: "330 88% 74%" },
   { key: "sakura",     label: "Sakura",      caption: "Cherry blossom", tone: "252 82% 78%" },
@@ -110,16 +110,17 @@ export const AVATAR_OPTIONS = [
 
 export type AvatarKey = (typeof AVATAR_OPTIONS)[number]["key"];
 
-// Earlier releases offered a kanji glyph per avatar, and a few of those keys
-// have no cartoon counterpart. Each maps to its nearest surviving character so
-// a learner who picked one keeps a choice that means the same thing, rather
-// than being silently reset to the first option in the list.
+// Presets that have been retired: the kanji-glyph set this replaced had a few
+// keys with no cartoon counterpart, and the odd character gets dropped later.
+// Each maps to its nearest survivor so a learner who picked one keeps a
+// comparable choice, rather than being silently reset to the first option.
 const LEGACY_AVATAR_KEYS: Record<string, AvatarKey> = {
   dragon: "koi",      // auspicious creature
   fortune: "maneki",  // 福 — the lucky cat's whole job
   wa: "matcha",       // 和 — harmony, poured
   usagi: "shiba",     // the animal one
   neko: "maneki",     // still the cat
+  student: "nigiri",  // the tile that stood here
 };
 
 export type ResolvedAvatar =

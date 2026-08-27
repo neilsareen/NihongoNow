@@ -117,17 +117,18 @@ export const AVATAR_ART: Record<AvatarKey, ReactNode> = {
     <circle cx="48" cy="50" r="1.7" fill="#8A4A20"/>
     </>
   ),
-  student: (
+  nigiri: (
     <>
-    <path d="M9 64c0-11 10-17 23-17s23 6 23 17z" fill="#2F3A63"/>
-    <path d="M32 47l-8 3 3 14h10l3-14z" fill={WHITE}/>
-    <path d="M32 50l-4 4 3 4 3-4z" fill="#DE4B57"/>
-    <path d="M30 58h4l1 6h-6z" fill="#DE4B57"/>
-    <rect x="21" y="23" width="22" height="25" rx="11" fill={SKIN}/>
-    <path d="M16 27c0-11 7-18 16-18s16 7 16 18c-2-6-5-8-9-8-4 3-14 4-19 1-2 1-4 3-4 7z" fill={INK}/>
-    <circle cx="26" cy="34" r="2.1" fill={INK}/>
-    <circle cx="38" cy="34" r="2.1" fill={INK}/>
-    <path d="M27 40c3 3 7 3 10 0" stroke={INK} strokeWidth="2.4" fill="none" strokeLinecap="round"/>
+    <path d="M8 46c0-10 11-16 24-16s24 6 24 16c0 6-11 10-24 10S8 52 8 46z" fill={CREAM}/>
+    <circle cx="16" cy="47" r="2.1" fill="#E8DCC4"/>
+    <circle cx="24" cy="51" r="2.1" fill="#E8DCC4"/>
+    <circle cx="40" cy="51" r="2.1" fill="#E8DCC4"/>
+    <circle cx="48" cy="47" r="2.1" fill="#E8DCC4"/>
+    <path d="M6 32c1-12 12-20 26-20s25 8 26 20c0 8-12 13-26 13S6 40 6 32z" fill="#FF8A5B"/>
+    <path d="M12 24c8-6 32-6 40 0-8-3-32-3-40 0z" fill="#FFC4A6"/>
+    <path d="M9 35c11-6 35-6 46 0-11 5-35 5-46 0z" fill="#FFC4A6"/>
+    <path d="M25 13h14v43H25z" fill="#2C4034"/>
+    <path d="M25 13h14v5H25z" fill="#40604B"/>
     </>
   ),
   shiba: (
