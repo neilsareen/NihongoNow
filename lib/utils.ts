@@ -82,25 +82,45 @@ export function pickPrimaryKanjiReading(
   return (onyomi[0] ?? kunyomi[0] ?? "").replace(/-/g, "");
 }
 
-// Selectable profile avatars, rendered as a kanji on a saturated colour plate
-// rather than as illustrations: a well-set glyph stays a considered mark at
-// every size, where a cartoon turns to mud in a tab bar. Tones are bright
-// enough to carry dark text on top. Keys are unchanged — they are persisted in
-// UserProfile.avatarUrl, so existing profiles keep their selection.
+// Selectable profile avatars: a flat cartoon of something Japanese on a
+// saturated colour plate. The drawings live in app/components/avatar-art.tsx,
+// keyed by `key`; this table is the data half, so the API routes can validate
+// a selection without pulling JSX into a server route.
+//
+// `key` is what lands in UserProfile.avatarUrl, so a key is a stored value and
+// renaming one orphans every profile holding it — retire through
+// LEGACY_AVATAR_KEYS below instead.
 export const AVATAR_OPTIONS = [
-  { key: "samurai", glyph: "侍", label: "Samurai", meaning: "Warrior",   tone: "196 90% 60%" },
-  { key: "dragon",  glyph: "龍", label: "Dragon",  meaning: "Dragon",    tone: "272 82% 72%" },
-  { key: "sakura",  glyph: "桜", label: "Sakura",  meaning: "Blossom",   tone: "330 86% 72%" },
-  { key: "koi",     glyph: "鯉", label: "Koi",     meaning: "Carp",      tone: "16 92% 64%" },
-  { key: "fuji",    glyph: "富", label: "Fuji",    meaning: "Abundance", tone: "168 70% 55%" },
-  { key: "usagi",   glyph: "兎", label: "Usagi",   meaning: "Rabbit",    tone: "82 78% 60%" },
-  { key: "neko",    glyph: "猫", label: "Neko",    meaning: "Cat",       tone: "44 98% 62%" },
-  { key: "fortune", glyph: "福", label: "Fortune", meaning: "Fortune",   tone: "352 85% 68%" },
-  { key: "wa",      glyph: "和", label: "Wa",      meaning: "Harmony",   tone: "150 68% 55%" },
-  { key: "kimono",  glyph: "着", label: "Kimono",  meaning: "To wear",   tone: "300 72% 70%" },
+  { key: "samurai",    label: "Samurai",     caption: "Warrior",        tone: "198 90% 62%" },
+  { key: "ninja",      label: "Ninja",       caption: "Shadow",         tone: "46 98% 62%" },
+  { key: "sumo",       label: "Sumo",        caption: "Wrestler",       tone: "152 66% 56%" },
+  { key: "sushi",      label: "Sushi chef",  caption: "Itamae",         tone: "216 88% 70%" },
+  { key: "kimono",     label: "Kimono",      caption: "Festivalgoer",   tone: "172 62% 54%" },
+  { key: "taiko",      label: "Taiko",       caption: "Drummer",        tone: "268 78% 74%" },
+  { key: "student",    label: "Student",     caption: "Gakusei",        tone: "24 94% 64%" },
+  { key: "shiba",      label: "Shiba Inu",   caption: "Good dog",       tone: "96 58% 60%" },
+  { key: "maneki",     label: "Maneki-neko", caption: "Lucky cat",      tone: "330 88% 74%" },
+  { key: "sakura",     label: "Sakura",      caption: "Cherry blossom", tone: "252 82% 78%" },
+  { key: "shinkansen", label: "Shinkansen",  caption: "Bullet train",   tone: "6 84% 66%" },
+  { key: "fuji",       label: "Mt Fuji",     caption: "The mountain",   tone: "40 94% 66%" },
+  { key: "matcha",     label: "Matcha",      caption: "Green tea",      tone: "312 70% 74%" },
+  { key: "koi",        label: "Koi",         caption: "Carp",           tone: "190 70% 66%" },
+  { key: "torii",      label: "Torii",       caption: "Shrine gate",    tone: "128 48% 58%" },
 ] as const;
 
 export type AvatarKey = (typeof AVATAR_OPTIONS)[number]["key"];
+
+// Earlier releases offered a kanji glyph per avatar, and a few of those keys
+// have no cartoon counterpart. Each maps to its nearest surviving character so
+// a learner who picked one keeps a choice that means the same thing, rather
+// than being silently reset to the first option in the list.
+const LEGACY_AVATAR_KEYS: Record<string, AvatarKey> = {
+  dragon: "koi",      // auspicious creature
+  fortune: "maneki",  // 福 — the lucky cat's whole job
+  wa: "matcha",       // 和 — harmony, poured
+  usagi: "shiba",     // the animal one
+  neko: "maneki",     // still the cat
+};
 
 export type ResolvedAvatar =
   | { type: "image"; url: string }
@@ -115,7 +135,8 @@ function isImageUrl(value: string): boolean {
 
 export function getAvatar(value: string | null | undefined): ResolvedAvatar {
   if (value && isImageUrl(value)) return { type: "image", url: value };
-  const preset = AVATAR_OPTIONS.find((a) => a.key === value) ?? AVATAR_OPTIONS[0];
+  const key = (value && LEGACY_AVATAR_KEYS[value]) || value;
+  const preset = AVATAR_OPTIONS.find((a) => a.key === key) ?? AVATAR_OPTIONS[0];
   return { type: "preset", ...preset };
 }
 

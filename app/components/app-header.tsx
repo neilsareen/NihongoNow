@@ -25,7 +25,7 @@ import type { ResolvedAvatar } from "@/lib/utils";
  *    else in the interface, so the stripe is a legend for the whole product.
  *
  * 3. Both edges of the bar do work rather than sitting symmetrical for looks:
- *    the learner's kanji avatar (into Settings) and their streak. That is what
+ *    the learner's avatar (into Settings) and their streak. That is what
  *    lets the dashboard below open on a greeting instead of a second header.
  */
 

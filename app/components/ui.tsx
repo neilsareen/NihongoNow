@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { cn, type AvatarKey } from "@/lib/utils";
+import { AVATAR_ART } from "@/app/components/avatar-art";
 
 /* ===========================================================================
    Shared interface primitives.
@@ -465,22 +466,22 @@ export function Wordmark({
 }
 
 /**
- * Profile avatar: either a learner's own uploaded photo, or a kanji on a
- * colour plate. The kanji plate reads as a considered mark at every size,
- * where a cartoon illustration turns to mud in a tab bar — but a real photo
- * is the whole point once someone uploads one, so that renders as-is.
+ * Profile avatar: either a learner's own uploaded photo, or one of the preset
+ * cartoons on its colour plate. The drawing is inline SVG on a 64x64 grid, so
+ * the same mark stays crisp at 36px in the header and at 56px in settings; the
+ * plate clips it, which is what lets the busts run off the bottom edge.
  */
 export function Avatar({
   avatar,
   size = 48,
   className,
 }: {
-  avatar: { glyph: string; label: string; tone: string } | { type: "image"; url: string };
+  avatar: { key: AvatarKey; label: string; tone: string } | { type: "image"; url: string };
   size?: number;
   className?: string;
 }) {
   // Checked on "url" rather than "type": callers pass either a raw preset
-  // ({glyph,label,tone}) or a full ResolvedAvatar (whose preset variant also
+  // ({key,label,tone}) or a full ResolvedAvatar (whose preset variant also
   // carries its own `type: "preset"` at runtime), so `"type" in avatar` would
   // misfire for that second shape. Only the image variant ever has a url.
   if ("url" in avatar) {
@@ -499,24 +500,24 @@ export function Avatar({
 
   return (
     <span
-      className={cn("inline-grid place-items-center rounded-tile shrink-0 select-none elevated", className)}
+      className={cn(
+        "inline-grid place-items-center rounded-tile shrink-0 select-none elevated overflow-hidden",
+        className
+      )}
       style={{
         width: size,
         height: size,
         background: `hsl(${avatar.tone})`,
-        // Avatar tones are fixed rather than themed, and always bright, so the
-        // glyph is always dark ink — `--on-light` flips to white in the light
-        // theme and would disappear here.
-        color: "hsl(var(--on-bright))",
         // The plate casts its own colour, so a lime avatar sits over a lime
         // shade. `--shade` composes its own alpha, so this is the bare triple.
         ["--shade" as string]: avatar.tone,
       }}
-      aria-hidden="true"
+      role="img"
+      aria-label={avatar.label}
     >
-      <span className="jp font-bold leading-none" style={{ fontSize: size * 0.46 }}>
-        {avatar.glyph}
-      </span>
+      <svg viewBox="0 0 64 64" width={size} height={size} className="block">
+        {AVATAR_ART[avatar.key]}
+      </svg>
     </span>
   );
 }

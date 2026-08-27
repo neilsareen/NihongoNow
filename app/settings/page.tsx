@@ -153,7 +153,7 @@ export default function SettingsPage() {
           <div className="space-y-1">
             <SectionLabel>Your mark</SectionLabel>
             <p className="text-[14px] text-text-muted font-medium">
-              Upload a photo, or pick a kanji. It shows up wherever you do.
+              Upload a photo, or pick a character. It shows up wherever you do.
             </p>
           </div>
 
@@ -204,8 +204,8 @@ export default function SettingsPage() {
                   <button
                     key={a.key}
                     onClick={() => handleAvatarChange(a.key)}
-                    title={`${a.label} — ${a.meaning}`}
-                    aria-label={`${a.label} (${a.meaning})`}
+                    title={`${a.label} — ${a.caption}`}
+                    aria-label={`${a.label} (${a.caption})`}
                     aria-pressed={isOn}
                     className={cn(
                       "aspect-square rounded-full grid place-items-center transition-all",
