@@ -110,6 +110,75 @@ top means Asset Links verified. If a URL bar is showing, the fingerprint served
 at `/.well-known/assetlinks.json` doesn't match the certificate the APK was
 signed with.
 
+## 4. Make it fill the screen
+
+By default a TWA starts *below* the status bar: the clock and battery sit on
+their own opaque band above the app, which is what makes an otherwise native
+app still read as a web page in a frame.
+
+Getting the header to run to the physical top edge is a **build-time** setting,
+not something the website can change. Editing `public/manifest.json` on the
+live site does nothing to an APK that already exists — the display behaviour
+was read out of the manifest when the package was generated and baked into it.
+Any change here means rebuilding and reinstalling.
+
+### What the website already does
+
+The web app is written for an edge-to-edge shell and needs no further change:
+
+- `viewportFit: "cover"` in `app/layout.tsx` opts the page into drawing behind
+  the system bars, which is what makes `env(safe-area-inset-*)` report real
+  numbers instead of zero.
+- `--safe-t` / `--safe-b` in `app/globals.css` lift those insets into tokens,
+  and a `.top-chrome` class puts the inset on whichever element carries a bar's
+  fill — so the fill paints up behind the status bar while the contents clear
+  it. Every top bar in the app uses it; the tab bar and the fixed drilling
+  screens do the same at the bottom.
+
+When the shell is *not* edge-to-edge those insets are zero and the whole thing
+computes to no padding, so the app looks exactly as it does today. Nothing has
+to be undone to go back.
+
+### The build change
+
+Target **API 35 or higher**. Android 15 enforces edge-to-edge for apps that do:
+the system bars go transparent, the activity draws underneath them, and Chrome
+passes the resulting insets through to the page as `env(safe-area-inset-*)`.
+The status bar stays visible — the clock and battery sit over the app's own
+header band rather than above it.
+
+With Bubblewrap, that means regenerating the Android project on a current CLI
+rather than hand-editing it:
+
+```bash
+npm install -g @bubblewrap/cli@latest
+bubblewrap update      # regenerates the project with current SDK targets
+bubblewrap build
+```
+
+Then confirm `targetSdkVersion` is 35 or higher in the generated
+`app/build.gradle` before installing. PWABuilder packages target a current SDK
+by default, so re-downloading the package is the equivalent step — reuse the
+**same signing key**, or Asset Links stops verifying and the address bar comes
+back (see step 2).
+
+### Checking it worked
+
+Reinstall and launch. The warm header band should run all the way up, with the
+clock and battery sitting on top of it, and no content hidden underneath them.
+
+**This only takes effect on Android 15 or newer** — Settings → About phone →
+Android version. On Android 14 and below the app targets a high SDK but the
+platform does not enforce edge-to-edge, so the status bar keeps its own band
+and the app looks as it does today. That is the expected outcome there, not a
+failure.
+
+If you would rather have the whole screen on every Android version and can live
+without the clock, the alternative is `"display": "fullscreen"` in
+`public/manifest.json` before generating the package: that puts the TWA in
+immersive mode and hides the system bars entirely. It is deterministic
+everywhere, at the cost of the status bar the design currently expects.
+
 ## Before the Play Store
 
 - Play Console account, $25 one-off

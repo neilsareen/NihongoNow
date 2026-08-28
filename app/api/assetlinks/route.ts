@@ -13,8 +13,14 @@ import { NextResponse } from "next/server";
 // don't grant the ability to use it — but they live in an env var rather than in
 // the repo because the list grows: once the app is on Play, Google re-signs it
 // with its own certificate under Play App Signing, and that one has to be added
-// here too or installs from the Play Store stop verifying. An env var makes that
-// a dashboard change instead of a deploy.
+// here too or installs from the Play Store stop verifying.
+//
+// Setting the variable is not enough on its own: Next reads it at build time, so
+// the value is baked into the deployed bundle and a change in the host's
+// dashboard does nothing until the next deploy. Add the fingerprint, then
+// redeploy, then reinstall the app — Chrome caches a failed verification, so
+// without the reinstall the address bar stays up and it looks as though the
+// fingerprint were still wrong.
 
 export const dynamic = "force-dynamic";
 
