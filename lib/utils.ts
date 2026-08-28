@@ -158,3 +158,20 @@ export function getLevelFromXP(xp: number): { level: number; progressPct: number
 
   return { level, progressPct: Math.round((remaining / required) * 100) };
 }
+
+// UserProfile.displayName is only ever shown as a greeting ("こんにちは、Neil
+// さん"), so it is one short name rather than a full identity. The cap is
+// generous enough for a long given name and tight enough that the dashboard
+// heading, which sits on one truncating line, still reads as a greeting.
+export const MAX_DISPLAY_NAME_LENGTH = 40;
+
+/**
+ * Reduces whatever an identity provider hands us to the single name the
+ * greeting can use. Google returns a full legal name, which is not always the
+ * name someone goes by — this is only ever the starting point, and Settings
+ * lets the learner write their own over it.
+ */
+export function toFirstName(value: string | null | undefined): string | null {
+  const first = value?.trim().split(/\s+/)[0] ?? "";
+  return first ? first.slice(0, MAX_DISPLAY_NAME_LENGTH) : null;
+}

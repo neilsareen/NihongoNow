@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { GraduationCap, LogOut, RotateCcw, Upload, X } from "lucide-react";
-import { AVATAR_OPTIONS, cn, getAvatar } from "@/lib/utils";
+import { AVATAR_OPTIONS, MAX_DISPLAY_NAME_LENGTH, cn, getAvatar } from "@/lib/utils";
 import { Avatar, Card, SectionLabel, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
+import { Field } from "@/app/components/field";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { ThemeToggle } from "@/app/components/theme";
 import { SilentModeSettings } from "@/app/components/silent-mode";
@@ -29,6 +30,12 @@ export default function SettingsPage() {
   const router = useRouter();
 
   const [studyGoal, setStudyGoal] = useState<number | null>(null);
+  // `savedName` is the name on the profile, `name` what is in the box; they
+  // differ only while the learner is mid-edit. Null until the profile lands,
+  // which is also what holds the field disabled.
+  const [name, setName] = useState("");
+  const [savedName, setSavedName] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
   const [avatarValue, setAvatarValue] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -54,6 +61,8 @@ export default function SettingsPage() {
       .then((d) => {
         setStudyGoal(d.studyGoalMinutes ?? 20);
         setAvatarValue(d.avatarUrl ?? null);
+        setName(d.displayName ?? "");
+        setSavedName(d.displayName ?? "");
       });
     refreshSimStatus();
   }, []);
@@ -72,6 +81,47 @@ export default function SettingsPage() {
     if (res.ok) setSimStatus(await res.json());
     setSimBusy(false);
     if (action === "start") router.push("/dashboard");
+  }
+
+  // Committed on blur and on Enter rather than per keystroke: the same quiet
+  // "Saved" slot the other settings use, without a request for every letter.
+  async function handleNameCommit() {
+    const trimmed = name.trim();
+    if (savedName === null || trimmed === savedName) {
+      setName(trimmed);
+      setNameError(null);
+      return;
+    }
+    if (!trimmed) {
+      // The old name stays on the profile; the box keeps what they typed so
+      // they can fix it rather than having the edit silently reverted.
+      setNameError("Your name can't be empty");
+      return;
+    }
+
+    setName(trimmed);
+    setNameError(null);
+    setSaving(true);
+    setSaved(false);
+    const res = await fetch("/api/user/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ displayName: trimmed }),
+    });
+    setSaving(false);
+    if (res.ok) {
+      const profile = await res.json();
+      setSavedName(profile.displayName ?? "");
+      setName(profile.displayName ?? "");
+      setSaved(true);
+      // The greeting and the header are server-rendered, so they only pick up
+      // the new name once this route's data is refetched.
+      router.refresh();
+      setTimeout(() => setSaved(false), 2000);
+    } else {
+      const body = await res.json().catch(() => null);
+      setNameError(body?.error ?? "Couldn't save that name. Try again.");
+    }
   }
 
   async function handleGoalChange(goal: number) {
@@ -154,6 +204,50 @@ export default function SettingsPage() {
       />
 
       <main className="max-w-lg mx-auto px-4 py-8 space-y-8 pb-[calc(6rem+var(--safe-b))]">
+        <section className="space-y-3">
+          <div className="space-y-1">
+            <SectionLabel>Your name</SectionLabel>
+            <p className="text-[16px] text-text-muted leading-relaxed font-medium">
+              What the app calls you. Signing in with Google brings over the name
+              on that account — write whatever you actually go by over it.
+            </p>
+          </div>
+          <Card className="p-4 space-y-2">
+            <Field
+              id="display-name"
+              label="First name"
+              type="text"
+              autoComplete="given-name"
+              value={name}
+              maxLength={MAX_DISPLAY_NAME_LENGTH}
+              disabled={savedName === null}
+              placeholder="Your name"
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby="display-name-note"
+              onChange={(e) => {
+                setName(e.target.value);
+                setNameError(null);
+              }}
+              onBlur={handleNameCommit}
+              onKeyDown={(e) => {
+                // Enter commits through the same blur path, so a phone keyboard's
+                // "done" and tapping away behave identically.
+                if (e.key === "Enter") e.currentTarget.blur();
+              }}
+            />
+            {nameError ? (
+              <p id="display-name-note" role="alert" className="text-[15px] text-rose font-medium">
+                {nameError}
+              </p>
+            ) : (
+              <p id="display-name-note" className="text-[15px] text-text-subtle font-medium">
+                The dashboard greets you as {name.trim() || "Learner"}
+                <span className="jp">さん</span>.
+              </p>
+            )}
+          </Card>
+        </section>
+
         <section className="space-y-3">
           <div className="space-y-1">
             <SectionLabel>Your mark</SectionLabel>

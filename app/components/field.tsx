@@ -28,6 +28,7 @@ export function Field({
           "bg-ink-deep border border-line text-text placeholder:text-text-subtle",
           "transition-colors duration-150",
           "hover:border-line-strong focus:border-coral focus:outline-none",
+          "disabled:opacity-60 disabled:cursor-not-allowed",
           className
         )}
         {...props}

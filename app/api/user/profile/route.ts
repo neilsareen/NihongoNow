@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { AVATAR_OPTIONS } from "@/lib/utils";
+import { AVATAR_OPTIONS, MAX_DISPLAY_NAME_LENGTH } from "@/lib/utils";
 import { KANJI_TIERS, type KanjiDepth } from "@/lib/kanji-tiers";
 
 export async function GET() {
@@ -28,6 +28,26 @@ export async function PATCH(request: Request) {
     kanjiDepth?: string;
   };
 
+  // Trimmed before it is judged and before it is stored: a name that is all
+  // whitespace would otherwise pass the length check and leave the dashboard
+  // greeting addressed to nobody.
+  let trimmedName: string | undefined;
+  if (displayName !== undefined) {
+    if (typeof displayName !== "string") {
+      return NextResponse.json({ error: "Invalid name" }, { status: 400 });
+    }
+    trimmedName = displayName.trim();
+    if (!trimmedName) {
+      return NextResponse.json({ error: "Your name can't be empty" }, { status: 400 });
+    }
+    if (trimmedName.length > MAX_DISPLAY_NAME_LENGTH) {
+      return NextResponse.json(
+        { error: `Keep your name to ${MAX_DISPLAY_NAME_LENGTH} characters or fewer` },
+        { status: 400 }
+      );
+    }
+  }
+
   if (avatarUrl !== undefined && !AVATAR_OPTIONS.some((a) => a.key === avatarUrl)) {
     return NextResponse.json({ error: "Invalid avatar" }, { status: 400 });
   }
@@ -43,7 +63,7 @@ export async function PATCH(request: Request) {
     where: { id: user.id },
     data: {
       ...(studyGoalMinutes !== undefined && { studyGoalMinutes }),
-      ...(displayName !== undefined && { displayName }),
+      ...(trimmedName !== undefined && { displayName: trimmedName }),
       ...(avatarUrl !== undefined && { avatarUrl }),
       ...(kanjiDepth !== undefined && { kanjiDepth: kanjiDepth as KanjiDepth }),
     },
