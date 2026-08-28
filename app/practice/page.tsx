@@ -11,6 +11,12 @@ import { kanaToRomaji, katakanaToHiragana } from "@/lib/pronunciation";
 import { cn } from "@/lib/utils";
 import { Card, CardScroller, Chip, TopBar, buttonStyles, buttonVars } from "@/app/components/ui";
 import { SCENE_LABELS, type ConversationExchange, type ConversationLine } from "@/lib/conversations";
+import {
+  NUMBER_SCENE_LABELS,
+  type NumberCard,
+  type NumberQuiz,
+  type NumberReading,
+} from "@/lib/numbers";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,6 +37,9 @@ interface PracticeItem {
   conversation?: ConversationExchange;
   /** Lines to choose between on a rehearsal card. The right one is in here. */
   choices?: ConversationLine[];
+  numbers?: NumberCard;
+  /** The figure quiz on a numbers card, when this one was dealt as a quiz. */
+  quiz?: NumberQuiz | null;
 }
 
 type ExampleWord = {
@@ -297,17 +306,74 @@ function LineChips({ label, lines }: { label: string; lines: ConversationLine[] 
   );
 }
 
+/**
+ * Everything a numbers card teaches: the table of figures with their readings,
+ * the line to say in that moment, what comes back, the frame, and the trap.
+ * Shared by the flip side of a reveal card and the debrief under an answered
+ * quiz, so the two cannot drift apart.
+ */
+function NumbersDetail({ card }: { card: NumberCard }) {
+  return (
+    <>
+      <div className="w-full space-y-2">
+        <DetailLabel>How they read</DetailLabel>
+        <div className="flex flex-col gap-1.5">
+          {card.readings.map((r, i) => (
+            <SpeakChip key={i} text={readingSpeechText(r.kana)} className="max-w-full text-[13px]">
+              <span
+                className="font-display font-extrabold text-[14px] tnum shrink-0 min-w-[3.75rem] text-left"
+                style={{ color: "hsl(var(--track-numbers))" }}
+              >
+                {r.figure}
+              </span>
+              <span className="flex flex-col items-start min-w-0 py-1.5 text-left">
+                <span className="jp leading-snug">{r.japanese}</span>
+                <span className="text-[11px] leading-snug text-text-subtle">{r.romaji}</span>
+              </span>
+              <span className="text-text-muted text-left">{r.english}</span>
+            </SpeakChip>
+          ))}
+        </div>
+      </div>
+
+      <LineChips label="You say" lines={[card.say]} />
+      {(card.hear ?? []).length > 0 && <LineChips label="You might hear" lines={card.hear!} />}
+      {(card.reply ?? []).length > 0 && <LineChips label="You could reply" lines={card.reply!} />}
+
+      {card.pattern && (
+        <div className="w-full space-y-2 text-center">
+          <DetailLabel>Pattern</DetailLabel>
+          <p className="jp text-[15px] font-medium">{card.pattern.frame}</p>
+          <p className="text-[12px] text-text-subtle">{card.pattern.gloss}</p>
+        </div>
+      )}
+
+      <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs">{card.tip}</p>
+    </>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Selection view
 // ---------------------------------------------------------------------------
 
-type TypeKey = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE" | "CONVERSATION";
+type TypeKey =
+  | "HIRAGANA"
+  | "KATAKANA"
+  | "KANJI"
+  | "VOCABULARY"
+  | "PHRASE"
+  | "CONVERSATION"
+  | "NUMBERS";
 
 // Same order as the dashboard's track list, kanji last: the drill picker and
 // the homepage should not disagree about what this app is mostly for.
 const TYPES: { key: TypeKey; label: string; glyph: string; tone: string }[] = [
   { key: "HIRAGANA", label: "Hiragana", glyph: "あ", tone: "var(--track-hiragana)" },
   { key: "KATAKANA", label: "Katakana", glyph: "ア", tone: "var(--track-katakana)" },
+  // No padlock: numbers & money is open from the first lesson, because a price
+  // tag is legible before the alphabet is. See lib/progression.ts.
+  { key: "NUMBERS", label: "Numbers & money", glyph: "円", tone: "var(--track-numbers)" },
   { key: "VOCABULARY", label: "Vocabulary", glyph: "語", tone: "var(--track-vocab)" },
   { key: "PHRASE", label: "Phrases", glyph: "話", tone: "var(--track-phrase)" },
   { key: "CONVERSATION", label: "Conversation", glyph: "会", tone: "var(--track-conversation)" },
@@ -642,12 +708,20 @@ function PracticeView({
   const isKanji = item.contentType === ContentType.KANJI;
   const isWordy = item.contentType === ContentType.VOCABULARY || item.contentType === ContentType.PHRASE;
   const isConversation = item.contentType === ContentType.CONVERSATION && !!item.conversation;
+  const isNumbers = item.contentType === ContentType.NUMBERS && !!item.numbers;
   // A rehearsal with lines to choose between is answered, not revealed. One
-  // choice means the deck was too small to build a question from.
-  const choices = isConversation ? (item.choices ?? []) : [];
+  // choice means the deck was too small to build a question from. A numbers
+  // card works the same way, with readings in place of lines — both are a list
+  // of {japanese, kana, romaji, english}, so one choice row serves both.
+  const numberQuiz = isNumbers && (item.quiz?.choices.length ?? 0) > 1 ? item.quiz! : null;
+  const choices: (ConversationLine | NumberReading)[] = numberQuiz
+    ? numberQuiz.choices
+    : isConversation
+      ? (item.choices ?? [])
+      : [];
   const isQuiz = choices.length > 1;
   const answered = chosen !== null;
-  const answerKana = item.conversation?.say.kana;
+  const answerKana = numberQuiz ? numberQuiz.answer.kana : item.conversation?.say.kana;
   const gotItRight = answered && choices[chosen]?.kana === answerKana;
   // The detail — the line, what comes back, the pattern, the tip — is what the
   // flip side shows, and what an answered quiz shows underneath its choices.
@@ -655,6 +729,7 @@ function PracticeView({
   // The heard line is the prompt when the other person opens; the situation
   // alone would leave the learner answering a question nobody asked.
   const opener = item.conversation?.theySpeakFirst ? item.conversation.hear[0] : undefined;
+  const numberScene = item.numbers ? NUMBER_SCENE_LABELS[item.numbers.scene] : "";
   const quizButtonVariant = !answered ? "primary" : gotItRight ? "affirm" : "reject";
   const exampleWords = parseExampleWords(item.exampleWords);
   const readings = isKanji ? kanjiReadings(item.onyomi, item.kunyomi) : [];
@@ -815,6 +890,51 @@ function PracticeView({
                     {opener ? "What do you say back?" : "What do you say?"}
                   </p>
                 </div>
+              ) : isNumbers && item.numbers ? (
+                <div className="w-full flex flex-col items-center gap-2.5 text-center">
+                  <Chip hue="var(--track-numbers)">{numberScene}</Chip>
+                  {numberQuiz ? (
+                    <>
+                      {/* The printed figure is the whole question — the form a
+                          number is actually met in, on a tag or a lift panel. */}
+                      <p
+                        className="font-display text-[3.25rem] leading-none font-extrabold tnum tracking-tight"
+                        style={{ color: "hsl(var(--track-numbers))" }}
+                      >
+                        {numberQuiz.figure}
+                      </p>
+                      <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
+                        How is this said?
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-display text-[19px] font-extrabold tracking-tight max-w-xs">
+                        {item.numbers.canDo}
+                      </p>
+                      <p className="text-[13px] text-text-muted leading-relaxed max-w-xs">
+                        {item.numbers.situation}
+                      </p>
+                      <div className="flex flex-wrap justify-center gap-2 mt-1">
+                        {item.numbers.readings.map((r, i) => (
+                          <span
+                            key={i}
+                            className="font-display font-extrabold text-[15px] tnum rounded-tile px-2.5 py-1"
+                            style={{
+                              background: "hsl(var(--track-numbers) / 0.14)",
+                              color: "hsl(var(--track-numbers))",
+                            }}
+                          >
+                            {r.figure}
+                          </span>
+                        ))}
+                      </div>
+                      <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
+                        How do you say these?
+                      </p>
+                    </>
+                  )}
+                </div>
               ) : (
                 <>
                   <span
@@ -862,9 +982,13 @@ function PracticeView({
                     ))}
                   </div>
 
-                  {answered && item.conversation && (
+                  {answered && (item.conversation || item.numbers) && (
                     <div className="w-full flex flex-col items-center gap-4 pt-1 animate-pop-in">
-                      <ConversationDetail conversation={item.conversation} compact />
+                      {item.numbers ? (
+                        <NumbersDetail card={item.numbers} />
+                      ) : (
+                        <ConversationDetail conversation={item.conversation!} compact />
+                      )}
                     </div>
                   )}
                 </div>
@@ -880,6 +1004,8 @@ function PracticeView({
                 <div className="w-full flex flex-col items-center gap-4 animate-pop-in">
                   {isConversation && item.conversation ? (
                     <ConversationDetail conversation={item.conversation} />
+                  ) : isNumbers && item.numbers ? (
+                    <NumbersDetail card={item.numbers} />
                   ) : isKanji ? (
                     <>
                       <div className="flex items-center gap-2.5">
@@ -959,7 +1085,9 @@ function PracticeView({
               style={buttonVars(quizButtonVariant)}
             >
               {!answered
-                ? "Pick a line"
+                ? numberQuiz
+                  ? "Pick a reading"
+                  : "Pick a line"
                 : gotItRight
                   ? "Right — next card"
                   : "Back in the stack"}
@@ -1113,7 +1241,7 @@ function SummaryView({
 
 type View = "loading" | "selection" | "practice" | "summary";
 
-const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI", "VOCABULARY", "PHRASE", "CONVERSATION"];
+const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI", "VOCABULARY", "PHRASE", "CONVERSATION", "NUMBERS"];
 
 function PracticePageInner() {
   const searchParams = useSearchParams();

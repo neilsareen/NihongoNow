@@ -9,6 +9,7 @@ import {
   type ConversationExchange,
   type ConversationLine,
 } from "@/lib/conversations";
+import { NUMBER_CARDS, buildNumberQuiz, type NumberCard, type NumberQuiz } from "@/lib/numbers";
 import { ContentType } from "@prisma/client";
 import { getSessionUser } from "@/lib/simulation";
 
@@ -85,6 +86,9 @@ export async function GET(request: Request) {
   const wantsVocab = requestedTypes.includes(ContentType.VOCABULARY);
   const wantsPhrase = requestedTypes.includes(ContentType.PHRASE);
   const wantsConversation = requestedTypes.includes(ContentType.CONVERSATION);
+  // Numbers & money has no readability gate — see lib/progression.ts — so it
+  // is served whenever it is asked for.
+  const includeNumbers = requestedTypes.includes(ContentType.NUMBERS);
   const masteredKana =
     wantsKanji || wantsVocab || wantsPhrase ? await getMasteredKana(session.userId) : null;
   // A drill honours the learner's kanji depth for the same reason a lesson
@@ -102,7 +106,14 @@ export async function GET(request: Request) {
   const includePhrase = wantsPhrase && unlockedPhraseStubs.length > 0;
   const includeConversation = wantsConversation && (await isConversationUnlocked(session.userId));
 
-  if (charTypes.length === 0 && !includeKanji && !includeVocab && !includePhrase && !includeConversation) {
+  if (
+    charTypes.length === 0 &&
+    !includeKanji &&
+    !includeVocab &&
+    !includePhrase &&
+    !includeConversation &&
+    !includeNumbers
+  ) {
     return NextResponse.json(
       { error: "Master more kana to unlock this content.", locked: true },
       { status: 403 }
@@ -123,6 +134,8 @@ export async function GET(request: Request) {
     english?: string;
     conversation?: ConversationExchange;
     choices?: ConversationLine[];
+    numbers?: NumberCard;
+    quiz?: NumberQuiz | null;
   }[] = [];
 
   if (charTypes.length > 0) {
@@ -213,6 +226,26 @@ export async function GET(request: Request) {
         // Built here rather than in the browser so the whole deck can be drawn
         // on for distractors without shipping it to the client a second time.
         choices: isQuizCard ? buildResponseChoices(c) : undefined,
+      });
+    }
+  }
+
+  if (includeNumbers) {
+    for (const c of NUMBER_CARDS) {
+      // Half the deck is the figure quiz, half is the full card revealed —
+      // the same split the conversation deck uses, and for the same reason:
+      // always being handed four options never makes the learner produce a
+      // reading themselves. Decided per card per session, not stored.
+      const isQuizCard = Math.random() < 0.5;
+      items.push({
+        id: c.id,
+        contentType: ContentType.NUMBERS,
+        character: c.say.japanese,
+        romaji: c.say.romaji,
+        kana: c.say.kana,
+        english: c.say.english,
+        numbers: c,
+        quiz: isQuizCard ? buildNumberQuiz(c) : undefined,
       });
     }
   }

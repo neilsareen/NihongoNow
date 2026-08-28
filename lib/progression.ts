@@ -20,10 +20,18 @@ export const KANA_TYPES: ContentType[] = [ContentType.HIRAGANA, ContentType.KATA
 // locked behind kana the learner hasn't mastered. Conversation carries its own,
 // stricter gate (every kana at Learning before the track opens at all), so once
 // a learner holds a conversation review the reading gate has nothing to add.
+//
+// Numbers & money is ungated on purpose rather than by omission. A price tag
+// is legible on day one — 1,500円 needs no kana at all — and every reading in
+// that track carries its figure and its romaji alongside the kana, so the
+// cards are usable before the alphabet is and reinforce it afterwards. It is
+// also the first thing a traveller actually needs: gating the ATM behind the
+// syllabary would be teaching the wrong thing first.
 const UNGATED_TYPES: ContentType[] = [
   ...KANA_TYPES,
   ContentType.CULTURE,
   ContentType.CONVERSATION,
+  ContentType.NUMBERS,
 ];
 
 // What every kana has to reach before the conversation track opens. Level 1 on

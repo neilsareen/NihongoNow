@@ -21,6 +21,7 @@ import {
 import { getKanjiDepth, getKanjiTierProgress, hasAnyUnlockedKanji, getConversationGate } from "@/lib/progression";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { CONVERSATIONS } from "@/lib/conversations";
+import { NUMBER_CARDS } from "@/lib/numbers";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, TopBar } from "@/app/components/ui";
 
@@ -124,6 +125,7 @@ export default async function AnalyticsPage() {
   }[] = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", locked: false },
     { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", locked: false },
+    { label: "Numbers & money", stage: "NUMBERS", total: NUMBER_CARDS.length, glyph: "円", tone: "var(--track-numbers)", locked: false },
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", locked: false },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", locked: false },
     { label: "Culture", stage: "CULTURE", total: CULTURAL_TIPS.length, glyph: "礼", tone: "var(--sun)", locked: false },
@@ -143,8 +145,13 @@ export default async function AnalyticsPage() {
   const vocPct = masteredByStage("CORE_VOCAB", 2000);
   const phrPct = masteredByStage("DAILY_CONVERSATION", 1000);
   const kanPct = kanjiTotal > 0 ? Math.min(1, kanjiMastered / kanjiTotal) : 0;
+  const numPct = masteredByStage("NUMBERS", NUMBER_CARDS.length);
 
-  const travelScore = Math.round(hirPct * 25 + katPct * 20 + vocPct * 30 + phrPct * 20 + kanPct * 5);
+  // Weights mirror app/dashboard/page.tsx — the two must agree, since they are
+  // the same number shown twice.
+  const travelScore = Math.round(
+    hirPct * 22 + katPct * 16 + vocPct * 25 + phrPct * 17 + numPct * 15 + kanPct * 5
+  );
 
   const travelLevel =
     travelScore >= 90 ? { name: "Near-native", tone: "var(--sun)", glyph: "極" } :
@@ -157,17 +164,18 @@ export default async function AnalyticsPage() {
 
   // Build a breakdown of what the user still needs
   const readinessBreakdown = [
-    { label: "Hiragana", pct: Math.round(hirPct * 100), weight: 25, done: hirPct >= 0.9, tone: "var(--track-hiragana)" },
-    { label: "Katakana", pct: Math.round(katPct * 100), weight: 20, done: katPct >= 0.9, tone: "var(--track-katakana)" },
-    { label: "Core vocabulary", pct: Math.round(vocPct * 100), weight: 30, done: vocPct >= 0.5, tone: "var(--track-vocab)" },
-    { label: "Phrases", pct: Math.round(phrPct * 100), weight: 20, done: phrPct >= 0.5, tone: "var(--track-phrase)" },
+    { label: "Hiragana", pct: Math.round(hirPct * 100), weight: 22, done: hirPct >= 0.9, tone: "var(--track-hiragana)" },
+    { label: "Katakana", pct: Math.round(katPct * 100), weight: 16, done: katPct >= 0.9, tone: "var(--track-katakana)" },
+    { label: "Core vocabulary", pct: Math.round(vocPct * 100), weight: 25, done: vocPct >= 0.5, tone: "var(--track-vocab)" },
+    { label: "Phrases", pct: Math.round(phrPct * 100), weight: 17, done: phrPct >= 0.5, tone: "var(--track-phrase)" },
+    { label: "Numbers & money", pct: Math.round(numPct * 100), weight: 15, done: numPct >= 0.6, tone: "var(--track-numbers)" },
     { label: "Kanji", pct: Math.round(kanPct * 100), weight: 5, done: kanPct >= 0.3, tone: "var(--track-kanji)" },
   ];
 
   const guidance =
     travelScore < 15 ? "Focus on hiragana first — it unlocks everything else. Once you can read it, menus, signs and apps all start to make sense." :
-    travelScore < 30 ? "You can read the phonetic scripts. Build vocabulary next, especially food, transport and shopping words — that's where daily life happens." :
-    travelScore < 50 ? "You're ready for a comfortable tourist trip. Keep stacking vocabulary and phrases to handle more situations unaided." :
+    travelScore < 30 ? "You can read the phonetic scripts. Build vocabulary next, especially food, transport and shopping words — that's where daily life happens. Prices too: a number is the one thing you can't point at." :
+    travelScore < 50 ? "You're ready for a comfortable tourist trip. Keep stacking vocabulary and phrases to handle more situations unaided, and get the counters solid — how many, how much, which platform." :
     travelScore < 70 ? "Japan is very manageable for you. Deeper kanji and phrase knowledge will open up more signs and more natural conversation." :
     travelScore < 90 ? "You move through Japan with ease. What's left is nuance — native materials, regional accents and unspoken social cues." :
                        "You're operating at a near-native level for travel. Japan feels like a second home.";

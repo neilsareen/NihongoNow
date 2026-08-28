@@ -16,6 +16,7 @@ enum ContentType {
   PHRASE
   CULTURE
   CONVERSATION
+  NUMBERS
 }
 
 enum SRSLevel {
@@ -45,6 +46,7 @@ enum LearningStage {
   ADVANCED_SURVIVAL
   CULTURE
   CONVERSATION
+  NUMBERS
 }
 
 enum ExerciseType {

@@ -14,7 +14,8 @@ export type ScriptIntroKey =
   | "kanji"
   | "vocabulary"
   | "phrases"
-  | "conversation";
+  | "conversation"
+  | "numbers";
 
 // One-time explainer cards. Each is shown the first time a learner is about to
 // meet a new script, sound-modifier system, or kind of content — before any
@@ -57,6 +58,12 @@ export const SCRIPT_INTROS: Record<ScriptIntroKey, ScriptIntro> = {
     kicker: "New track unlocked",
     title: "Conversation: Getting Through the Day",
     body: "You can now read every kana, which means every line in this track is one you can sound out — so from here the goal stops being recognition and starts being understood. These cards work differently on purpose. Each one drops you into a real moment (a konbini counter, a taxi, a platform) and asks what you would say, because rehearsing the situation is what makes the words available when the situation is real. Each teaches one whole chunk rather than words to assemble under pressure — that is how fluent speakers actually talk, in ready-made pieces. And each shows you what will be said back, because the half of a conversation that strands travellers is never their own line, it is the reply. Learn the chunk, recognise the reply, and swap new words into the pattern underneath. Politeness beats precision every time: すみません and おねがいします, said warmly, will carry you further than perfect grammar.",
+  },
+  numbers: {
+    id: "intro-numbers",
+    kicker: "New track unlocked",
+    title: "Numbers & Money: The Part You Can't Mime",
+    body: "You can point at a menu, mime a direction and smile through a greeting — but you cannot point at a price. Every counter in Japan ends with a number said out loud at speed, and Japan is still a cash country in exactly the places you will end up: the shrine stall, the ramen counter, the ticket machine, the ryokan that has never taken a card. So this track starts on day one, before the alphabet is finished, because a price tag is legible to you already: every card is anchored to the figure as it is actually printed — 1,500円, 3階, 7:42 — with the reading in kana and in romaji beside it. Two things are worth knowing before you start. Japanese counts in blocks of four digits rather than three, so 10,000 is one 万 and reading the comma the English way is how travellers pay ten times too much. And the system is regular right up until it isn't: 300 is さんびゃく, 600 is ろっぴゃく, 8,000 is はっせん, and 4 o'clock is よじ. Those exceptions are flagged on every card, because they are the whole difficulty.",
   },
   phrases: {
     id: "intro-phrases",

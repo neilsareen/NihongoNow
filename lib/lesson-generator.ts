@@ -3,6 +3,7 @@ import type { KanjiDepth } from "./kanji-tiers";
 import { ContentType, ExerciseType } from "@prisma/client";
 import { CULTURAL_TIPS, getRandomCulturalTip } from "./cultural-tips";
 import { CONVERSATIONS } from "./conversations";
+import { NUMBER_CARDS } from "./numbers";
 import { SCRIPT_INTROS, type ScriptIntroKey } from "./script-intros";
 import {
   getMasteredKana,
@@ -28,6 +29,10 @@ const TARGET_LESSON_SECONDS = 600; // 10 minutes
 // otherwise get handed just the day's culture card. Floor every lesson here
 // by pulling in reviews ahead of schedule until it clears this bar.
 const MIN_LESSON_SECONDS = 300; // 5 minutes
+// How many overdue numbers & money cards a lesson carries, on top of one the
+// learner has never met. Two rather than the one the other ride-along tracks
+// take — see pickNumberCards.
+const DUE_NUMBER_CARDS_PER_LESSON = 2;
 
 /** One card in a generated lesson, before it is written to the database. */
 type LessonItemSpec = {
@@ -66,6 +71,7 @@ const AVG_SECONDS_BY_CONTENT: Record<ContentType, number> = {
   [ContentType.PHRASE]:     32, // avg of ENGLISH_TO_JAPANESE/JAPANESE_TO_ENGLISH/LISTENING/SPEAKING/SCENARIO
   [ContentType.CULTURE]:    40, // always SCENARIO: read the situation, then self-assess
   [ContentType.CONVERSATION]: 45, // a rehearsal card carries a line, a reply and a pattern
+  [ContentType.NUMBERS]:      32, // avg of SCENARIO/MULTIPLE_CHOICE/SPEAKING/LISTENING
 };
 
 const AVG_SECONDS_PER_ITEM = 25;
@@ -73,7 +79,11 @@ const AVG_SECONDS_PER_ITEM = 25;
 // Content types that get dedicated slots in every lesson, and so must be kept
 // out of the general review pool: drawing them twice would put the same card
 // in front of the learner twice in one sitting.
-const OWN_SLOT_TYPES: ContentType[] = [ContentType.CULTURE, ContentType.CONVERSATION];
+const OWN_SLOT_TYPES: ContentType[] = [
+  ContentType.CULTURE,
+  ContentType.CONVERSATION,
+  ContentType.NUMBERS,
+];
 
 // LISTENING included for vocab/phrase — auto-plays audio, user self-assesses comprehension.
 // SPEAKING is the mirror of it: the learner says the word and the browser's
@@ -90,6 +100,11 @@ const EXERCISE_TYPES_BY_CONTENT: Record<ContentType, ExerciseType[]> = {
   // (see pickExerciseType). Reviews then rotate through saying it back and
   // hearing it cold, which is the skill the track exists to build.
   CONVERSATION: [ExerciseType.SCENARIO, ExerciseType.SPEAKING, ExerciseType.LISTENING],
+  // SCENARIO first for the same reason: a first encounter is the teaching card
+  // that lays out the whole table. Reviews rotate onto the figure quiz — which
+  // is the skill the track exists for, reading a printed number aloud — and
+  // onto saying and hearing the card's own line.
+  NUMBERS: [ExerciseType.SCENARIO, ExerciseType.MULTIPLE_CHOICE, ExerciseType.SPEAKING, ExerciseType.LISTENING],
 };
 
 export async function generateDailyLesson(config: LessonConfig) {
@@ -101,12 +116,20 @@ export async function generateDailyLesson(config: LessonConfig) {
   // here rather than in getNewContent: until every kana is at Learning the
   // picker returns nothing and the lesson is exactly what it was before.
   const conversation = await pickConversationCards(userId, now);
+  // Numbers & money rides in every lesson from the first one — no gate, because
+  // a price tag is readable before the alphabet is. See lib/numbers.ts.
+  const numbers = await pickNumberCards(userId, now);
   const cultureSeconds = cultureCardIds.length * SECONDS_PER_EXERCISE[ExerciseType.SCENARIO];
   const conversationSeconds = conversation.items.reduce(
     (sum, item) => sum + SECONDS_PER_EXERCISE[item.exerciseType],
     0
   );
-  const effectiveBudget = TARGET_LESSON_SECONDS - cultureSeconds - conversationSeconds;
+  const numberSeconds = numbers.items.reduce(
+    (sum, item) => sum + SECONDS_PER_EXERCISE[item.exerciseType],
+    0
+  );
+  const effectiveBudget =
+    TARGET_LESSON_SECONDS - cultureSeconds - conversationSeconds - numberSeconds;
   const reviewBudget = Math.floor(effectiveBudget * 0.7);
 
   // Both are settled once and threaded down, so every place a lesson can pick
@@ -179,7 +202,11 @@ export async function generateDailyLesson(config: LessonConfig) {
   }));
   // Conversation rides along the same way: a rehearsal or two placed among the
   // drills rather than bolted onto the end, where a tiring lesson would eat it.
-  const ridealongItems: LessonItemSpec[] = [...cultureItems, ...conversation.items];
+  const ridealongItems: LessonItemSpec[] = [
+    ...cultureItems,
+    ...conversation.items,
+    ...numbers.items,
+  ];
   const firstSlot = 2 + Math.floor(Math.random() * 4);
   const slotGap = Math.max(2, Math.floor(baseItems.length / (ridealongItems.length + 1)));
   const withCulture: LessonItemSpec[] = [...baseItems];
@@ -219,6 +246,9 @@ export async function generateDailyLesson(config: LessonConfig) {
   // Conversation's items come from their own picker rather than newItems, so
   // its explainer is triggered by that picker having found a first exchange.
   if (!learned.CONVERSATION && conversation.introducesFirst) scriptIntroItems.push(introCard("conversation"));
+  // Numbers comes from its own picker too, so its explainer follows the same
+  // signal. It lands in the very first lesson, which is the point of the track.
+  if (!learned.NUMBERS && numbers.introducesFirst) scriptIntroItems.push(introCard("numbers"));
 
   const finalItems = [...scriptIntroItems, ...withCulture];
 
@@ -396,6 +426,66 @@ async function pickConversationCards(
   return { items, introducesFirst: seen.size === 0 && items.length > 0 };
 }
 
+/**
+ * The numbers & money cards a lesson should carry, and whether one of them is
+ * the learner's very first — which is what triggers the track's explainer.
+ *
+ * Unlike conversation there is no gate, so this runs from lesson one. The
+ * shape is otherwise the culture picker's — the overdue cards plus one never
+ * met, so the track always moves forward and never only backwards, and a
+ * learner who is caught up still gets the next one pulled forward rather than
+ * a silent slot.
+ *
+ * It takes two overdue cards where the other ride-along tracks take one. That
+ * is the weighting the track is meant to carry: numbers are the one part of a
+ * trip that cannot be mimed (see the header of lib/numbers.ts), and a review
+ * here is usually the twenty-second figure quiz rather than a full card, so
+ * the extra slot costs the lesson very little.
+ */
+async function pickNumberCards(
+  userId: string,
+  now: Date
+): Promise<{ items: LessonItemSpec[]; introducesFirst: boolean }> {
+  const reviews = await prisma.review.findMany({
+    where: { userId, contentType: ContentType.NUMBERS },
+    select: { contentId: true, nextReviewAt: true, srsLevel: true },
+  });
+
+  const seen = new Set(reviews.map((r) => r.contentId));
+  const scheduled = reviews
+    .filter((r) => r.srsLevel !== "MASTERED")
+    .sort((a, b) => a.nextReviewAt.getTime() - b.nextReviewAt.getTime());
+  // Curriculum order, not random: the digits have to come before the prices
+  // that are built out of them.
+  const unseen = NUMBER_CARDS.filter((c) => !seen.has(c.id));
+
+  const items: LessonItemSpec[] = [];
+  const due = scheduled.filter((r) => r.nextReviewAt <= now).slice(0, DUE_NUMBER_CARDS_PER_LESSON);
+  for (const r of due) {
+    items.push({
+      contentType: ContentType.NUMBERS,
+      contentId: r.contentId,
+      exerciseType: pickExerciseType(ContentType.NUMBERS, r.srsLevel),
+    });
+  }
+  if (unseen.length > 0) {
+    items.push({
+      contentType: ContentType.NUMBERS,
+      contentId: unseen[0].id,
+      exerciseType: ExerciseType.SCENARIO,
+    });
+  }
+  if (items.length === 0 && scheduled.length > 0) {
+    items.push({
+      contentType: ContentType.NUMBERS,
+      contentId: scheduled[0].contentId,
+      exerciseType: pickExerciseType(ContentType.NUMBERS, scheduled[0].srsLevel),
+    });
+  }
+
+  return { items, introducesFirst: seen.size === 0 && items.length > 0 };
+}
+
 function interleaveItems<T>(a: T[], b: T[]): T[] {
   const result: T[] = [];
   const aShuffled = [...a].sort(() => Math.random() - 0.5);
@@ -539,6 +629,12 @@ function pickExerciseType(contentType: ContentType, srsLevel: string): ExerciseT
   if (srsLevel === "NEW") {
     if (contentType === ContentType.VOCABULARY || contentType === ContentType.PHRASE) return ExerciseType.ENGLISH_TO_JAPANESE;
     return types[0];
+  }
+  // Half of a numbers review is the figure quiz. Reading 1,500円 aloud without
+  // being shown the answer first is the skill the whole track is for, and the
+  // other three card shapes all reveal the reading rather than ask for it.
+  if (contentType === ContentType.NUMBERS && Math.random() < 0.5) {
+    return ExerciseType.MULTIPLE_CHOICE;
   }
   const picked = types[Math.floor(Math.random() * types.length)];
   // Half of a vocabulary review's English-to-Japanese turns ask the learner to

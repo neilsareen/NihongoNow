@@ -14,6 +14,9 @@ const EXERCISE_FOR_TYPE: Record<string, ExerciseType> = {
   // A weak rehearsal is re-run as the full situation card, not as a say-it-back:
   // the point of drilling it again is the moment, not the microphone.
   CONVERSATION: ExerciseType.SCENARIO,
+  // A weak numbers card is re-run as the figure quiz rather than the teaching
+  // card: it is already met, and what went wrong was reading the figure.
+  NUMBERS: ExerciseType.MULTIPLE_CHOICE,
 };
 
 export async function POST() {

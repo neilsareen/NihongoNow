@@ -7,6 +7,7 @@ import { ChevronRight, Clapperboard, Lock, Zap } from "lucide-react";
 import { getStartOfDayInTimezone } from "@/lib/utils";
 import { getMasteredKana, filterUnlockedReviews, getKanjiDepth, getKanjiTierProgress, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, getConversationGate } from "@/lib/progression";
 import { CONVERSATIONS } from "@/lib/conversations";
+import { NUMBER_CARDS } from "@/lib/numbers";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
 import { SpeakingCta } from "./speaking-cta";
 import { LockedTrack } from "./locked-track";
@@ -19,6 +20,7 @@ const LESSON_TYPE_SYMBOL: Record<string, string> = {
   PHRASE: "話",
   CULTURE: "礼",
   CONVERSATION: "会",
+  NUMBERS: "円",
 };
 
 async function getDashboardData(userId: string, timeZone: string) {
@@ -153,6 +155,11 @@ export default async function DashboardPage() {
   }[] = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", practiceType: "HIRAGANA", href: "/practice?type=HIRAGANA" },
     { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", practiceType: "KATAKANA", href: "/practice?type=KATAKANA" },
+    // Numbers & money, straight after the kana and before anything with a
+    // padlock on it. The cards are anchored to printed figures and carry their
+    // romaji, so they are usable from the first lesson — and a price is the
+    // one thing on a trip that cannot be mimed.
+    { label: "Numbers & money", stage: "NUMBERS", total: NUMBER_CARDS.length, glyph: "円", tone: "var(--track-numbers)", practiceType: "NUMBERS", href: "/practice?type=NUMBERS" },
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", practiceType: "VOCABULARY", href: "/practice?type=VOCABULARY" },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: "PHRASE", href: "/practice?type=PHRASE" },
     // Survival speaking. Sealed until every kana is at Learning, because every
@@ -172,12 +179,17 @@ export default async function DashboardPage() {
   // depth cannot strand the score short of 100 forever. Kanji stays at 5 of
   // the 100 points: reading signs helps, but this score is about getting
   // around and being understood.
+  //
+  // Numbers & money carries real weight here rather than riding along unscored:
+  // a traveller who can read every kana but not a price tag is not ready, and
+  // the readiness number should say so. Mirrored in app/analytics/page.tsx.
   const kanjiPct = kanjiTotal > 0 ? Math.min(1, kanjiMastered / kanjiTotal) : 0;
   const travelScore = Math.round(
-    masteredByStage("HIRAGANA", 71) * 25 +
-    masteredByStage("KATAKANA", 69) * 20 +
-    masteredByStage("CORE_VOCAB", 2000) * 30 +
-    masteredByStage("DAILY_CONVERSATION", 1000) * 20 +
+    masteredByStage("HIRAGANA", 71) * 22 +
+    masteredByStage("KATAKANA", 69) * 16 +
+    masteredByStage("CORE_VOCAB", 2000) * 25 +
+    masteredByStage("DAILY_CONVERSATION", 1000) * 17 +
+    masteredByStage("NUMBERS", NUMBER_CARDS.length) * 15 +
     kanjiPct * 5
   );
 

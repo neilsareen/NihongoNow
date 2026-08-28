@@ -99,6 +99,7 @@ export async function POST(request: Request) {
     PHRASE: LearningStage.DAILY_CONVERSATION,
     CULTURE: LearningStage.CULTURE,
     CONVERSATION: LearningStage.CONVERSATION,
+    NUMBERS: LearningStage.NUMBERS,
   };
 
   const stage = contentTypeToStage[contentType];

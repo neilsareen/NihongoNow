@@ -16,6 +16,12 @@ import {
   type ConversationPattern,
   type ConversationScene,
 } from "@/lib/conversations";
+import {
+  NUMBER_SCENE_LABELS,
+  type NumberQuiz,
+  type NumberReading,
+  type NumberScene,
+} from "@/lib/numbers";
 
 type ContentType =
   | "HIRAGANA"
@@ -24,7 +30,8 @@ type ContentType =
   | "VOCABULARY"
   | "PHRASE"
   | "CULTURE"
-  | "CONVERSATION";
+  | "CONVERSATION"
+  | "NUMBERS";
 
 interface LessonItem {
   id: string;
@@ -56,7 +63,9 @@ interface LessonItem {
     body?: string;
     category?: string;
     isConversation?: boolean;
-    scene?: ConversationScene;
+    /** A conversation scene or a numbers scene — each card's own renderer
+     *  narrows it, and the two label maps never overlap. */
+    scene?: ConversationScene | NumberScene;
     canDo?: string;
     situation?: string;
     theySpeakFirst?: boolean;
@@ -65,6 +74,10 @@ interface LessonItem {
     reply?: ConversationLine[];
     pattern?: ConversationPattern;
     tip?: string;
+    isNumbers?: boolean;
+    readings?: NumberReading[];
+    /** Built server-side for a MULTIPLE_CHOICE numbers card. */
+    quiz?: NumberQuiz | null;
   } | null;
   review: {
     srsLevel: string;
@@ -103,6 +116,7 @@ const CONTENT_LABEL: Record<ContentType, { label: string; tone: string }> = {
   PHRASE: { label: "Phrase", tone: "var(--track-phrase)" },
   CULTURE: { label: "Culture", tone: "var(--sun)" },
   CONVERSATION: { label: "Conversation", tone: "var(--track-conversation)" },
+  NUMBERS: { label: "Numbers & money", tone: "var(--track-numbers)" },
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -136,6 +150,28 @@ function isConversationItem(item: LessonItem): boolean {
  */
 function isConversationScenario(item: LessonItem): boolean {
   return isConversationItem(item) && item.exerciseType === "SCENARIO";
+}
+
+function isNumbersItem(item: LessonItem): boolean {
+  return !!item.content?.isNumbers;
+}
+
+/** The teaching card: the situation, the table of figures, the line to say. */
+function isNumbersScenario(item: LessonItem): boolean {
+  return isNumbersItem(item) && item.exerciseType === "SCENARIO";
+}
+
+/**
+ * The figure quiz: a printed number on one side, four readings on the other.
+ * Falls back to false when the server could not build a question, so the card
+ * becomes an ordinary reveal rather than a choice with one option.
+ */
+function isNumbersQuiz(item: LessonItem): boolean {
+  return (
+    isNumbersItem(item) &&
+    item.exerciseType === "MULTIPLE_CHOICE" &&
+    (item.content?.quiz?.choices.length ?? 0) > 1
+  );
 }
 
 function AudioButton({
@@ -426,6 +462,19 @@ function CardFront({ item }: { item: LessonItem }) {
   const { content, contentType } = item;
   if (!content) return <p className="text-text-muted">No content</p>;
 
+  // A figure quiz is answered from the printed number alone — the form it is
+  // actually met in, on a tag, a lift panel or a departure board.
+  if (isNumbersQuiz(item)) {
+    return (
+      <span
+        className="font-display text-[3.25rem] leading-none font-extrabold tnum tracking-tight text-center"
+        style={{ color: "hsl(var(--track-numbers))" }}
+      >
+        {content.quiz!.figure}
+      </span>
+    );
+  }
+
   if (isListening(item)) {
     const text = getSpeechText(item);
     return (
@@ -491,7 +540,8 @@ function CardBack({ item }: { item: LessonItem }) {
     const japanese = content.japanese ?? content.character ?? "";
     // Whole lines rather than single words — set smaller so they don't wrap
     // into a wall. A conversation card's Japanese is a whole line too.
-    const isPhrase = contentType === "PHRASE" || contentType === "CONVERSATION";
+    const isPhrase =
+      contentType === "PHRASE" || contentType === "CONVERSATION" || contentType === "NUMBERS";
     return (
       <div className="flex flex-col items-center gap-2 text-center">
         <div className="flex items-center gap-2.5">
@@ -836,6 +886,223 @@ function ConversationAnswer({ item }: { item: LessonItem }) {
   );
 }
 
+/* ---------------------------------------------------------------------------
+   Numbers & money.
+
+   The teaching card is laid out the way the moment arrives: the situation, the
+   table of figures as they are actually printed, the line you would say, what
+   comes back, the frame underneath, and the trap at the bottom. The table is
+   the part that makes this track different from the rest of the app — a number
+   is only ever met as a figure on a tag or a screen, so the figure leads and
+   the reading answers it.
+   --------------------------------------------------------------------------- */
+
+/** One row of the table: the printed figure, then how it is said. */
+function ReadingRow({ reading }: { reading: NumberReading }) {
+  return (
+    <li className="flex items-center gap-3 py-2 border-b border-line last:border-0">
+      <span
+        className="font-display font-extrabold text-[17px] tnum tracking-tight shrink-0 min-w-[4.5rem]"
+        style={{ color: "hsl(var(--track-numbers))" }}
+      >
+        {reading.figure}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5 flex-wrap">
+          <span className="jp text-[16px] font-bold leading-snug">{reading.japanese}</span>
+          {reading.irregular && (
+            <span
+              className="font-display text-[9px] font-bold uppercase tracking-[0.1em] rounded-full px-1.5 py-0.5"
+              style={{ background: "hsl(var(--sun) / 0.18)", color: "hsl(var(--sun))" }}
+              title="An irregular sound change — this is where the pattern breaks"
+            >
+              Irregular
+            </span>
+          )}
+        </span>
+        <span className="block text-[12px] text-text-subtle leading-snug">{reading.romaji}</span>
+        <span className="block text-[12px] text-text-muted font-medium leading-snug mt-0.5">
+          {reading.english}
+        </span>
+      </span>
+      <AudioButton text={readingSpeechText(reading.kana)} />
+    </li>
+  );
+}
+
+function NumbersQuestion({ item }: { item: LessonItem }) {
+  const { content } = item;
+  if (!content) return null;
+  const scene = NUMBER_SCENE_LABELS[content.scene as NumberScene] ?? "Numbers";
+
+  return (
+    <div className="flex flex-col gap-4 w-full">
+      <div className="flex items-center justify-between gap-3">
+        <Masthead kicker={`Numbers · ${scene}`} tone="var(--track-numbers)" />
+        <MasteryPips review={item.review} />
+      </div>
+
+      {content.canDo && (
+        <p
+          className="font-display text-[11px] font-bold uppercase tracking-[0.12em]"
+          style={{ color: "hsl(var(--track-numbers))" }}
+        >
+          {content.canDo}
+        </p>
+      )}
+
+      <p className="text-[16px] leading-relaxed text-text-muted font-medium">
+        {content.situation}
+      </p>
+
+      <p className="font-display font-extrabold text-[19px] tracking-tight">
+        How do you say these?
+      </p>
+
+      {/* The figures without their readings: the question is whether the
+          learner can produce them, so the answer side is what fills them in. */}
+      <div className="flex flex-wrap gap-2">
+        {(content.readings ?? []).map((r, i) => (
+          <span
+            key={i}
+            className="font-display font-extrabold text-[17px] tnum rounded-tile px-3 py-1.5"
+            style={{
+              background: "hsl(var(--track-numbers) / 0.14)",
+              color: "hsl(var(--track-numbers))",
+            }}
+          >
+            {r.figure}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NumbersAnswer({ item }: { item: LessonItem }) {
+  const { content } = item;
+  if (!content) return null;
+  const hear = content.hear ?? [];
+  const reply = content.reply ?? [];
+
+  return (
+    <div className="flex flex-col gap-5 w-full animate-fade">
+      <div>
+        <DetailLabel>How they read</DetailLabel>
+        <ul className="mt-1.5">
+          {(content.readings ?? []).map((r, i) => (
+            <ReadingRow key={i} reading={r} />
+          ))}
+        </ul>
+      </div>
+
+      {content.say && (
+        <div>
+          <DetailLabel>You say</DetailLabel>
+          <div className="mt-2.5">
+            <DialogueLine line={content.say} tone="var(--track-numbers)" emphasis />
+          </div>
+        </div>
+      )}
+
+      {hear.length > 0 && (
+        <div>
+          <DetailLabel>{hear.length > 1 ? "You might hear" : "You'll hear"}</DetailLabel>
+          <div className="mt-2.5 flex flex-col gap-3">
+            {hear.map((line, i) => (
+              <DialogueLine key={i} line={line} tone="var(--sky)" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {reply.length > 0 && (
+        <div>
+          <DetailLabel>Then you can say</DetailLabel>
+          <div className="mt-2.5 flex flex-col gap-3">
+            {reply.map((line, i) => (
+              <DialogueLine key={i} line={line} tone="var(--track-numbers)" />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {content.pattern && (
+        <div className="rounded-tile bg-surface-raised p-3.5">
+          <DetailLabel>The pattern</DetailLabel>
+          <p className="jp text-[17px] font-bold mt-2">{content.pattern.frame}</p>
+          <p className="text-[13px] text-text-subtle mt-0.5">{content.pattern.gloss}</p>
+          <ul className="mt-3 flex flex-col gap-2">
+            {content.pattern.swaps.map((swap, i) => (
+              <li key={i} className="flex flex-col">
+                <span className="jp text-[15px] font-medium">{swap.japanese}</span>
+                <span className="text-[12px] text-text-subtle">{swap.english}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {content.tip && (
+        <p className="text-[14px] text-text-muted leading-relaxed">{content.tip}</p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The figure quiz's choice list. Each option carries its romaji as well as its
+ * kana: the track is open from day one, before the alphabet is, and a question
+ * the learner cannot read is not a question about numbers. It gives nothing
+ * away — every option is a real reading, and which one matches the figure is
+ * still the thing being asked.
+ */
+function NumbersQuizChoices({
+  quiz,
+  chosen,
+  onPick,
+}: {
+  quiz: NumberQuiz;
+  chosen: string | null;
+  onPick: (kana: string) => void;
+}) {
+  return (
+    <div className="space-y-2 shrink-0">
+      {quiz.choices.map((choice) => {
+        const isAnswer = choice.kana === quiz.answer.kana;
+        const isSelected = chosen === choice.kana;
+
+        let stateClass = "bg-surface border-line text-text hover:border-line-strong elevated";
+        if (chosen) {
+          if (isSelected && isAnswer) stateClass = "bg-lime border-lime text-on-light animate-pop";
+          else if (isSelected) stateClass = "bg-rose border-rose text-on-dark animate-shake";
+          else if (isAnswer) stateClass = "bg-lime/15 border-lime/50 text-lime";
+          else stateClass = "bg-surface border-line text-text-subtle opacity-60";
+        }
+
+        return (
+          <button
+            key={choice.kana}
+            disabled={!!chosen}
+            className={cn(
+              "w-full py-3.5 px-5 rounded-tile text-left border",
+              "transition-colors duration-150 disabled:cursor-default",
+              stateClass
+            )}
+            onClick={() => {
+              if (chosen) return;
+              onPick(choice.kana);
+            }}
+          >
+            <span className="jp block text-[17px] font-bold leading-snug">{choice.japanese}</span>
+            <span className="block text-[12px] opacity-75 leading-snug mt-0.5">{choice.romaji}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 function ScriptIntroCard({ item }: { item: LessonItem }) {
   const { content } = item;
   if (!content) return null;
@@ -1007,7 +1274,9 @@ export default function LessonPage() {
       ? "CULTURE"
       : isConversationItem(item)
         ? "CONVERSATION"
-        : item.contentType;
+        : isNumbersItem(item)
+          ? "NUMBERS"
+          : item.contentType;
     fetch("/api/review", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1238,9 +1507,11 @@ export default function LessonPage() {
   const isCultural = currentItem ? isCulturalTipItem(currentItem) : false;
   const isScriptIntro = currentItem ? isScriptIntroItem(currentItem) : false;
   const isRehearsal = currentItem ? isConversationScenario(currentItem) : false;
-  // All three are read-then-self-assess cards, so they share the reveal flow
+  const isNumberCard = currentItem ? isNumbersScenario(currentItem) : false;
+  const numberQuiz = currentItem && isNumbersQuiz(currentItem) ? currentItem.content!.quiz! : null;
+  // All four are read-then-self-assess cards, so they share the reveal flow
   // below and differ only in what they put on the two faces.
-  const isEditorial = isCultural || isScriptIntro || isRehearsal;
+  const isEditorial = isCultural || isScriptIntro || isRehearsal || isNumberCard;
 
   return (
     <div className="screen-fixed flex flex-col">
@@ -1345,6 +1616,12 @@ export default function LessonPage() {
                       ) : (
                         <ConversationQuestion item={currentItem} />
                       )
+                    ) : isNumberCard ? (
+                      revealed ? (
+                        <NumbersAnswer item={currentItem} />
+                      ) : (
+                        <NumbersQuestion item={currentItem} />
+                      )
                     ) : revealed ? (
                       <CulturalTipAnswer item={currentItem} />
                     ) : (
@@ -1432,7 +1709,9 @@ export default function LessonPage() {
 
                   <div className="px-8 pt-5 pb-8 flex flex-col items-center justify-center gap-4 min-h-[12rem]">
                     <p className="text-[13px] font-semibold text-text-subtle">
-                      {isFillInBlankItem
+                      {numberQuiz
+                        ? "How is this said?"
+                        : isFillInBlankItem
                         ? "Type it in romaji"
                         : isE2J(currentItem)
                           ? silent
@@ -1445,7 +1724,7 @@ export default function LessonPage() {
                     <CardFront item={currentItem} />
                   </div>
 
-                  {!isListeningMC && (
+                  {!isListeningMC && !numberQuiz && (
                     <div className="border-t border-line p-6 flex items-center justify-center min-h-[7rem] bg-ink-deep/40">
                       {revealed ? (
                         <div className="w-full flex flex-col items-center gap-2 animate-pop-in">
@@ -1478,7 +1757,29 @@ export default function LessonPage() {
                 )}
                 </CardScroller>
 
-                {isListeningMC ? (
+                {numberQuiz ? (
+                  <>
+                    <NumbersQuizChoices
+                      quiz={numberQuiz}
+                      chosen={mcChoice}
+                      onPick={(kana) => {
+                        const correct = kana === numberQuiz.answer.kana;
+                        setMcChoice(kana);
+                        setMcCorrect(correct);
+                        if (correct) setTimeout(() => handleAnswer(true), 700);
+                      }}
+                    />
+                    {mcChoice && !mcCorrect && (
+                      <button
+                        onClick={() => handleAnswer(false)}
+                        className={buttonStyles({ variant: "secondary", full: true, size: "lg", className: "shrink-0" })}
+                        style={buttonVars("secondary")}
+                      >
+                        Continue
+                      </button>
+                    )}
+                  </>
+                ) : isListeningMC ? (
                   <div className="space-y-2 shrink-0">
                     {mcChoices.map((choice) => {
                       const isCorrectAnswer = choice === (currentItem.content?.english ?? "");

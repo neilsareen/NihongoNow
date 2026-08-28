@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ContentType } from "@prisma/client";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { CONVERSATIONS } from "@/lib/conversations";
+import { NUMBER_CARDS, buildNumberQuiz } from "@/lib/numbers";
 import { SCRIPT_INTRO_LIST } from "@/lib/script-intros";
 import { findPhrasesByIds } from "@/lib/phrases";
 import { effectiveSrsLevel } from "@/lib/srs";
@@ -31,19 +32,22 @@ export async function GET(
   const culturalTipMap = new Map(CULTURAL_TIPS.map((t) => [t.id, t]));
   const scriptIntroMap = new Map(SCRIPT_INTRO_LIST.map((t) => [t.id, t]));
   const conversationMap = new Map(CONVERSATIONS.map((c) => [c.id, c]));
+  const numberMap = new Map(NUMBER_CARDS.map((c) => [c.id, c]));
 
-  // Three kinds of content live in code rather than in the database — social
-  // conventions, explainer cards and conversation rehearsals — and each is
-  // recognisable from its id prefix.
+  // Four kinds of content live in code rather than in the database — social
+  // conventions, explainer cards, conversation rehearsals and the numbers &
+  // money cards — and each is recognisable from its id prefix.
   const realItems = lesson.items.filter(
     (i) =>
       !i.contentId.startsWith("cultural-") &&
       !i.contentId.startsWith("intro-") &&
-      !i.contentId.startsWith("conv-")
+      !i.contentId.startsWith("conv-") &&
+      !i.contentId.startsWith("num-")
   );
   const culturalItems = lesson.items.filter((i) => i.contentId.startsWith("cultural-"));
   const scriptIntroItems = lesson.items.filter((i) => i.contentId.startsWith("intro-"));
   const conversationItems = lesson.items.filter((i) => i.contentId.startsWith("conv-"));
+  const numberItems = lesson.items.filter((i) => i.contentId.startsWith("num-"));
 
   const itemsByType = realItems.reduce<Record<string, typeof realItems>>(
     (acc, item) => {
@@ -67,6 +71,7 @@ export async function GET(
     ...allRealContentIds,
     ...culturalItems.map((i) => i.contentId),
     ...conversationItems.map((i) => i.contentId),
+    ...numberItems.map((i) => i.contentId),
   ];
 
   const [hiragana, katakana, kanji, vocabulary, phrases, reviews] = await Promise.all([
@@ -130,6 +135,25 @@ export async function GET(
     }
   }
 
+  // The same lift as a rehearsal: the line the learner says goes to the top
+  // level so the say-it-back and listening cards can read a numbers card like
+  // any other item. The figure quiz is built here rather than in the browser,
+  // so distractors can be drawn from the whole deck without shipping it twice.
+  for (const item of numberItems) {
+    const card = numberMap.get(item.contentId);
+    if (card) {
+      contentMap.set(item.contentId, {
+        isNumbers: true,
+        ...card,
+        japanese: card.say.japanese,
+        kana: card.say.kana,
+        romaji: card.say.romaji,
+        english: card.say.english,
+        quiz: item.exerciseType === "MULTIPLE_CHOICE" ? buildNumberQuiz(card) : undefined,
+      });
+    }
+  }
+
   const reviewMap = new Map<string, (typeof reviews)[0]>();
   for (const r of reviews) reviewMap.set(`${r.contentType}:${r.contentId}`, r);
 
@@ -138,7 +162,9 @@ export async function GET(
       ? ContentType.CULTURE
       : item.contentId.startsWith("conv-")
         ? ContentType.CONVERSATION
-        : item.contentType;
+        : item.contentId.startsWith("num-")
+          ? ContentType.NUMBERS
+          : item.contentType;
     const r = reviewMap.get(`${lookupType}:${item.contentId}`) ?? null;
     return {
       ...item,
