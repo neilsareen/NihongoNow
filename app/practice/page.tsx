@@ -303,13 +303,15 @@ function LineChips({ label, lines }: { label: string; lines: ConversationLine[] 
 
 type TypeKey = "HIRAGANA" | "KATAKANA" | "KANJI" | "VOCABULARY" | "PHRASE" | "CONVERSATION";
 
+// Same order as the dashboard's track list, kanji last: the drill picker and
+// the homepage should not disagree about what this app is mostly for.
 const TYPES: { key: TypeKey; label: string; glyph: string; tone: string }[] = [
   { key: "HIRAGANA", label: "Hiragana", glyph: "あ", tone: "var(--track-hiragana)" },
   { key: "KATAKANA", label: "Katakana", glyph: "ア", tone: "var(--track-katakana)" },
-  { key: "KANJI", label: "Kanji", glyph: "漢", tone: "var(--track-kanji)" },
   { key: "VOCABULARY", label: "Vocabulary", glyph: "語", tone: "var(--track-vocab)" },
   { key: "PHRASE", label: "Phrases", glyph: "話", tone: "var(--track-phrase)" },
   { key: "CONVERSATION", label: "Conversation", glyph: "会", tone: "var(--track-conversation)" },
+  { key: "KANJI", label: "Kanji", glyph: "漢", tone: "var(--track-kanji)" },
 ];
 
 /** Types whose availability depends on how much kana the learner has mastered. */

@@ -1,4 +1,5 @@
 import { prisma } from "./prisma";
+import type { KanjiDepth } from "./kanji-tiers";
 import { ContentType, ExerciseType } from "@prisma/client";
 import { CULTURAL_TIPS, getRandomCulturalTip } from "./cultural-tips";
 import { CONVERSATIONS } from "./conversations";
@@ -6,6 +7,7 @@ import { SCRIPT_INTROS, type ScriptIntroKey } from "./script-intros";
 import {
   getMasteredKana,
   filterUnlockedReviews,
+  getKanjiDepth,
   getUnlockedKanji,
   getUnlockedVocabulary,
   getUnlockedPhrases,
@@ -107,7 +109,14 @@ export async function generateDailyLesson(config: LessonConfig) {
   const effectiveBudget = TARGET_LESSON_SECONDS - cultureSeconds - conversationSeconds;
   const reviewBudget = Math.floor(effectiveBudget * 0.7);
 
-  const masteredKana = await getMasteredKana(userId);
+  // Both are settled once and threaded down, so every place a lesson can pick
+  // up a kanji applies the same ceiling. A depth honoured in only some of them
+  // would be worse than none: the learner would still meet the characters they
+  // asked not to see, just less predictably.
+  const [masteredKana, kanjiDepth] = await Promise.all([
+    getMasteredKana(userId),
+    getKanjiDepth(userId),
+  ]);
 
   // Fetch more than we'll use; trim by time budget. Reviews are then filtered
   // to content the learner can actually read: someone who studied kanji before
@@ -125,7 +134,7 @@ export async function generateDailyLesson(config: LessonConfig) {
     orderBy: [{ srsLevel: "asc" }, { nextReviewAt: "asc" }],
     take: 60,
   });
-  const allDueReviews = await filterUnlockedReviews(fetchedReviews, masteredKana);
+  const allDueReviews = await filterUnlockedReviews(fetchedReviews, masteredKana, kanjiDepth);
 
   let reviewSeconds = 0;
   const dueReviews: typeof allDueReviews = [];
@@ -143,7 +152,7 @@ export async function generateDailyLesson(config: LessonConfig) {
 
   const weakTypes = await getWeakContentTypes(userId);
   const { items: newItems, learned, hasLearnedDakuten } =
-    await getNewContent(userId, newItemBudget, weakTypes, masteredKana);
+    await getNewContent(userId, newItemBudget, weakTypes, masteredKana, kanjiDepth);
   const spreadNewItems = spreadByFamily(newItems);
 
   const reviewItems = dueReviews.map((review) => ({
@@ -213,7 +222,7 @@ export async function generateDailyLesson(config: LessonConfig) {
 
   const finalItems = [...scriptIntroItems, ...withCulture];
 
-  const paddedItems = await padToMinimumDuration(finalItems, userId, now, masteredKana);
+  const paddedItems = await padToMinimumDuration(finalItems, userId, now, masteredKana, kanjiDepth);
 
   const lesson = await prisma.lesson.create({
     data: {
@@ -253,7 +262,8 @@ async function padToMinimumDuration(
   items: LessonItemSpec[],
   userId: string,
   now: Date,
-  masteredKana: MasteredKana
+  masteredKana: MasteredKana,
+  kanjiDepth: KanjiDepth
 ): Promise<LessonItemSpec[]> {
   if (estimateSeconds(items) >= MIN_LESSON_SECONDS) return items;
 
@@ -272,7 +282,7 @@ async function padToMinimumDuration(
       orderBy: { nextReviewAt: "asc" },
       take: 30,
     });
-    const unlockedUpcoming = await filterUnlockedReviews(upcomingReviews, masteredKana);
+    const unlockedUpcoming = await filterUnlockedReviews(upcomingReviews, masteredKana, kanjiDepth);
 
     for (const r of unlockedUpcoming) {
       if (estimateSeconds(padded) >= MIN_LESSON_SECONDS) break;
@@ -462,7 +472,8 @@ async function getNewContent(
   userId: string,
   budget: number,
   weakTypes: ContentType[],
-  masteredKana: MasteredKana
+  masteredKana: MasteredKana,
+  kanjiDepth: KanjiDepth
 ) {
   const existing = await prisma.review.findMany({ where: { userId }, select: { contentId: true, contentType: true } });
   const learnedByType: Record<string, Set<string>> = {};
@@ -483,7 +494,7 @@ async function getNewContent(
     // Words and kanji are offered only once every kana in their reading is
     // mastered, so the learner can always sound out what they're shown.
     getUnlockedVocabulary(masteredKana, [...(learnedByType[ContentType.VOCABULARY] ?? [])]),
-    getUnlockedKanji(masteredKana, [...(learnedByType[ContentType.KANJI] ?? [])]),
+    getUnlockedKanji(masteredKana, [...(learnedByType[ContentType.KANJI] ?? [])], kanjiDepth),
     getUnlockedPhrases(masteredKana, [...(learnedByType[ContentType.PHRASE] ?? [])]),
     learnedKanaIds.length
       ? prisma.japaneseCharacter.findMany({ where: { id: { in: learnedKanaIds }, displayOrder: { gte: DAKUTEN_DISPLAY_ORDER_START } }, select: { id: true }, take: 1 })

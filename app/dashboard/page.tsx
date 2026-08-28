@@ -5,7 +5,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import { ChevronRight, Clapperboard, Lock, Zap } from "lucide-react";
 import { getStartOfDayInTimezone } from "@/lib/utils";
-import { getMasteredKana, filterUnlockedReviews, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, getConversationGate } from "@/lib/progression";
+import { getMasteredKana, filterUnlockedReviews, getKanjiDepth, getKanjiTierProgress, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, getConversationGate } from "@/lib/progression";
 import { CONVERSATIONS } from "@/lib/conversations";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, buttonStyles, buttonVars } from "@/app/components/ui";
 import { SpeakingCta } from "./speaking-cta";
@@ -27,7 +27,10 @@ async function getDashboardData(userId: string, timeZone: string) {
   // Resolved first so the due-review list can be filtered against it: a lesson
   // only serves content the learner can read, so counting locked items as
   // "due" would promise work they can't actually be given.
-  const masteredKana = await getMasteredKana(userId);
+  const [masteredKana, kanjiDepth] = await Promise.all([
+    getMasteredKana(userId),
+    getKanjiDepth(userId),
+  ]);
 
   const [profile, stats, progress, fetchedDueReviews, inProgressLesson, todayStudy, todayLessons, conversationGate] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
@@ -51,17 +54,26 @@ async function getDashboardData(userId: string, timeZone: string) {
     getConversationGate(userId),
   ]);
 
-  const unlockedDue = await filterUnlockedReviews(fetchedDueReviews, masteredKana);
+  const unlockedDue = await filterUnlockedReviews(fetchedDueReviews, masteredKana, kanjiDepth);
   const dueCountsByType: Record<string, number> = {};
   for (const r of unlockedDue) {
     dueCountsByType[r.contentType] = (dueCountsByType[r.contentType] ?? 0) + 1;
   }
   const reviewsDue = unlockedDue.length;
-  const kanjiUnlocked = (await getUnlockedKanji(masteredKana)).length > 0;
+  const kanjiUnlocked = (await getUnlockedKanji(masteredKana, [], kanjiDepth)).length > 0;
   const vocabUnlocked = (await getUnlockedVocabulary(masteredKana)).length > 0;
   const phraseUnlocked = (await getUnlockedPhrases(masteredKana)).length > 0;
 
-  return { profile, stats, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, vocabUnlocked, phraseUnlocked, conversationGate };
+  // Counted from the corpus rather than read off UserProgress, which holds one
+  // number for kanji as a whole: once the learner has capped their depth, the
+  // row has to measure them against the characters they actually opted into,
+  // or someone on "essential only" could show more mastered than the bar holds.
+  const kanjiTiers = await getKanjiTierProgress(userId, kanjiDepth);
+  const kanjiInDepth = kanjiTiers.filter((t) => t.included);
+  const kanjiTotal = kanjiInDepth.reduce((n, t) => n + t.total, 0);
+  const kanjiMastered = kanjiInDepth.reduce((n, t) => n + t.mastered, 0);
+
+  return { profile, stats, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, vocabUnlocked, phraseUnlocked, conversationGate, kanjiDepth, kanjiTotal, kanjiMastered };
 }
 
 // What symbol best represents the makeup of a lesson: for an in-progress
@@ -103,7 +115,7 @@ export default async function DashboardPage() {
   if (!session) redirect("/api/auth/signout");
 
   const timeZone = (await cookies()).get("tz")?.value || "UTC";
-  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, vocabUnlocked, phraseUnlocked, conversationGate } = await getDashboardData(session.userId, timeZone);
+  const { profile, progress, reviewsDue, dueCountsByType, inProgressLesson, todayStudy, todayLessons, kanjiUnlocked, vocabUnlocked, phraseUnlocked, conversationGate, kanjiTotal, kanjiMastered } = await getDashboardData(session.userId, timeZone);
   if (!profile) redirect("/onboarding");
 
   const progressMap = Object.fromEntries(progress.map((p) => [p.stage, p]));
@@ -116,31 +128,57 @@ export default async function DashboardPage() {
   const goalMinutes = profile.studyGoalMinutes;
   const goalPct = Math.min(100, goalMinutes > 0 ? Math.round((todayMinutes / goalMinutes) * 100) : 0);
 
-  // One list for every content track, ordered the way the curriculum unlocks
-  // them. The previous dashboard split these across three gradient tiles and a
-  // separate card, which made two identical measurements look like two
-  // different kinds of thing.
-  const tracks = [
-    { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", practiceType: "HIRAGANA" },
-    { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", practiceType: "KATAKANA" },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", practiceType: "KANJI" },
-    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", practiceType: "VOCABULARY" },
-    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: "PHRASE" },
+  // One list for every content track. The order is the app's priorities read
+  // top to bottom, not the order the curriculum happens to unlock: kana first
+  // because nothing else can be read without it, then the words, phrases and
+  // exchanges that are the point of the product — understanding what is said
+  // and being able to answer.
+  //
+  // Kanji goes last deliberately. It is the part of Japanese most likely to
+  // stall a traveller before they can order lunch, and putting it third had it
+  // reading as the next thing to grind through after the alphabet. It is now
+  // an opt-in depth (see lib/kanji-tiers.ts) rather than a wall, and its row
+  // leads to the track screen where that choice is made rather than straight
+  // into a drill.
+  const tracks: {
+    label: string;
+    stage: string;
+    total: number;
+    glyph: string;
+    tone: string;
+    practiceType: string;
+    href: string;
+    /** Set only where the count is not the stage's own UserProgress row. */
+    mastered?: number;
+  }[] = [
+    { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", practiceType: "HIRAGANA", href: "/practice?type=HIRAGANA" },
+    { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", practiceType: "KATAKANA", href: "/practice?type=KATAKANA" },
+    { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", practiceType: "VOCABULARY", href: "/practice?type=VOCABULARY" },
+    { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", practiceType: "PHRASE", href: "/practice?type=PHRASE" },
     // Survival speaking. Sealed until every kana is at Learning, because every
     // line in it is written in kana the learner is meant to be able to read.
-    { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", practiceType: "CONVERSATION" },
+    { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", practiceType: "CONVERSATION", href: "/practice?type=CONVERSATION" },
+    // Counts come from the corpus at the learner's chosen depth rather than
+    // from UserProgress, so the row measures them against the characters they
+    // actually opted into.
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: Math.max(1, kanjiTotal), mastered: kanjiMastered, glyph: "漢", tone: "var(--track-kanji)", practiceType: "KANJI", href: "/kanji" },
   ];
 
   const masteredByStage = (stage: string, total: number) => {
     const p = progressMap[stage];
     return Math.min(1, (p?.masteredItems ?? 0) / total);
   };
+  // Measured against the characters the learner opted into, so capping the
+  // depth cannot strand the score short of 100 forever. Kanji stays at 5 of
+  // the 100 points: reading signs helps, but this score is about getting
+  // around and being understood.
+  const kanjiPct = kanjiTotal > 0 ? Math.min(1, kanjiMastered / kanjiTotal) : 0;
   const travelScore = Math.round(
     masteredByStage("HIRAGANA", 71) * 25 +
     masteredByStage("KATAKANA", 69) * 20 +
     masteredByStage("CORE_VOCAB", 2000) * 30 +
     masteredByStage("DAILY_CONVERSATION", 1000) * 20 +
-    masteredByStage("ESSENTIAL_KANJI", 1500) * 5
+    kanjiPct * 5
   );
 
   const travelLevel =
@@ -168,7 +206,7 @@ export default async function DashboardPage() {
   const fallbackStage =
     masteredByStage("HIRAGANA", 71) < 0.9 ? "HIRAGANA" :
     masteredByStage("KATAKANA", 69) < 0.9 ? "KATAKANA" :
-    (kanjiUnlocked && masteredByStage("ESSENTIAL_KANJI", 1500) < 0.9) ? "KANJI" :
+    (kanjiUnlocked && kanjiPct < 0.9) ? "KANJI" :
     masteredByStage("CORE_VOCAB", 2000) < 0.9 ? "VOCABULARY" :
     "PHRASE";
   const lessonTypeCounts: Partial<Record<string, number>> = inProgressLesson
@@ -263,7 +301,7 @@ export default async function DashboardPage() {
 
         <div className="space-y-2.5 stagger">
           {tracks.map((track) => {
-            const mastered = progressMap[track.stage]?.masteredItems ?? 0;
+            const mastered = track.mastered ?? progressMap[track.stage]?.masteredItems ?? 0;
             const pct = Math.min(100, Math.round((mastered / track.total) * 100));
 
             // Kanji, vocabulary and phrases stay sealed — including their
@@ -275,7 +313,7 @@ export default async function DashboardPage() {
               (track.practiceType === "VOCABULARY" && !vocabUnlocked) ||
               (track.practiceType === "PHRASE" && !phraseUnlocked) ||
               (track.stage === "CONVERSATION" && !conversationGate.unlocked);
-            const href = !locked && track.practiceType ? `/practice?type=${track.practiceType}` : null;
+            const href = !locked ? track.href : null;
             // A padlock with no reason next to it reads as a bug. Conversation
             // says what is left to do and how far along it already is.
             const lockedNote =

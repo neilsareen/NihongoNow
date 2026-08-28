@@ -3,6 +3,15 @@ import { ContentType } from "@prisma/client";
 import { findPhrasesByIds, getPhraseCandidates } from "./phrases";
 import { pickPrimaryKanjiReading } from "./utils";
 import { effectiveSrsLevel, srsRank, type SRSLevel } from "./srs";
+import {
+  KANJI_TIERS,
+  charactersUpTo,
+  isKanjiInDepth,
+  kanjiTierOf,
+  tiersUpTo,
+  type KanjiDepth,
+  type KanjiTier,
+} from "./kanji-tiers";
 
 export const KANA_TYPES: ContentType[] = [ContentType.HIRAGANA, ContentType.KATAKANA];
 
@@ -104,9 +113,16 @@ export function isKanjiUnlocked(
 // Drops reviews for content whose reading the learner can't read yet. Only the
 // already-fetched page of reviews is checked, so this stays cheap regardless
 // of corpus size. Kana reviews always pass.
+//
+// `depth` additionally drops kanji outside the band the learner has opted into.
+// It belongs here rather than only at the point where new content is chosen,
+// because a learner who narrows their setting keeps the review rows they
+// already earned: without this they would go on coming due forever in a
+// dashboard count that no lesson would ever satisfy. The rows are kept, not
+// deleted — widening the setting brings them straight back.
 export async function filterUnlockedReviews<
   T extends { contentType: ContentType; contentId: string }
->(reviews: T[], mastered: MasteredKana): Promise<T[]> {
+>(reviews: T[], mastered: MasteredKana, depth?: KanjiDepth): Promise<T[]> {
   const wordReviews = reviews.filter((r) => !UNGATED_TYPES.includes(r.contentType));
   if (wordReviews.length === 0) return reviews;
 
@@ -135,18 +151,51 @@ export async function filterUnlockedReviews<
   const unlocked = new Set<string>();
   for (const v of vocab) if (isReadingUnlocked(v.kana, mastered)) unlocked.add(v.id);
   for (const p of phrases) if (isReadingUnlocked(p.kana, mastered)) unlocked.add(p.id);
-  for (const k of kanji) if (isKanjiUnlocked(k, mastered)) unlocked.add(k.id);
+  for (const k of kanji) {
+    if (!isKanjiUnlocked(k, mastered)) continue;
+    if (depth && !isKanjiInDepth(k.character, depth)) continue;
+    unlocked.add(k.id);
+  }
 
   return reviews.filter(
     (r) => UNGATED_TYPES.includes(r.contentType) || unlocked.has(r.contentId)
   );
 }
 
-// Kanji the learner can read right now, most frequent first.
-export async function getUnlockedKanji(mastered: MasteredKana, excludeIds: string[] = []) {
+/**
+ * The learner's chosen kanji depth. Read on its own rather than passed down
+ * from whatever already loaded the profile, because the three callers that
+ * need it (lesson generation, drills, the dashboard) each reach this file by a
+ * different route, and a depth that is merely *usually* applied is worse than
+ * none — it would mean a learner who asked for essentials only still meeting
+ * advanced characters in whichever surface forgot to thread it through.
+ */
+export async function getKanjiDepth(userId: string): Promise<KanjiDepth> {
+  const profile = await prisma.userProfile.findUnique({
+    where: { id: userId },
+    select: { kanjiDepth: true },
+  });
+  return profile?.kanjiDepth ?? "ESSENTIAL";
+}
+
+// Kanji the learner can read right now, most frequent first, and within the
+// band they have opted into. `depth` is optional so the readability helpers
+// can still ask "is any kanji at all readable" without a profile lookup.
+export async function getUnlockedKanji(
+  mastered: MasteredKana,
+  excludeIds: string[] = [],
+  depth?: KanjiDepth
+) {
   if (mastered.hiragana.size === 0 && mastered.katakana.size === 0) return [];
+  // `null` means the depth places no ceiling on the corpus — see
+  // `charactersUpTo`, which deliberately does not enumerate the open-ended
+  // advanced band.
+  const allowed = depth ? charactersUpTo(depth) : null;
   const candidates = await prisma.kanji.findMany({
-    where: excludeIds.length ? { id: { notIn: excludeIds } } : undefined,
+    where: {
+      ...(excludeIds.length ? { id: { notIn: excludeIds } } : {}),
+      ...(allowed ? { character: { in: allowed } } : {}),
+    },
     orderBy: { frequency: "desc" },
     take: CANDIDATE_POOL,
     select: {
@@ -181,11 +230,66 @@ export async function getUnlockedPhrases(mastered: MasteredKana, excludeIds: str
 }
 
 // Whether any kanji at all is readable yet — drives the locked states in the UI.
+// Scoped to the learner's depth, so a row that says "unlocked" always leads to
+// content a drill can actually serve.
 export async function hasAnyUnlockedKanji(userId: string): Promise<boolean> {
-  const mastered = await getMasteredKana(userId);
-  const unlocked = await getUnlockedKanji(mastered);
+  const [mastered, depth] = await Promise.all([
+    getMasteredKana(userId),
+    getKanjiDepth(userId),
+  ]);
+  const unlocked = await getUnlockedKanji(mastered, [], depth);
   return unlocked.length > 0;
 }
+
+export interface KanjiTierProgress {
+  tier: KanjiTier;
+  /** Characters in this band that exist in the corpus. */
+  total: number;
+  /** How many of them the learner has taken to MASTERED. */
+  mastered: number;
+  /** Whether this band is inside the learner's chosen depth. */
+  included: boolean;
+}
+
+/**
+ * Per-band totals and mastery, for the kanji track screen.
+ *
+ * Counted from the corpus rather than from `UserProgress`, which stores one
+ * number for kanji as a whole and so cannot say which band the mastered
+ * characters came from. Both queries are small — the corpus is the corpus, and
+ * a learner has at most one review row per character.
+ */
+export async function getKanjiTierProgress(
+  userId: string,
+  depth: KanjiDepth
+): Promise<KanjiTierProgress[]> {
+  const [corpus, masteredReviews] = await Promise.all([
+    prisma.kanji.findMany({ select: { id: true, character: true } }),
+    prisma.review.findMany({
+      where: { userId, contentType: ContentType.KANJI, srsLevel: "MASTERED" },
+      select: { contentId: true },
+    }),
+  ]);
+
+  const masteredIds = new Set(masteredReviews.map((r) => r.contentId));
+  const totals = new Map<KanjiTier, { total: number; mastered: number }>(
+    KANJI_TIERS.map((t) => [t, { total: 0, mastered: 0 }])
+  );
+
+  for (const k of corpus) {
+    const bucket = totals.get(kanjiTierOf(k.character))!;
+    bucket.total += 1;
+    if (masteredIds.has(k.id)) bucket.mastered += 1;
+  }
+
+  const included = new Set(tiersUpTo(depth));
+  return KANJI_TIERS.map((tier) => ({
+    tier,
+    ...totals.get(tier)!,
+    included: included.has(tier),
+  }));
+}
+
 
 export async function hasAnyUnlockedVocabulary(userId: string): Promise<boolean> {
   const mastered = await getMasteredKana(userId);

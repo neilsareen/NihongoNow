@@ -26,6 +26,16 @@ enum SRSLevel {
   MASTERED
 }
 
+// How far into the kanji corpus a learner wants to go. The value names the
+// deepest band they have opted into; every shallower band is included with it.
+// See lib/kanji-tiers.ts for what each band holds and why the split is by
+// usefulness on the ground rather than by JLPT level.
+enum KanjiDepth {
+  ESSENTIAL
+  INTERMEDIATE
+  ADVANCED
+}
+
 enum LearningStage {
   HIRAGANA
   KATAKANA
@@ -58,6 +68,10 @@ model UserProfile {
   currentStage     LearningStage @default(HIRAGANA)
   nativeLevel      String?
   studyGoalMinutes Int           @default(20)
+  // Defaults to the essential band: Ikou is built around understanding and
+  // speaking, so a learner who never opens this setting is not handed the
+  // whole character set by accident.
+  kanjiDepth       KanjiDepth    @default(ESSENTIAL)
   currentStreak    Int           @default(0)
   longestStreak    Int           @default(0)
   lastStudiedAt    DateTime?

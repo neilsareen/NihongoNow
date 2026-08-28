@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { pickPrimaryKanjiReading } from "@/lib/utils";
-import { getMasteredKana, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, isConversationUnlocked } from "@/lib/progression";
+import { getKanjiDepth, getMasteredKana, getUnlockedKanji, getUnlockedVocabulary, getUnlockedPhrases, isConversationUnlocked } from "@/lib/progression";
 import { findPhrasesByIds } from "@/lib/phrases";
 import {
   CONVERSATIONS,
@@ -87,7 +87,11 @@ export async function GET(request: Request) {
   const wantsConversation = requestedTypes.includes(ContentType.CONVERSATION);
   const masteredKana =
     wantsKanji || wantsVocab || wantsPhrase ? await getMasteredKana(session.userId) : null;
-  const unlockedKanji = masteredKana ? await getUnlockedKanji(masteredKana) : [];
+  // A drill honours the learner's kanji depth for the same reason a lesson
+  // does: "essential only" has to mean it everywhere, or it means nothing.
+  const kanjiDepth = wantsKanji ? await getKanjiDepth(session.userId) : null;
+  const unlockedKanji =
+    masteredKana && kanjiDepth ? await getUnlockedKanji(masteredKana, [], kanjiDepth) : [];
   const includeKanji = wantsKanji && unlockedKanji.length > 0;
 
   // The unlocked helpers return only what they need to test readability, so

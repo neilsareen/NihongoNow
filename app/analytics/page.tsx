@@ -18,7 +18,7 @@ import {
   VolumeX,
   type LucideIcon,
 } from "lucide-react";
-import { hasAnyUnlockedKanji, getConversationGate } from "@/lib/progression";
+import { getKanjiDepth, getKanjiTierProgress, hasAnyUnlockedKanji, getConversationGate } from "@/lib/progression";
 import { CULTURAL_TIPS } from "@/lib/cultural-tips";
 import { CONVERSATIONS } from "@/lib/conversations";
 import { BottomNav } from "@/app/components/bottom-nav";
@@ -83,14 +83,23 @@ export default async function AnalyticsPage() {
   if (!session) redirect("/login");
   const { userId } = session;
 
-  const [profile, stats, progress, lessonsCompleted, kanjiUnlocked, conversationGate] = await Promise.all([
+  const kanjiDepth = await getKanjiDepth(userId);
+  const [profile, stats, progress, lessonsCompleted, kanjiUnlocked, conversationGate, kanjiTiers] = await Promise.all([
     prisma.userProfile.findUnique({ where: { id: userId } }),
     prisma.userStatistics.findUnique({ where: { userId } }),
     prisma.userProgress.findMany({ where: { userId } }),
     prisma.lesson.count({ where: { userId, completedAt: { not: null } } }),
     hasAnyUnlockedKanji(userId),
     getConversationGate(userId),
+    getKanjiTierProgress(userId, kanjiDepth),
   ]);
+
+  // Kanji is measured against the bands the learner opted into, matching the
+  // dashboard row exactly — two lists of the same tracks disagreeing on the
+  // denominator is worse than either number on its own.
+  const kanjiInDepth = kanjiTiers.filter((t) => t.included);
+  const kanjiTotal = kanjiInDepth.reduce((n, t) => n + t.total, 0);
+  const kanjiMastered = kanjiInDepth.reduce((n, t) => n + t.mastered, 0);
 
   if (!profile) redirect("/onboarding");
 
@@ -103,14 +112,25 @@ export default async function AnalyticsPage() {
 
   // The kanji row shows a padlock until at least one kanji is readable, so the
   // glyph itself stays hidden until the learner can actually meet it.
-  const progressItems = [
+  const progressItems: {
+    label: string;
+    stage: string;
+    total: number;
+    glyph: string;
+    tone: string;
+    locked: boolean;
+    /** Set only where the count is not the stage's own UserProgress row. */
+    mastered?: number;
+  }[] = [
     { label: "Hiragana", stage: "HIRAGANA", total: 71, glyph: "あ", tone: "var(--track-hiragana)", locked: false },
     { label: "Katakana", stage: "KATAKANA", total: 69, glyph: "ア", tone: "var(--track-katakana)", locked: false },
-    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: 1500, glyph: "漢", tone: "var(--track-kanji)", locked: !kanjiUnlocked },
     { label: "Vocabulary", stage: "CORE_VOCAB", total: 2000, glyph: "語", tone: "var(--track-vocab)", locked: false },
     { label: "Phrases", stage: "DAILY_CONVERSATION", total: 1000, glyph: "話", tone: "var(--track-phrase)", locked: false },
     { label: "Culture", stage: "CULTURE", total: CULTURAL_TIPS.length, glyph: "礼", tone: "var(--sun)", locked: false },
     { label: "Conversation", stage: "CONVERSATION", total: CONVERSATIONS.length, glyph: "会", tone: "var(--track-conversation)", locked: !conversationGate.unlocked },
+    // Last, and counted against the learner's own ceiling — see the ordering
+    // note on the dashboard's track list.
+    { label: "Kanji", stage: "ESSENTIAL_KANJI", total: Math.max(1, kanjiTotal), mastered: kanjiMastered, glyph: "漢", tone: "var(--track-kanji)", locked: !kanjiUnlocked },
   ];
 
   const masteredByStage = (stage: string, total: number) => {
@@ -122,7 +142,7 @@ export default async function AnalyticsPage() {
   const katPct = masteredByStage("KATAKANA", 69);
   const vocPct = masteredByStage("CORE_VOCAB", 2000);
   const phrPct = masteredByStage("DAILY_CONVERSATION", 1000);
-  const kanPct = masteredByStage("ESSENTIAL_KANJI", 1500);
+  const kanPct = kanjiTotal > 0 ? Math.min(1, kanjiMastered / kanjiTotal) : 0;
 
   const travelScore = Math.round(hirPct * 25 + katPct * 20 + vocPct * 30 + phrPct * 20 + kanPct * 5);
 
@@ -231,7 +251,7 @@ export default async function AnalyticsPage() {
           <SectionLabel>Mastery by track</SectionLabel>
           <div className="space-y-2.5 stagger">
             {progressItems.map((item) => {
-              const mastered = progressMap[item.stage]?.masteredItems ?? 0;
+              const mastered = item.mastered ?? progressMap[item.stage]?.masteredItems ?? 0;
               const pct = Math.min(100, Math.round((mastered / item.total) * 100));
               return (
                 <div

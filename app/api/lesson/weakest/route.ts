@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getMasteredKana, filterUnlockedReviews } from "@/lib/progression";
+import { getKanjiDepth, getMasteredKana, filterUnlockedReviews } from "@/lib/progression";
 import { ExerciseType } from "@prisma/client";
 import { getSessionUser } from "@/lib/simulation";
 
@@ -34,7 +34,7 @@ export async function POST() {
     orderBy: [{ correctCount: "asc" }, { totalAttempts: "desc" }],
     take: 30,
   });
-  const reviews = (await filterUnlockedReviews(fetched, masteredKana)).slice(0, 15);
+  const reviews = (await filterUnlockedReviews(fetched, masteredKana, await getKanjiDepth(userId))).slice(0, 15);
 
   if (reviews.length === 0) {
     return NextResponse.json({ error: "No weak items found — keep studying!" }, { status: 404 });
