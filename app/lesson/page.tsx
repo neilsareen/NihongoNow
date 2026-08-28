@@ -31,7 +31,7 @@ export default function LessonPage() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-6 text-center">
         <div className="space-y-1.5">
           <h1 className="text-xl">Couldn&apos;t build a lesson</h1>
-          <p className="text-[14px] text-text-muted max-w-xs leading-relaxed font-medium">{error}</p>
+          <p className="text-[16px] text-text-muted max-w-xs leading-relaxed font-medium">{error}</p>
         </div>
         <Link href="/dashboard" className={buttonStyles({ variant: "secondary" })}
           style={buttonVars("secondary")}>
@@ -44,7 +44,7 @@ export default function LessonPage() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4">
       <div className="w-8 h-8 border-4 border-surface-raised border-t-coral rounded-full animate-spin" />
-      <p className="text-[14px] text-text-subtle font-medium">Assembling your lesson…</p>
+      <p className="text-[16px] text-text-subtle font-medium">Assembling your lesson…</p>
     </div>
   );
 }

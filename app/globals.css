@@ -217,6 +217,28 @@
     @apply bg-ink text-text antialiased;
   }
 
+  /* --- The type scale ---------------------------------------------------
+     Sizes are written as arbitrary pixel values at the point of use rather
+     than as named classes, because this design leans on a lot of one-off
+     numerals and headlines. They still come from one ladder, and the rungs
+     below the headlines are what the app is actually read at:
+
+       11px  the smallest label. Uppercase, tracked, never a sentence.
+       12px  a caption or a pip count under something else.
+       14px  eyebrow labels ("HOW THIS TRACK WORKS"). Uppercase and tracked,
+             so it sits a rung below its own point size in apparent weight.
+       15px  secondary prose — a card's supporting line, a hint, a blurb.
+       16px  a row title, or prose in a tight card.
+       17px  body copy. Anything the learner reads a paragraph of lands here.
+       18px  a screen or card title, and the large button label.
+
+     Everything was a size or two smaller until it was measured on a phone at
+     arm's length, which is where this app is actually used: 13px paragraphs
+     read as fine print and got skipped. Prose took the biggest lift, so the
+     gap between a label and a paragraph is now real. If you are adding text
+     and reaching for something under 15px, it had better not be a sentence.
+     ---------------------------------------------------------------------- */
+
   /* Display face for headings; the UI face carries everything else. */
   h1, h2, h3 {
     font-family: var(--font-display), system-ui, sans-serif;

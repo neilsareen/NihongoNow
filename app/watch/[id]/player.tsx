@@ -194,7 +194,7 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
                   style={isActive ? { background: `hsl(${roleTone} / 0.12)` } : undefined}
                 >
                   {role === "them" && (
-                    <span className="font-display font-bold text-[12px] tracking-tight truncate">
+                    <span className="font-display font-bold text-[13px] tracking-tight truncate">
                       {dialogue.them.label}
                     </span>
                   )}
@@ -205,12 +205,12 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
                     )}
                     style={{ background: `hsl(${roleTone})` }}
                   >
-                    <span className="jp text-[15px] font-bold leading-none">
+                    <span className="jp text-[17px] font-bold leading-none">
                       {role === "you" ? YOU_GLYPH : dialogue.them.glyph}
                     </span>
                   </span>
                   {role === "you" && (
-                    <span className="font-display font-bold text-[12px] tracking-tight">You</span>
+                    <span className="font-display font-bold text-[13px] tracking-tight">You</span>
                   )}
                 </div>
               );
@@ -220,7 +220,7 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
           {/* Subtitles. Sized to be read at arm's length, not scanned. */}
           <div className="border-t border-line px-5 py-5 min-h-[10.5rem] flex flex-col items-center justify-center gap-2.5 text-center bg-ink-deep/40">
             {turn.stage && (
-              <p className="text-[12px] text-text-subtle italic leading-relaxed max-w-[34ch]">
+              <p className="text-[15px] text-text-subtle italic leading-relaxed max-w-[34ch]">
                 {turn.stage}
               </p>
             )}
@@ -231,11 +231,11 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
             >
               {turn.japanese}
             </p>
-            <p className="text-[15px] text-text-muted font-medium leading-relaxed">
+            <p className="text-[17px] text-text-muted font-medium leading-relaxed">
               {turn.romaji}
             </p>
             {showEnglish && (
-              <p className="text-[15px] text-text font-semibold leading-relaxed max-w-[34ch]">
+              <p className="text-[17px] text-text font-semibold leading-relaxed max-w-[34ch]">
                 {turn.english}
               </p>
             )}
@@ -254,7 +254,7 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
         </section>
 
         {silent && (
-          <p className="shrink-0 flex items-center justify-center gap-2 text-[12px] text-text-subtle font-medium">
+          <p className="shrink-0 flex items-center justify-center gap-2 text-[13px] text-text-subtle font-medium">
             <VolumeX className="w-3.5 h-3.5 shrink-0" strokeWidth={2.5} />
             Silent mode — playing as subtitles
           </p>
@@ -289,15 +289,15 @@ export function DialoguePlayer({ dialogue }: { dialogue: Dialogue }) {
                   }
                   aria-current={isNow ? "true" : undefined}
                 >
-                  <span className="block font-display font-bold text-[10px] uppercase tracking-[0.1em] text-text-subtle mb-1">
+                  <span className="block font-display font-bold text-[11px] uppercase tracking-[0.1em] text-text-subtle mb-1">
                     {isYou ? "You" : dialogue.them.label}
                   </span>
-                  <span className="jp block text-[16px] font-medium leading-snug">
+                  <span className="jp block text-[17px] font-medium leading-snug">
                     {t.japanese}
                   </span>
-                  <span className="block text-[12px] text-text-subtle mt-0.5">{t.romaji}</span>
+                  <span className="block text-[13px] text-text-subtle mt-0.5">{t.romaji}</span>
                   {showEnglish && (
-                    <span className="block text-[13px] text-text-muted font-medium mt-1">
+                    <span className="block text-[15px] text-text-muted font-medium mt-1">
                       {t.english}
                     </span>
                   )}

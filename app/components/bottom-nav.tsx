@@ -61,7 +61,7 @@ export function BottomNav() {
               </span>
               <span
                 className={cn(
-                  "font-display text-[10px] font-bold tracking-wide transition-colors",
+                  "font-display text-[11px] font-bold tracking-wide transition-colors",
                   !active && "text-text-subtle group-hover:text-text-muted"
                 )}
                 style={active ? { color: `hsl(${tone})` } : undefined}

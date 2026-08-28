@@ -66,7 +66,7 @@ function CenteredNotice({
     <div className="flex-1 flex flex-col items-center justify-center gap-4 text-center px-2">
       <p className="jp text-5xl">{glyph}</p>
       <h2 className="text-xl">{title}</h2>
-      <p className="text-[14px] text-text-muted leading-relaxed max-w-xs font-medium">{body}</p>
+      <p className="text-[16px] text-text-muted leading-relaxed max-w-xs font-medium">{body}</p>
       {action}
     </div>
   );
@@ -148,7 +148,7 @@ export default function SpeakPracticePage() {
       <Shell>
         <div className="flex-1 flex flex-col items-center justify-center gap-4">
           <div className="w-8 h-8 border-4 border-surface-raised border-t-coral rounded-full animate-spin" />
-          <p className="text-[14px] text-text-subtle font-medium">Finding words to say…</p>
+          <p className="text-[16px] text-text-subtle font-medium">Finding words to say…</p>
         </div>
       </Shell>
     );
@@ -213,14 +213,14 @@ export default function SpeakPracticePage() {
               {great ? "声" : "続"}
             </span>
             <div className="relative p-6 text-center">
-              <p className="font-display font-bold text-[13px] uppercase tracking-[0.12em] opacity-75">
+              <p className="font-display font-bold text-[14px] uppercase tracking-[0.12em] opacity-75">
                 Said out loud
               </p>
               <p className="font-display font-extrabold text-mega tnum mt-2">
                 {correct}
                 <span className="text-3xl align-top">/{total}</span>
               </p>
-              <p className="font-display font-bold text-[17px] mt-1">
+              <p className="font-display font-bold text-[18px] mt-1">
                 {great
                   ? "Understood on the first try."
                   : accuracy >= 50
@@ -231,7 +231,7 @@ export default function SpeakPracticePage() {
           </div>
 
           <Card className="p-4">
-            <p className="text-[13px] text-text-muted leading-relaxed font-medium">
+            <p className="text-[15px] text-text-muted leading-relaxed font-medium">
               Speaking drills don&apos;t change your review schedule — say a word as many
               times as you like.
             </p>
@@ -270,7 +270,7 @@ export default function SpeakPracticePage() {
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0">
+        <span className="font-display font-bold text-[16px] text-text-subtle tnum shrink-0">
           {index + 1}/{items.length}
         </span>
       </div>

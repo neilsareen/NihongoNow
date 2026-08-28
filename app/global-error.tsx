@@ -52,7 +52,7 @@ export default function GlobalError({
         <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 gap-6">
           <div className="text-center space-y-2 max-w-sm">
             <h1 className="text-2xl font-bold tracking-tight">Well, that went sideways</h1>
-            <p className="text-[#B2A6C4] text-[13px] leading-relaxed">
+            <p className="text-[#B2A6C4] text-[15px] leading-relaxed">
               {recovering
                 ? "Clearing cached files and reloading…"
                 : "The app hit an unexpected error. Reloading usually clears it up."}
@@ -63,13 +63,13 @@ export default function GlobalError({
             <div className="flex flex-col gap-2.5 w-full max-w-xs">
               <button
                 onClick={() => reset()}
-                className="w-full h-11 rounded-full bg-[#F97A4B] hover:brightness-110 text-white text-sm font-medium transition-colors"
+                className="w-full h-11 rounded-full bg-[#F97A4B] hover:brightness-110 text-white text-[16px] font-medium transition-colors"
               >
                 Try again
               </button>
               <button
                 onClick={handleManualReset}
-                className="w-full h-11 rounded-full border border-[#3B2F56] hover:border-[#584878] text-[#D6CCE6] text-sm font-medium transition-colors"
+                className="w-full h-11 rounded-full border border-[#3B2F56] hover:border-[#584878] text-[#D6CCE6] text-[16px] font-medium transition-colors"
               >
                 Clear cached data and reload
               </button>
@@ -79,10 +79,10 @@ export default function GlobalError({
           {/* Surfaced so a failure on someone else's device can actually be
               diagnosed — the console isn't reachable on mobile. */}
           <details className="w-full max-w-xs text-left" open>
-            <summary className="text-[#8B7CA3] text-xs cursor-pointer select-none">
+            <summary className="text-[#8B7CA3] text-[13px] cursor-pointer select-none">
               Error details
             </summary>
-            <pre className="mt-2 p-3 bg-black/40 border border-[#3B2F56] rounded-lg text-[10px] font-mono text-[#F4859A] whitespace-pre-wrap break-words max-h-60 overflow-auto">
+            <pre className="mt-2 p-3 bg-black/40 border border-[#3B2F56] rounded-lg text-[11px] font-mono text-[#F4859A] whitespace-pre-wrap break-words max-h-60 overflow-auto">
               {[
                 error?.name && `${error.name}: ${error.message ?? ""}`,
                 error?.digest && `digest: ${error.digest}`,

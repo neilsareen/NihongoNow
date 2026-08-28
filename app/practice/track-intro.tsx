@@ -37,7 +37,7 @@ export function TrackIntroView({
               <span className="jp text-[1.9rem] font-bold leading-none">{intro.glyph}</span>
             </span>
             <span
-              className="inline-flex items-center h-7 px-3 rounded-full font-display text-[11px] font-bold uppercase tracking-[0.1em] text-on-light"
+              className="inline-flex items-center h-7 px-3 rounded-full font-display text-[12px] font-bold uppercase tracking-[0.1em] text-on-light"
               style={{ background: `hsl(${intro.tone})` }}
             >
               {intro.kicker}

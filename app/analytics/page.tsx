@@ -207,7 +207,7 @@ export default async function AnalyticsPage() {
               {travelLevel.glyph}
             </span>
             <div className="relative p-5">
-              <p className="font-display font-bold text-[12px] uppercase tracking-[0.12em] opacity-75">
+              <p className="font-display font-bold text-[13px] uppercase tracking-[0.12em] opacity-75">
                 Travel readiness
               </p>
               <div className="flex items-end gap-3 mt-1">
@@ -219,7 +219,7 @@ export default async function AnalyticsPage() {
               <p className="font-display font-extrabold text-[21px] tracking-tight mt-1">
                 {travelLevel.name}
               </p>
-              <p className="text-[14px] font-medium mt-2 opacity-85 leading-relaxed max-w-[36ch]">
+              <p className="text-[16px] font-medium mt-2 opacity-85 leading-relaxed max-w-[36ch]">
                 {guidance}
               </p>
             </div>
@@ -246,7 +246,7 @@ export default async function AnalyticsPage() {
                 >
                   {s.value}
                 </p>
-                <p className="text-[11px] font-bold text-text-subtle mt-1.5 leading-tight">
+                <p className="text-[12px] font-bold text-text-subtle mt-1.5 leading-tight">
                   {s.label}
                 </p>
               </div>
@@ -284,11 +284,11 @@ export default async function AnalyticsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-baseline justify-between gap-3 mb-2">
                       <span
-                        className={`font-display font-bold text-[16px] tracking-tight ${item.locked ? "text-text-subtle" : ""}`}
+                        className={`font-display font-bold text-[17px] tracking-tight ${item.locked ? "text-text-subtle" : ""}`}
                       >
                         {item.label}
                       </span>
-                      <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
+                      <span className="text-[13px] font-bold text-text-subtle tnum shrink-0">
                         {item.locked
                           ? "LOCKED"
                           : `${mastered.toLocaleString()} / ${item.total.toLocaleString()}`}
@@ -312,7 +312,7 @@ export default async function AnalyticsPage() {
             {readinessBreakdown.map((item) => (
               <div key={item.label}>
                 <div className="flex items-baseline justify-between gap-3 mb-2">
-                  <span className="text-[14px] font-semibold flex items-center gap-2">
+                  <span className="text-[16px] font-semibold flex items-center gap-2">
                     {item.done && (
                       <CheckCircle2
                         className="w-4 h-4 shrink-0 text-lime"
@@ -323,7 +323,7 @@ export default async function AnalyticsPage() {
                       {item.label}
                     </span>
                   </span>
-                  <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
+                  <span className="text-[13px] font-bold text-text-subtle tnum shrink-0">
                     {item.pct}% · {item.weight} pts
                   </span>
                 </div>
@@ -341,7 +341,7 @@ export default async function AnalyticsPage() {
         <section className="space-y-3">
           <div className="space-y-1.5">
             <SectionLabel>Don&apos;t be that tourist</SectionLabel>
-            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+            <p className="text-[16px] text-text-muted leading-relaxed font-medium">
               Eight things that catch first-timers out.
             </p>
           </div>
@@ -361,10 +361,10 @@ export default async function AnalyticsPage() {
                     <Icon className="w-5 h-5" strokeWidth={2.5} />
                   </span>
                   <div className="min-w-0">
-                    <h3 className="font-display font-bold text-[16px] tracking-tight mb-1">
+                    <h3 className="font-display font-bold text-[17px] tracking-tight mb-1">
                       {title}
                     </h3>
-                    <p className="text-[13px] text-text-muted leading-relaxed font-medium">
+                    <p className="text-[15px] text-text-muted leading-relaxed font-medium">
                       {detail}
                     </p>
                   </div>

@@ -42,7 +42,7 @@ export default async function WatchIndexPage() {
       <main className="max-w-lg mx-auto px-4 py-6 space-y-7 pb-[calc(6rem+var(--safe-b))]">
         <div className="space-y-2">
           <h1 className="text-hero leading-none">Watch<br />it happen</h1>
-          <p className="text-[15px] text-text-muted leading-relaxed font-medium max-w-[34ch]">
+          <p className="text-[17px] text-text-muted leading-relaxed font-medium max-w-[34ch]">
             The lines you drill as single cards, chained into the real thing — both
             sides, at speed, with subtitles you can follow.
           </p>
@@ -66,8 +66,8 @@ export default async function WatchIndexPage() {
                       <span className="jp text-2xl font-bold leading-none">{d.glyph}</span>
                     </span>
                     <div className="flex-1 min-w-0">
-                      <p className="font-display font-bold text-[17px] tracking-tight">{d.title}</p>
-                      <p className="text-[12px] font-bold text-text-subtle mt-1 flex items-center gap-3">
+                      <p className="font-display font-bold text-[18px] tracking-tight">{d.title}</p>
+                      <p className="text-[13px] font-bold text-text-subtle mt-1 flex items-center gap-3">
                         <span className="inline-flex items-center gap-1.5">
                           <Clock className="w-3.5 h-3.5" strokeWidth={2.5} />
                           <span className="tnum">
@@ -85,7 +85,7 @@ export default async function WatchIndexPage() {
                       <Play className="w-4 h-4 ml-0.5" strokeWidth={3} fill="currentColor" />
                     </span>
                   </div>
-                  <p className="text-[13px] text-text-muted leading-relaxed font-medium mt-3">
+                  <p className="text-[15px] text-text-muted leading-relaxed font-medium mt-3">
                     {d.blurb}
                   </p>
                 </Link>
@@ -102,10 +102,10 @@ export default async function WatchIndexPage() {
                 <Lock className="w-5 h-5 text-text-subtle" strokeWidth={2.5} />
               </span>
               <div className="flex-1 min-w-0">
-                <p className="font-display font-bold text-[17px] tracking-tight text-text-subtle">
+                <p className="font-display font-bold text-[18px] tracking-tight text-text-subtle">
                   Locked
                 </p>
-                <p className="text-[12px] font-bold text-text-subtle tnum mt-1">
+                <p className="text-[13px] font-bold text-text-subtle tnum mt-1">
                   {gate.ready}/{gate.total} kana ready
                 </p>
               </div>
@@ -114,7 +114,7 @@ export default async function WatchIndexPage() {
               value={gate.total > 0 ? Math.round((gate.ready / gate.total) * 100) : 0}
               hue="var(--track-conversation)"
             />
-            <p className="text-[13px] text-text-muted leading-relaxed font-medium">
+            <p className="text-[15px] text-text-muted leading-relaxed font-medium">
               Every line in these scenes is written in kana, so they open once every
               hiragana and katakana has reached Learning — {gate.remaining} to go.
             </p>

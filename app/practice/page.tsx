@@ -156,7 +156,7 @@ function parseExampleWords(raw: unknown): ExampleWord[] {
 
 function DetailLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-display text-[11px] font-bold uppercase tracking-[0.12em] text-text-subtle">
+    <p className="font-display text-[12px] font-bold uppercase tracking-[0.12em] text-text-subtle">
       {children}
     </p>
   );
@@ -197,7 +197,7 @@ function ConversationDetail({
             </p>
             <AudioButton text={readingSpeechText(speechReading(conversation.say.japanese, conversation.say.kana))} />
           </div>
-          <p className="text-[15px] text-text-muted font-medium text-center">
+          <p className="text-[17px] text-text-muted font-medium text-center">
             {conversation.say.romaji} — {conversation.say.english}
           </p>
         </>
@@ -214,12 +214,12 @@ function ConversationDetail({
       {conversation.pattern && (
         <div className="w-full space-y-2 text-center">
           <DetailLabel>Pattern</DetailLabel>
-          <p className="jp text-[15px] font-medium">{conversation.pattern.frame}</p>
-          <p className="text-[12px] text-text-subtle">{conversation.pattern.gloss}</p>
+          <p className="jp text-[17px] font-medium">{conversation.pattern.frame}</p>
+          <p className="text-[13px] text-text-subtle">{conversation.pattern.gloss}</p>
         </div>
       )}
 
-      <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs">
+      <p className="text-[15px] text-text-muted leading-relaxed text-center max-w-xs">
         {conversation.tip}
       </p>
     </>
@@ -269,7 +269,7 @@ function ChoiceRow({
       <span
         className={cn(
           "w-6 h-6 rounded-full shrink-0 grid place-items-center mt-0.5",
-          "font-display text-[12px] font-bold tnum",
+          "font-display text-[13px] font-bold tnum",
           state === "correct"
             ? "bg-lime text-on-light"
             : state === "wrong"
@@ -285,10 +285,10 @@ function ChoiceRow({
         )}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="jp block text-[17px] font-bold leading-snug">{line.japanese}</span>
-        <span className="block text-[12px] text-text-subtle leading-snug mt-0.5">{line.romaji}</span>
+        <span className="jp block text-[18px] font-bold leading-snug">{line.japanese}</span>
+        <span className="block text-[13px] text-text-subtle leading-snug mt-0.5">{line.romaji}</span>
         {settled && (
-          <span className="block text-[13px] text-text-muted font-medium mt-1">{line.english}</span>
+          <span className="block text-[15px] text-text-muted font-medium mt-1">{line.english}</span>
         )}
       </span>
     </button>
@@ -301,10 +301,10 @@ function LineChips({ label, lines }: { label: string; lines: ConversationLine[] 
       <DetailLabel>{label}</DetailLabel>
       <div className="flex flex-col items-center gap-1.5">
         {lines.map((l, i) => (
-          <SpeakChip key={i} text={readingSpeechText(speechReading(l.japanese, l.kana))} className="max-w-full text-[13px]">
+          <SpeakChip key={i} text={readingSpeechText(speechReading(l.japanese, l.kana))} className="max-w-full text-[15px]">
             <span className="flex flex-col items-start min-w-0 py-1.5 text-left">
               <span className="jp leading-snug">{l.japanese}</span>
-              <span className="text-[11px] leading-snug text-text-subtle">{l.romaji}</span>
+              <span className="text-[12px] leading-snug text-text-subtle">{l.romaji}</span>
             </span>
             <span className="text-text-muted text-left">{l.english}</span>
           </SpeakChip>
@@ -327,16 +327,16 @@ function NumbersDetail({ card }: { card: NumberCard }) {
         <DetailLabel>How they read</DetailLabel>
         <div className="flex flex-col gap-1.5">
           {card.readings.map((r, i) => (
-            <SpeakChip key={i} text={readingSpeechText(r.kana)} className="max-w-full text-[13px]">
+            <SpeakChip key={i} text={readingSpeechText(r.kana)} className="max-w-full text-[15px]">
               <span
-                className="font-display font-extrabold text-[14px] tnum shrink-0 min-w-[3.75rem] text-left"
+                className="font-display font-extrabold text-[16px] tnum shrink-0 min-w-[3.75rem] text-left"
                 style={{ color: "hsl(var(--track-numbers))" }}
               >
                 {r.figure}
               </span>
               <span className="flex flex-col items-start min-w-0 py-1.5 text-left">
                 <span className="jp leading-snug">{r.japanese}</span>
-                <span className="text-[11px] leading-snug text-text-subtle">{r.romaji}</span>
+                <span className="text-[12px] leading-snug text-text-subtle">{r.romaji}</span>
               </span>
               <span className="text-text-muted text-left">{r.english}</span>
             </SpeakChip>
@@ -351,12 +351,12 @@ function NumbersDetail({ card }: { card: NumberCard }) {
       {card.pattern && (
         <div className="w-full space-y-2 text-center">
           <DetailLabel>Pattern</DetailLabel>
-          <p className="jp text-[15px] font-medium">{card.pattern.frame}</p>
-          <p className="text-[12px] text-text-subtle">{card.pattern.gloss}</p>
+          <p className="jp text-[17px] font-medium">{card.pattern.frame}</p>
+          <p className="text-[13px] text-text-subtle">{card.pattern.gloss}</p>
         </div>
       )}
 
-      <p className="text-[13px] text-text-muted leading-relaxed text-center max-w-xs">{card.tip}</p>
+      <p className="text-[15px] text-text-muted leading-relaxed text-center max-w-xs">{card.tip}</p>
     </>
   );
 }
@@ -472,14 +472,14 @@ function SelectionView({
       <main className="max-w-lg mx-auto px-4 py-8 space-y-6">
         <div className="space-y-2">
           <h1 className="text-hero leading-none">Drill<br />mode</h1>
-          <p className="text-[15px] text-text-muted leading-relaxed font-medium max-w-[32ch]">
+          <p className="text-[17px] text-text-muted leading-relaxed font-medium max-w-[32ch]">
             Free-form flashcards that count toward mastery, same as a lesson —
             warm up, or hammer one script until it sticks.
           </p>
         </div>
 
         <fieldset className="space-y-2.5">
-          <legend className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-text-subtle mb-3">
+          <legend className="font-display text-[14px] font-bold uppercase tracking-[0.1em] text-text-subtle mb-3">
             What are we drilling?
           </legend>
           {TYPES.map(({ key, label, glyph, tone }) => {
@@ -530,14 +530,14 @@ function SelectionView({
                 <span className="flex-1 min-w-0">
                   <span
                     className={cn(
-                      "block font-display font-bold text-[17px] tracking-tight",
+                      "block font-display font-bold text-[18px] tracking-tight",
                       locked && "text-text-subtle"
                     )}
                   >
                     {label}
                   </span>
                   {locked && (
-                    <span className="block text-[13px] text-text-subtle mt-0.5 font-medium">
+                    <span className="block text-[15px] text-text-subtle mt-0.5 font-medium">
                       {LOCKED_HINT[key] ?? "Unlocks as you master the kana in its readings"}
                     </span>
                   )}
@@ -560,7 +560,7 @@ function SelectionView({
         </fieldset>
 
         <fieldset className="space-y-3">
-          <legend className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-text-subtle mb-3">
+          <legend className="font-display text-[14px] font-bold uppercase tracking-[0.1em] text-text-subtle mb-3">
             How many cards?
           </legend>
           <div className="grid grid-cols-4 gap-2">
@@ -593,7 +593,7 @@ function SelectionView({
               );
             })}
           </div>
-          <p className="text-[13px] text-text-muted leading-relaxed font-medium">
+          <p className="text-[15px] text-text-muted leading-relaxed font-medium">
             You&rsquo;ll drill until all {count} are cleared. Any card you miss goes back
             into the stack and comes round again — so a miss costs you a repeat, not the
             card. If a script has fewer than {count} cards, you get everything it has.
@@ -601,7 +601,7 @@ function SelectionView({
         </fieldset>
 
         {error && (
-          <p className="text-[14px] text-rose font-semibold" role="alert">{error}</p>
+          <p className="text-[16px] text-rose font-semibold" role="alert">{error}</p>
         )}
 
         <button
@@ -633,7 +633,7 @@ function MnemonicButton({ hint }: { hint: string }) {
       </button>
       {show && (
         <p
-          className="text-[14px] leading-relaxed text-center max-w-xs animate-pop-in rounded-tile px-4 py-3 font-medium"
+          className="text-[16px] leading-relaxed text-center max-w-xs animate-pop-in rounded-tile px-4 py-3 font-medium"
           style={{ background: "hsl(var(--sun) / 0.14)", color: "hsl(var(--sun))" }}
         >
           {hint}
@@ -647,7 +647,7 @@ function LoadingView() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4">
       <div className="w-8 h-8 border-4 border-surface-raised border-t-coral rounded-full animate-spin" />
-      <p className="text-[14px] text-text-subtle font-medium">Loading…</p>
+      <p className="text-[16px] text-text-subtle font-medium">Loading…</p>
     </div>
   );
 }
@@ -824,7 +824,7 @@ function PracticeView({
               <span className="tnum">{streak}</span>
             </Chip>
           ) : (
-            <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0 min-w-[3rem] text-right">
+            <span className="font-display font-bold text-[16px] text-text-subtle tnum shrink-0 min-w-[3rem] text-right">
               {cleared}/{size}
             </span>
           )}
@@ -852,7 +852,7 @@ function PracticeView({
           {flash && (
             <p
               key={flash.turn}
-              className="animate-pop-in text-[13px] font-display font-bold text-center"
+              className="animate-pop-in text-[15px] font-display font-bold text-center"
               style={{ color: `hsl(${flash.correct ? "var(--lime)" : "var(--rose)"})` }}
             >
               {flash.correct
@@ -872,7 +872,7 @@ function PracticeView({
                   <p className="font-display text-[19px] font-extrabold tracking-tight max-w-xs">
                     {item.conversation.canDo}
                   </p>
-                  <p className="text-[13px] text-text-muted leading-relaxed max-w-xs">
+                  <p className="text-[15px] text-text-muted leading-relaxed max-w-xs">
                     {item.conversation.situation}
                   </p>
 
@@ -881,11 +881,11 @@ function PracticeView({
                       <DetailLabel>They say</DetailLabel>
                       <div className="mt-1.5 flex items-start gap-2">
                         <div className="min-w-0 flex-1">
-                          <p className="jp text-[17px] font-bold leading-snug">{opener.japanese}</p>
-                          <p className="text-[12px] text-text-subtle leading-snug mt-0.5">
+                          <p className="jp text-[18px] font-bold leading-snug">{opener.japanese}</p>
+                          <p className="text-[13px] text-text-subtle leading-snug mt-0.5">
                             {opener.romaji}
                           </p>
-                          <p className="text-[13px] text-text-muted font-medium mt-1">
+                          <p className="text-[15px] text-text-muted font-medium mt-1">
                             {opener.english}
                           </p>
                         </div>
@@ -894,7 +894,7 @@ function PracticeView({
                     </div>
                   )}
 
-                  <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
+                  <p className="font-display font-extrabold text-[18px] tracking-tight mt-1">
                     {opener ? "What do you say back?" : "What do you say?"}
                   </p>
                 </div>
@@ -911,7 +911,7 @@ function PracticeView({
                       >
                         {numberQuiz.figure}
                       </p>
-                      <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
+                      <p className="font-display font-extrabold text-[18px] tracking-tight mt-1">
                         How is this said?
                       </p>
                     </>
@@ -920,14 +920,14 @@ function PracticeView({
                       <p className="font-display text-[19px] font-extrabold tracking-tight max-w-xs">
                         {item.numbers.canDo}
                       </p>
-                      <p className="text-[13px] text-text-muted leading-relaxed max-w-xs">
+                      <p className="text-[15px] text-text-muted leading-relaxed max-w-xs">
                         {item.numbers.situation}
                       </p>
                       <div className="flex flex-wrap justify-center gap-2 mt-1">
                         {item.numbers.readings.map((r, i) => (
                           <span
                             key={i}
-                            className="font-display font-extrabold text-[15px] tnum rounded-tile px-2.5 py-1"
+                            className="font-display font-extrabold text-[17px] tnum rounded-tile px-2.5 py-1"
                             style={{
                               background: "hsl(var(--track-numbers) / 0.14)",
                               color: "hsl(var(--track-numbers))",
@@ -937,7 +937,7 @@ function PracticeView({
                           </span>
                         ))}
                       </div>
-                      <p className="font-display font-extrabold text-[17px] tracking-tight mt-1">
+                      <p className="font-display font-extrabold text-[18px] tracking-tight mt-1">
                         How do you say these?
                       </p>
                     </>
@@ -958,10 +958,10 @@ function PracticeView({
                     {item.character}
                   </span>
                   {isWordy && item.kana && item.kana !== item.character && (
-                    <span className="jp text-lg text-text-muted font-medium">{item.kana}</span>
+                    <span className="jp text-[19px] text-text-muted font-medium">{item.kana}</span>
                   )}
                   {isWordy && item.romaji && (
-                    <span className="text-sm text-text-subtle font-medium tracking-wide">{item.romaji}</span>
+                    <span className="text-[16px] text-text-subtle font-medium tracking-wide">{item.romaji}</span>
                   )}
                 </>
               )}
@@ -1031,9 +1031,9 @@ function PracticeView({
                           <div className="flex flex-wrap items-center justify-center gap-2">
                             {readings.map((r) => (
                               <SpeakChip key={`${r.label}-${r.kana}`} text={readingSpeechText(r.kana)}>
-                                <span className="jp text-[15px]">{r.kana}</span>
-                                <span className="text-[13px] text-text-muted">{kanaToRomaji(r.kana)}</span>
-                                <span className="font-display text-[10px] font-bold uppercase tracking-wider text-text-subtle bg-ink-deep rounded-full px-2 py-0.5">
+                                <span className="jp text-[17px]">{r.kana}</span>
+                                <span className="text-[15px] text-text-muted">{kanaToRomaji(r.kana)}</span>
+                                <span className="font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle bg-ink-deep rounded-full px-2 py-0.5">
                                   {r.label}
                                 </span>
                               </SpeakChip>
@@ -1047,7 +1047,7 @@ function PracticeView({
                           <DetailLabel>Common words</DetailLabel>
                           <div className="flex flex-col items-center gap-1.5">
                             {exampleWords.map((w, i) => (
-                              <SpeakChip key={i} text={w.reading || w.word || ""} className="text-[13px]">
+                              <SpeakChip key={i} text={w.reading || w.word || ""} className="text-[15px]">
                                 <span className="jp">{w.word}</span>
                                 {w.meaning && <span className="text-text-muted">{w.meaning}</span>}
                               </SpeakChip>
@@ -1065,9 +1065,9 @@ function PracticeView({
                         <AudioButton text={speechText(item.contentType, item)} />
                       </div>
                       {item.kana && item.kana !== item.character && (
-                        <p className="jp text-[15px] text-text-muted text-center">{item.kana}</p>
+                        <p className="jp text-[17px] text-text-muted text-center">{item.kana}</p>
                       )}
-                      <p className="font-display text-[14px] text-text-subtle">{item.romaji}</p>
+                      <p className="font-display text-[16px] text-text-subtle">{item.romaji}</p>
                     </>
                   ) : (
                     <div className="flex items-center gap-2.5">
@@ -1172,17 +1172,17 @@ function SummaryView({
               {great ? "祝" : "続"}
             </span>
             <div className="relative p-6 text-center">
-              <p className="font-display font-bold text-[13px] uppercase tracking-[0.12em] opacity-75">
+              <p className="font-display font-bold text-[14px] uppercase tracking-[0.12em] opacity-75">
                 Stack cleared — all {size} cards
               </p>
               <p className="font-display font-extrabold text-mega tnum mt-2">
                 {accuracy}
                 <span className="text-3xl align-top">%</span>
               </p>
-              <p className="font-display font-bold text-[15px] opacity-80">
+              <p className="font-display font-bold text-[17px] opacity-80">
                 right on the first try
               </p>
-              <p className="font-display font-bold text-[17px] mt-2">
+              <p className="font-display font-bold text-[18px] mt-2">
                 {great
                   ? "That set is well in hand."
                   : accuracy >= 50
@@ -1208,14 +1208,14 @@ function SummaryView({
                 >
                   {stat.value}
                 </p>
-                <p className="text-[11px] font-bold text-text-subtle mt-1.5 uppercase tracking-wider leading-tight">
+                <p className="text-[12px] font-bold text-text-subtle mt-1.5 uppercase tracking-wider leading-tight">
                   {stat.label}
                 </p>
               </div>
             ))}
           </div>
 
-          <p className="text-[13px] text-text-muted leading-relaxed font-medium text-center">
+          <p className="text-[15px] text-text-muted leading-relaxed font-medium text-center">
             {putBack === 0
               ? `You cleared every card first time — nothing went back in the stack.`
               : `${putBack} time${putBack === 1 ? "" : "s"} a card went back in the stack for another go, and you cleared them all in the end.`}

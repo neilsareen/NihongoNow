@@ -48,7 +48,7 @@ export function SimulationBanner() {
     <div
       className={cn(
         "sticky top-0 z-50 top-strip flex items-center justify-center gap-2 px-4 py-2",
-        "text-[12px] font-display font-bold uppercase tracking-wider"
+        "text-[13px] font-display font-bold uppercase tracking-wider"
       )}
       style={{ background: "hsl(var(--sun))", color: "hsl(var(--on-light))" }}
     >

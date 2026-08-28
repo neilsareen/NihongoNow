@@ -33,7 +33,7 @@ export function LockedTrack({
           className="mt-2 flex items-start gap-2.5 p-3.5 rounded-card border border-line bg-surface-raised animate-rise"
         >
           <Lock className="w-4 h-4 mt-0.5 shrink-0 text-text-subtle" strokeWidth={2.5} />
-          <p className="text-[13px] text-text-muted font-medium leading-relaxed">{message}</p>
+          <p className="text-[15px] text-text-muted font-medium leading-relaxed">{message}</p>
         </div>
       )}
     </div>

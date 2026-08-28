@@ -57,10 +57,10 @@ export function KanjiTrackIntro({ simulating }: { simulating: boolean }) {
           <span className="jp text-xl font-bold leading-none">{intro.glyph}</span>
         </span>
         <span className="flex-1 min-w-0">
-          <span className="block font-display font-bold text-[15px] tracking-tight">
+          <span className="block font-display font-bold text-[17px] tracking-tight">
             {intro.title}
           </span>
-          <span className="block text-[13px] text-text-subtle font-medium">
+          <span className="block text-[15px] text-text-subtle font-medium">
             {open ? "Tap to fold away" : "What kanji is, and how this track works"}
           </span>
         </span>

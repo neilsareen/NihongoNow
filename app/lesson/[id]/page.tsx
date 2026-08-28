@@ -230,7 +230,7 @@ function MasteryPips({ review }: { review: LessonItem["review"] }) {
       title={`Mastery: ${display.label} — New → Learning → Familiar → Strong → Mastered`}
     >
       <span
-        className="font-display font-bold text-[11px] uppercase tracking-wider"
+        className="font-display font-bold text-[12px] uppercase tracking-wider"
         style={{ color: `hsl(${display.tone})` }}
       >
         {display.label}
@@ -266,7 +266,7 @@ function MnemonicButton({ hint }: { hint: string }) {
       </button>
       {show && (
         <p
-          className="text-[14px] leading-relaxed text-center max-w-xs animate-pop-in rounded-tile px-4 py-3 font-medium"
+          className="text-[16px] leading-relaxed text-center max-w-xs animate-pop-in rounded-tile px-4 py-3 font-medium"
           style={{ background: "hsl(var(--sun) / 0.14)", color: "hsl(var(--sun))" }}
         >
           {hint}
@@ -427,7 +427,7 @@ function RomajiInputForm({
         onChange={(e) => onChange(e.target.value)}
         placeholder="type the romaji…"
         className={cn(
-          "w-full max-w-[16rem] h-12 px-4 rounded-tile text-center text-[17px] font-medium",
+          "w-full max-w-[16rem] h-12 px-4 rounded-tile text-center text-[18px] font-medium",
           "bg-ink-deep border border-line text-text placeholder:text-text-subtle/60",
           "transition-colors duration-150",
           "hover:border-line-strong focus:border-coral focus:outline-none"
@@ -441,7 +441,7 @@ function RomajiInputForm({
 function RomajiResultBanner({ correct }: { correct: boolean }) {
   return (
     <p
-      className="font-display text-[13px] font-bold uppercase tracking-[0.1em]"
+      className="font-display text-[14px] font-bold uppercase tracking-[0.1em]"
       style={{ color: `hsl(${correct ? "var(--lime)" : "var(--rose)"})` }}
     >
       {correct ? "Correct" : "Not quite"}
@@ -452,7 +452,7 @@ function RomajiResultBanner({ correct }: { correct: boolean }) {
 /** Small caption above a group of secondary details on the answer side. */
 function DetailLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-display text-[11px] font-bold uppercase tracking-[0.12em] text-text-subtle">
+    <p className="font-display text-[12px] font-bold uppercase tracking-[0.12em] text-text-subtle">
       {children}
     </p>
   );
@@ -479,7 +479,7 @@ function CardFront({ item }: { item: LessonItem }) {
     const text = getSpeechText(item);
     return (
       <div className="flex flex-col items-center gap-4">
-        <p className="text-[14px] text-text-muted font-medium">Listen and identify</p>
+        <p className="text-[16px] text-text-muted font-medium">Listen and identify</p>
         <button
           onClick={() => speak(text)}
           className="w-20 h-20 rounded-full grid place-items-center pressable text-on-light"
@@ -488,7 +488,7 @@ function CardFront({ item }: { item: LessonItem }) {
         >
           <Volume2 className="w-8 h-8" strokeWidth={2.5} />
         </button>
-        <p className="text-[13px] text-text-subtle font-medium">Tap to replay</p>
+        <p className="text-[15px] text-text-subtle font-medium">Tap to replay</p>
       </div>
     );
   }
@@ -514,7 +514,7 @@ function CardFront({ item }: { item: LessonItem }) {
         <span className="jp text-[3.5rem] leading-none font-bold">{content.japanese}</span>
         {showKana && <span className="jp text-xl text-text-muted font-medium">{content.kana}</span>}
         {content.romaji && (
-          <span className="text-sm text-text-subtle font-medium tracking-wide">{content.romaji}</span>
+          <span className="text-[16px] text-text-subtle font-medium tracking-wide">{content.romaji}</span>
         )}
       </div>
     );
@@ -551,9 +551,9 @@ function CardBack({ item }: { item: LessonItem }) {
           {speechTextForItem && <AudioButton text={speechTextForItem} size="md" />}
         </div>
         {content.kana && content.kana !== japanese && (
-          <p className="jp text-base text-text-muted">{content.kana}</p>
+          <p className="jp text-[17px] text-text-muted">{content.kana}</p>
         )}
-        {content.romaji && <p className="text-[13px] text-text-subtle">{content.romaji}</p>}
+        {content.romaji && <p className="text-[15px] text-text-subtle">{content.romaji}</p>}
         <p className="font-display text-xl font-extrabold tracking-tight mt-0.5">{content.english}</p>
       </div>
     );
@@ -567,8 +567,8 @@ function CardBack({ item }: { item: LessonItem }) {
             <p className="jp text-[2.5rem] leading-none font-bold">{content.japanese}</p>
             {content.kana && <AudioButton text={readingSpeechText(content.kana)} size="md" />}
           </div>
-          {content.kana && <p className="jp text-base text-text-muted">{content.kana}</p>}
-          {content.romaji && <p className="text-[13px] text-text-subtle">{content.romaji}</p>}
+          {content.kana && <p className="jp text-[17px] text-text-muted">{content.kana}</p>}
+          {content.romaji && <p className="text-[15px] text-text-subtle">{content.romaji}</p>}
         </div>
       );
     }
@@ -579,8 +579,8 @@ function CardBack({ item }: { item: LessonItem }) {
             <p className="jp text-2xl font-bold leading-snug">{content.japanese}</p>
             {content.kana && <AudioButton text={readingSpeechText(speechReading(content.japanese, content.kana))} size="md" />}
           </div>
-          {content.kana && <p className="jp text-[15px] text-text-muted">{content.kana}</p>}
-          {content.romaji && <p className="text-[13px] text-text-subtle">{content.romaji}</p>}
+          {content.kana && <p className="jp text-[17px] text-text-muted">{content.kana}</p>}
+          {content.romaji && <p className="text-[15px] text-text-subtle">{content.romaji}</p>}
         </div>
       );
     }
@@ -590,7 +590,7 @@ function CardBack({ item }: { item: LessonItem }) {
           <p className="jp text-[3.5rem] leading-none font-bold">{content.character}</p>
           {speechTextForItem && <AudioButton text={speechTextForItem} size="md" />}
         </div>
-        {content.romaji && <p className="text-base text-text-muted">{content.romaji}</p>}
+        {content.romaji && <p className="text-[17px] text-text-muted">{content.romaji}</p>}
       </div>
     );
   }
@@ -617,9 +617,9 @@ function CardBack({ item }: { item: LessonItem }) {
             <div className="flex flex-wrap items-center justify-center gap-2">
               {readings.map((r) => (
                 <SpeakChip key={`${r.label}-${r.kana}`} text={readingSpeechText(r.kana)}>
-                  <span className="jp text-[15px] text-text">{r.kana}</span>
-                  <span className="text-[13px] text-text-muted">{kanaToRomaji(r.kana)}</span>
-                  <span className="font-display text-[10px] font-bold uppercase tracking-wider text-text-subtle bg-ink-deep rounded-full px-2 py-0.5">
+                  <span className="jp text-[17px] text-text">{r.kana}</span>
+                  <span className="text-[15px] text-text-muted">{kanaToRomaji(r.kana)}</span>
+                  <span className="font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle bg-ink-deep rounded-full px-2 py-0.5">
                     {r.label}
                   </span>
                 </SpeakChip>
@@ -633,7 +633,7 @@ function CardBack({ item }: { item: LessonItem }) {
             <DetailLabel>Common words</DetailLabel>
             <div className="flex flex-col items-center gap-1.5">
               {exampleWords.map((w, i) => (
-                <SpeakChip key={i} text={w.reading || w.word || ""} className="text-[13px]">
+                <SpeakChip key={i} text={w.reading || w.word || ""} className="text-[15px]">
                   <span className="jp text-text">{w.word}</span>
                   {w.meaning && <span className="text-text-muted">{w.meaning}</span>}
                 </SpeakChip>
@@ -649,15 +649,15 @@ function CardBack({ item }: { item: LessonItem }) {
     return (
       <div className="flex flex-col items-center gap-2.5 text-center">
         <div className="flex items-center gap-2.5">
-          <p className="text-[13px] text-text-subtle">{content.romaji}</p>
+          <p className="text-[15px] text-text-subtle">{content.romaji}</p>
           {speechTextForItem && <AudioButton text={speechTextForItem} />}
         </div>
         <p className="font-display text-2xl font-extrabold tracking-tight">{content.english}</p>
         {content.exampleSentenceJa && (
           <div className="mt-1 pt-3 border-t border-line w-full space-y-1">
-            <p className="jp text-[13px] text-text-muted leading-relaxed">{content.exampleSentenceJa}</p>
+            <p className="jp text-[15px] text-text-muted leading-relaxed">{content.exampleSentenceJa}</p>
             {content.exampleSentenceEn && (
-              <p className="text-[13px] text-text-subtle">{content.exampleSentenceEn}</p>
+              <p className="text-[15px] text-text-subtle">{content.exampleSentenceEn}</p>
             )}
           </div>
         )}
@@ -669,12 +669,12 @@ function CardBack({ item }: { item: LessonItem }) {
   return (
     <div className="flex flex-col items-center gap-2.5 text-center">
       <div className="flex items-center gap-2.5">
-        <p className="text-[13px] text-text-subtle">{content.romaji}</p>
+        <p className="text-[15px] text-text-subtle">{content.romaji}</p>
         {speechTextForItem && <AudioButton text={speechTextForItem} />}
       </div>
       <p className="font-display text-2xl font-extrabold tracking-tight">{content.english}</p>
       {content.scenario && (
-        <p className="text-[13px] text-text-subtle">{content.scenario}</p>
+        <p className="text-[15px] text-text-subtle">{content.scenario}</p>
       )}
     </div>
   );
@@ -684,7 +684,7 @@ function CardBack({ item }: { item: LessonItem }) {
 function Masthead({ kicker, tone }: { kicker: string; tone: string }) {
   return (
     <span
-      className="inline-flex self-start items-center h-7 px-3 rounded-full font-display text-[11px] font-bold uppercase tracking-[0.1em] text-on-light"
+      className="inline-flex self-start items-center h-7 px-3 rounded-full font-display text-[12px] font-bold uppercase tracking-[0.1em] text-on-light"
       style={{ background: `hsl(${tone})` }}
     >
       {kicker}
@@ -702,7 +702,7 @@ function CulturalTipQuestion({ item }: { item: LessonItem }) {
         <Masthead kicker={`Japan tip · ${category}`} tone="var(--sun)" />
         <MasteryPips review={item.review} />
       </div>
-      <p className="text-[17px] leading-relaxed font-medium">{content.question}</p>
+      <p className="text-[18px] leading-relaxed font-medium">{content.question}</p>
     </div>
   );
 }
@@ -713,7 +713,7 @@ function CulturalTipAnswer({ item }: { item: LessonItem }) {
   return (
     <div className="flex flex-col gap-3 w-full animate-fade">
       <h3 className="text-xl">{content.title}</h3>
-      <p className="text-[15px] text-text-muted leading-relaxed">{content.body}</p>
+      <p className="text-[17px] text-text-muted leading-relaxed">{content.body}</p>
     </div>
   );
 }
@@ -743,21 +743,21 @@ function DialogueLine({
           <p
             className={cn(
               "jp font-bold leading-snug flex-1 min-w-0",
-              emphasis ? "text-[1.6rem]" : "text-[17px]"
+              emphasis ? "text-[1.6rem]" : "text-[18px]"
             )}
           >
             {line.japanese}
           </p>
           <AudioButton text={readingSpeechText(speechReading(line.japanese, line.kana))} size={emphasis ? "md" : "sm"} />
         </div>
-        <p className={cn("text-text-subtle mt-0.5", emphasis ? "text-[14px]" : "text-[12px]")}>
+        <p className={cn("text-text-subtle mt-0.5", emphasis ? "text-[16px]" : "text-[13px]")}>
           {line.romaji}
         </p>
         {!hideEnglish && (
           <p
             className={cn(
               "text-text-muted font-medium mt-1",
-              emphasis ? "text-[15px]" : "text-[13px]"
+              emphasis ? "text-[17px]" : "text-[15px]"
             )}
           >
             {line.english}
@@ -796,14 +796,14 @@ function ConversationQuestion({ item }: { item: LessonItem }) {
 
       {content.canDo && (
         <p
-          className="font-display text-[11px] font-bold uppercase tracking-[0.12em]"
+          className="font-display text-[12px] font-bold uppercase tracking-[0.12em]"
           style={{ color: "hsl(var(--track-conversation))" }}
         >
           {content.canDo}
         </p>
       )}
 
-      <p className="text-[16px] leading-relaxed text-text-muted font-medium">
+      <p className="text-[17px] leading-relaxed text-text-muted font-medium">
         {content.situation}
       </p>
 
@@ -866,13 +866,13 @@ function ConversationAnswer({ item }: { item: LessonItem }) {
       {content.pattern && (
         <div className="rounded-tile bg-surface-raised p-3.5">
           <DetailLabel>The pattern</DetailLabel>
-          <p className="jp text-[17px] font-bold mt-2">{content.pattern.frame}</p>
-          <p className="text-[13px] text-text-subtle mt-0.5">{content.pattern.gloss}</p>
+          <p className="jp text-[18px] font-bold mt-2">{content.pattern.frame}</p>
+          <p className="text-[15px] text-text-subtle mt-0.5">{content.pattern.gloss}</p>
           <ul className="mt-3 flex flex-col gap-2">
             {content.pattern.swaps.map((swap, i) => (
               <li key={i} className="flex flex-col">
-                <span className="jp text-[15px] font-medium">{swap.japanese}</span>
-                <span className="text-[12px] text-text-subtle">{swap.english}</span>
+                <span className="jp text-[17px] font-medium">{swap.japanese}</span>
+                <span className="text-[13px] text-text-subtle">{swap.english}</span>
               </li>
             ))}
           </ul>
@@ -880,7 +880,7 @@ function ConversationAnswer({ item }: { item: LessonItem }) {
       )}
 
       {content.tip && (
-        <p className="text-[14px] text-text-muted leading-relaxed">{content.tip}</p>
+        <p className="text-[16px] text-text-muted leading-relaxed">{content.tip}</p>
       )}
     </div>
   );
@@ -902,17 +902,17 @@ function ReadingRow({ reading }: { reading: NumberReading }) {
   return (
     <li className="flex items-center gap-3 py-2 border-b border-line last:border-0">
       <span
-        className="font-display font-extrabold text-[17px] tnum tracking-tight shrink-0 min-w-[4.5rem]"
+        className="font-display font-extrabold text-[18px] tnum tracking-tight shrink-0 min-w-[4.5rem]"
         style={{ color: "hsl(var(--track-numbers))" }}
       >
         {reading.figure}
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 flex-wrap">
-          <span className="jp text-[16px] font-bold leading-snug">{reading.japanese}</span>
+          <span className="jp text-[17px] font-bold leading-snug">{reading.japanese}</span>
           {reading.irregular && (
             <span
-              className="font-display text-[9px] font-bold uppercase tracking-[0.1em] rounded-full px-1.5 py-0.5"
+              className="font-display text-[10px] font-bold uppercase tracking-[0.1em] rounded-full px-1.5 py-0.5"
               style={{ background: "hsl(var(--sun) / 0.18)", color: "hsl(var(--sun))" }}
               title="An irregular sound change — this is where the pattern breaks"
             >
@@ -920,8 +920,8 @@ function ReadingRow({ reading }: { reading: NumberReading }) {
             </span>
           )}
         </span>
-        <span className="block text-[12px] text-text-subtle leading-snug">{reading.romaji}</span>
-        <span className="block text-[12px] text-text-muted font-medium leading-snug mt-0.5">
+        <span className="block text-[13px] text-text-subtle leading-snug">{reading.romaji}</span>
+        <span className="block text-[13px] text-text-muted font-medium leading-snug mt-0.5">
           {reading.english}
         </span>
       </span>
@@ -944,14 +944,14 @@ function NumbersQuestion({ item }: { item: LessonItem }) {
 
       {content.canDo && (
         <p
-          className="font-display text-[11px] font-bold uppercase tracking-[0.12em]"
+          className="font-display text-[12px] font-bold uppercase tracking-[0.12em]"
           style={{ color: "hsl(var(--track-numbers))" }}
         >
           {content.canDo}
         </p>
       )}
 
-      <p className="text-[16px] leading-relaxed text-text-muted font-medium">
+      <p className="text-[17px] leading-relaxed text-text-muted font-medium">
         {content.situation}
       </p>
 
@@ -965,7 +965,7 @@ function NumbersQuestion({ item }: { item: LessonItem }) {
         {(content.readings ?? []).map((r, i) => (
           <span
             key={i}
-            className="font-display font-extrabold text-[17px] tnum rounded-tile px-3 py-1.5"
+            className="font-display font-extrabold text-[18px] tnum rounded-tile px-3 py-1.5"
             style={{
               background: "hsl(var(--track-numbers) / 0.14)",
               color: "hsl(var(--track-numbers))",
@@ -1030,13 +1030,13 @@ function NumbersAnswer({ item }: { item: LessonItem }) {
       {content.pattern && (
         <div className="rounded-tile bg-surface-raised p-3.5">
           <DetailLabel>The pattern</DetailLabel>
-          <p className="jp text-[17px] font-bold mt-2">{content.pattern.frame}</p>
-          <p className="text-[13px] text-text-subtle mt-0.5">{content.pattern.gloss}</p>
+          <p className="jp text-[18px] font-bold mt-2">{content.pattern.frame}</p>
+          <p className="text-[15px] text-text-subtle mt-0.5">{content.pattern.gloss}</p>
           <ul className="mt-3 flex flex-col gap-2">
             {content.pattern.swaps.map((swap, i) => (
               <li key={i} className="flex flex-col">
-                <span className="jp text-[15px] font-medium">{swap.japanese}</span>
-                <span className="text-[12px] text-text-subtle">{swap.english}</span>
+                <span className="jp text-[17px] font-medium">{swap.japanese}</span>
+                <span className="text-[13px] text-text-subtle">{swap.english}</span>
               </li>
             ))}
           </ul>
@@ -1044,7 +1044,7 @@ function NumbersAnswer({ item }: { item: LessonItem }) {
       )}
 
       {content.tip && (
-        <p className="text-[14px] text-text-muted leading-relaxed">{content.tip}</p>
+        <p className="text-[16px] text-text-muted leading-relaxed">{content.tip}</p>
       )}
     </div>
   );
@@ -1094,8 +1094,8 @@ function NumbersQuizChoices({
               onPick(choice.kana);
             }}
           >
-            <span className="jp block text-[17px] font-bold leading-snug">{choice.japanese}</span>
-            <span className="block text-[12px] opacity-75 leading-snug mt-0.5">{choice.romaji}</span>
+            <span className="jp block text-[18px] font-bold leading-snug">{choice.japanese}</span>
+            <span className="block text-[13px] opacity-75 leading-snug mt-0.5">{choice.romaji}</span>
           </button>
         );
       })}
@@ -1110,7 +1110,7 @@ function ScriptIntroCard({ item }: { item: LessonItem }) {
     <div className="flex flex-col gap-3 w-full">
       <Masthead kicker={content.kicker ?? "Before you begin"} tone="var(--sky)" />
       <h3 className="text-xl">{content.title}</h3>
-      <p className="text-[15px] text-text-muted leading-relaxed">{content.body}</p>
+      <p className="text-[17px] text-text-muted leading-relaxed">{content.body}</p>
     </div>
   );
 }
@@ -1119,7 +1119,7 @@ function Spinner({ label = "Preparing lesson…" }: { label?: string }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4">
       <div className="w-8 h-8 border-4 border-surface-raised border-t-coral rounded-full animate-spin" />
-      <p className="text-[14px] text-text-subtle font-medium">{label}</p>
+      <p className="text-[16px] text-text-subtle font-medium">{label}</p>
     </div>
   );
 }
@@ -1420,14 +1420,14 @@ export default function LessonPage() {
             </span>
 
             <div className="relative p-6 text-center">
-              <p className="font-display font-bold text-[13px] uppercase tracking-[0.12em] opacity-75">
+              <p className="font-display font-bold text-[14px] uppercase tracking-[0.12em] opacity-75">
                 Lesson complete
               </p>
               <p className="font-display font-extrabold text-mega tnum mt-2">
                 {finalResults.accuracy}
                 <span className="text-3xl align-top">%</span>
               </p>
-              <p className="font-display font-bold text-[17px] mt-1">
+              <p className="font-display font-bold text-[18px] mt-1">
                 {great
                   ? "That material is sticking."
                   : finalResults.accuracy >= 50
@@ -1453,7 +1453,7 @@ export default function LessonPage() {
                 >
                   {stat.value}
                 </p>
-                <p className="text-[11px] font-bold text-text-subtle mt-1.5 uppercase tracking-wider">
+                <p className="text-[12px] font-bold text-text-subtle mt-1.5 uppercase tracking-wider">
                   {stat.label}
                 </p>
               </div>
@@ -1463,8 +1463,8 @@ export default function LessonPage() {
           {installPrompt && (
             <Card className="p-4 flex items-center justify-between gap-3">
               <div>
-                <p className="font-display font-bold text-[14px]">Put Ikou on your home screen</p>
-                <p className="text-[12px] text-text-subtle mt-0.5 font-medium">
+                <p className="font-display font-bold text-[16px]">Put Ikou on your home screen</p>
+                <p className="text-[13px] text-text-subtle mt-0.5 font-medium">
                   Full screen, works offline
                 </p>
               </div>
@@ -1530,7 +1530,7 @@ export default function LessonPage() {
           >
             <div onClick={(e) => e.stopPropagation()}>
               <h2 id="stop-title" className="text-xl mb-2">Call it here?</h2>
-              <p className="text-[14px] text-text-muted leading-relaxed mb-5 font-medium">
+              <p className="text-[16px] text-text-muted leading-relaxed mb-5 font-medium">
                 Your progress is saved — this lesson will be waiting exactly where you
                 left it.
               </p>
@@ -1587,7 +1587,7 @@ export default function LessonPage() {
               <span className="tnum">{combo}</span>
             </Chip>
           ) : (
-            <span className="font-display font-bold text-[14px] text-text-subtle tnum shrink-0 text-right">
+            <span className="font-display font-bold text-[16px] text-text-subtle tnum shrink-0 text-right">
               {currentIndex + 1}/{totalUnanswered}
             </span>
           )}
@@ -1699,7 +1699,7 @@ export default function LessonPage() {
                 <Card className="overflow-hidden">
                   <div className="px-4 h-12 flex items-center justify-between border-b border-line">
                     <span
-                      className="inline-flex items-center h-7 px-3 rounded-full font-display text-[11px] font-bold uppercase tracking-[0.1em] text-on-light"
+                      className="inline-flex items-center h-7 px-3 rounded-full font-display text-[12px] font-bold uppercase tracking-[0.1em] text-on-light"
                       style={{ background: `hsl(${CONTENT_LABEL[currentItem.contentType].tone})` }}
                     >
                       {CONTENT_LABEL[currentItem.contentType].label}
@@ -1708,7 +1708,7 @@ export default function LessonPage() {
                   </div>
 
                   <div className="px-8 pt-5 pb-8 flex flex-col items-center justify-center gap-4 min-h-[12rem]">
-                    <p className="text-[13px] font-semibold text-text-subtle">
+                    <p className="text-[15px] font-semibold text-text-subtle">
                       {numberQuiz
                         ? "How is this said?"
                         : isFillInBlankItem
@@ -1804,7 +1804,7 @@ export default function LessonPage() {
                           key={choice}
                           disabled={!!mcChoice}
                           className={cn(
-                            "w-full py-4 px-5 rounded-tile text-[15px] font-semibold text-left border",
+                            "w-full py-4 px-5 rounded-tile text-[17px] font-semibold text-left border",
                             "transition-colors duration-150 disabled:cursor-default",
                             stateClass
                           )}

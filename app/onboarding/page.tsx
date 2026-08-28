@@ -65,13 +65,13 @@ export default function OnboardingPage() {
       <main className="flex-1 max-w-lg mx-auto w-full px-4 py-10 space-y-9">
         <div className="space-y-2">
           <h1 className="text-hero leading-none">Let&apos;s get<br />you started</h1>
-          <p className="text-[15px] text-text-muted leading-relaxed font-medium max-w-[34ch]">
+          <p className="text-[17px] text-text-muted leading-relaxed font-medium max-w-[34ch]">
             Two questions. Then Ikou builds a schedule around exactly where you are.
           </p>
         </div>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-text-subtle">
+          <h2 className="font-display text-[14px] font-bold uppercase tracking-[0.1em] text-text-subtle">
             Where are you starting from?
           </h2>
           <div className="space-y-2.5 stagger">
@@ -107,10 +107,10 @@ export default function OnboardingPage() {
                     <span className="jp text-2xl font-bold leading-none">{level.glyph}</span>
                   </span>
                   <span className="flex-1 min-w-0">
-                    <span className="block font-display font-bold text-[17px] tracking-tight">
+                    <span className="block font-display font-bold text-[18px] tracking-tight">
                       {level.label}
                     </span>
-                    <span className="block text-[13px] text-text-muted mt-0.5 font-medium">
+                    <span className="block text-[15px] text-text-muted mt-0.5 font-medium">
                       {level.desc}
                     </span>
                   </span>
@@ -130,7 +130,7 @@ export default function OnboardingPage() {
         </section>
 
         <section className="space-y-3">
-          <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-text-subtle">
+          <h2 className="font-display text-[14px] font-bold uppercase tracking-[0.1em] text-text-subtle">
             How much a day?
           </h2>
           <div className="grid grid-cols-4 gap-2">
@@ -142,7 +142,7 @@ export default function OnboardingPage() {
                   onClick={() => setStudyGoal(min)}
                   aria-pressed={isOn}
                   className={cn(
-                    "h-16 rounded-tile border font-display font-bold text-[16px] tnum elevated",
+                    "h-16 rounded-tile border font-display font-bold text-[17px] tnum elevated",
                     "transition-colors duration-150",
                     isOn
                       ? "border-lime bg-lime text-on-light"
@@ -150,12 +150,12 @@ export default function OnboardingPage() {
                   )}
                 >
                   {min}
-                  <span className="text-[11px] font-bold opacity-70 ml-0.5">min</span>
+                  <span className="text-[12px] font-bold opacity-70 ml-0.5">min</span>
                 </button>
               );
             })}
           </div>
-          <p className="text-[13px] text-text-subtle font-medium">
+          <p className="text-[15px] text-text-subtle font-medium">
             Lessons run about ten minutes — your goal sets how many to aim for.
           </p>
         </section>
@@ -163,7 +163,7 @@ export default function OnboardingPage() {
         {error && (
           <p
             role="alert"
-            className="text-[14px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 font-semibold animate-shake"
+            className="text-[16px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 font-semibold animate-shake"
           >
             {error}
           </p>

@@ -56,7 +56,7 @@ export default async function HomePage() {
         {/* Hero */}
         <section>
           <span
-            className="inline-flex items-center h-8 px-4 rounded-full font-display text-[12px] font-bold uppercase tracking-[0.1em] text-on-light mb-6"
+            className="inline-flex items-center h-8 px-4 rounded-full font-display text-[13px] font-bold uppercase tracking-[0.1em] text-on-light mb-6"
             style={{ background: "hsl(var(--sun))" }}
           >
             Japanese for travellers
@@ -78,7 +78,7 @@ export default async function HomePage() {
             .
           </h1>
 
-          <p className="text-[17px] text-text-muted leading-relaxed mb-9 max-w-lg font-medium">
+          <p className="text-[18px] text-text-muted leading-relaxed mb-9 max-w-lg font-medium">
             Ikou teaches the Japanese that changes a trip — reading signs, ordering
             without pointing, asking for help and understanding the answer. Ten
             minutes a day. No prior knowledge assumed.
@@ -112,7 +112,7 @@ export default async function HomePage() {
               style={{ background: `hsl(${s.tone})` }}
             >
               <div className="jp text-[2.75rem] leading-none font-bold mb-2">{s.glyph}</div>
-              <div className="font-display text-[13px] font-bold">{s.label}</div>
+              <div className="font-display text-[15px] font-bold">{s.label}</div>
             </div>
           ))}
         </section>
@@ -132,7 +132,7 @@ export default async function HomePage() {
               </span>
               <div>
                 <h2 className="text-[19px] mb-1.5">{title}</h2>
-                <p className="text-[14px] text-text-muted leading-relaxed font-medium">{desc}</p>
+                <p className="text-[16px] text-text-muted leading-relaxed font-medium">{desc}</p>
               </div>
             </div>
           ))}
@@ -153,12 +153,12 @@ export default async function HomePage() {
             </span>
             <div className="relative">
               <h2 className="text-[26px] mb-2">Your trip is closer than you think</h2>
-              <p className="text-[15px] font-medium opacity-85 mb-6 max-w-sm mx-auto">
+              <p className="text-[17px] font-medium opacity-85 mb-6 max-w-sm mx-auto">
                 Start with hiragana today. It is the one that unlocks everything else.
               </p>
               <Link
                 href="/signup"
-                className="inline-flex items-center gap-2 h-14 px-7 rounded-full font-display font-bold text-[16px] bg-on-light text-coral pressable"
+                className="inline-flex items-center gap-2 h-14 px-7 rounded-full font-display font-bold text-[17px] bg-on-light text-coral pressable"
               >
                 Start free
                 <ArrowRight className="w-[18px] h-[18px]" strokeWidth={3} />
@@ -171,7 +171,7 @@ export default async function HomePage() {
       <footer className="border-t border-line">
         <div className="max-w-2xl mx-auto px-6 py-8 flex flex-wrap items-center justify-between gap-4">
           <Wordmark />
-          <p className="text-[13px] text-text-subtle font-medium">
+          <p className="text-[15px] text-text-subtle font-medium">
             Hiragana · Katakana · Kanji · Words · Phrases
           </p>
         </div>

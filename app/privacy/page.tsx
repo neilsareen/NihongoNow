@@ -21,7 +21,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <section className="space-y-3">
       <h2 className="font-display font-bold text-[19px] tracking-tight">{title}</h2>
-      <div className="space-y-3 text-[15px] leading-relaxed text-text-muted font-medium">
+      <div className="space-y-3 text-[17px] leading-relaxed text-text-muted font-medium">
         {children}
       </div>
     </section>
@@ -38,7 +38,7 @@ export default function PrivacyPage() {
           </Link>
           <div className="space-y-1">
             <h1 className="text-[28px]">Privacy Policy</h1>
-            <p className="text-[15px] text-text-muted font-medium">
+            <p className="text-[17px] text-text-muted font-medium">
               Last updated {LAST_UPDATED}
             </p>
           </div>
@@ -156,7 +156,7 @@ export default function PrivacyPage() {
           </Section>
         </Card>
 
-        <p className="text-center text-[14px] text-text-subtle font-medium">
+        <p className="text-center text-[16px] text-text-subtle font-medium">
           <Link href="/" className="text-coral hover:brightness-110 transition-all font-bold">
             Back to Ikou
           </Link>

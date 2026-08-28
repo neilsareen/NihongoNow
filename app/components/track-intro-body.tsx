@@ -13,14 +13,14 @@ export function TrackIntroBody({ intro }: { intro: TrackIntro }) {
     <>
       <div className="space-y-4">
         {intro.body.map((paragraph, i) => (
-          <p key={i} className="text-[15px] text-text-muted leading-relaxed">
+          <p key={i} className="text-[17px] text-text-muted leading-relaxed">
             {paragraph}
           </p>
         ))}
       </div>
 
       <section className="space-y-2.5">
-        <h2 className="font-display text-[13px] font-bold uppercase tracking-[0.1em] text-text-subtle">
+        <h2 className="font-display text-[14px] font-bold uppercase tracking-[0.1em] text-text-subtle">
           How this track works
         </h2>
         <ul className="space-y-2.5">
@@ -35,10 +35,10 @@ export function TrackIntroBody({ intro }: { intro: TrackIntro }) {
                 aria-hidden="true"
               />
               <span className="min-w-0">
-                <span className="block font-display font-bold text-[14px] tracking-tight">
+                <span className="block font-display font-bold text-[16px] tracking-tight">
                   {point.label}
                 </span>
-                <span className="block text-[13.5px] text-text-muted leading-relaxed mt-0.5">
+                <span className="block text-[15px] text-text-muted leading-relaxed mt-0.5">
                   {point.text}
                 </span>
               </span>

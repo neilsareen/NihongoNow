@@ -177,13 +177,13 @@ export function SpeakCard({
       <Card className="overflow-hidden flex flex-col max-h-full">
         <div className="shrink-0 px-4 h-12 flex items-center justify-between border-b border-line">
           <span
-            className="inline-flex items-center h-7 px-3 rounded-full font-display text-[11px] font-bold uppercase tracking-[0.1em] text-on-light"
+            className="inline-flex items-center h-7 px-3 rounded-full font-display text-[12px] font-bold uppercase tracking-[0.1em] text-on-light"
             style={{ background: "hsl(var(--grape))" }}
           >
             Say it back
           </span>
           {attempts > 0 && (
-            <span className="font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle tnum">
+            <span className="font-display text-[12px] font-bold uppercase tracking-wider text-text-subtle tnum">
               Attempt {attempts + (passed ? 0 : 1)}
             </span>
           )}
@@ -205,9 +205,9 @@ export function SpeakCard({
             <div className="flex flex-col items-center gap-1.5 animate-pop-in">
               <p className="jp text-[2.75rem] leading-none font-bold">{prompt.japanese}</p>
               {prompt.kana && prompt.kana !== prompt.japanese && (
-                <p className="jp text-[17px] text-text-muted font-medium">{prompt.kana}</p>
+                <p className="jp text-[18px] text-text-muted font-medium">{prompt.kana}</p>
               )}
-              {romaji && <p className="text-[13px] text-text-subtle">{romaji}</p>}
+              {romaji && <p className="text-[15px] text-text-subtle">{romaji}</p>}
             </div>
           ) : (
             <button
@@ -232,38 +232,38 @@ export function SpeakCard({
         >
           {listening ? (
             <>
-              <p className="font-display font-bold text-[15px]" style={{ color: "hsl(var(--lime))" }}>
+              <p className="font-display font-bold text-[17px]" style={{ color: "hsl(var(--lime))" }}>
                 Listening…
               </p>
-              <p className="jp text-[15px] text-text-muted min-h-[1.4rem]">
+              <p className="jp text-[17px] text-text-muted min-h-[1.4rem]">
                 {interim || "Say the word out loud"}
               </p>
             </>
           ) : grade ? (
             <div className="w-full flex items-center gap-4 animate-pop-in">
               <div
-                className="w-14 h-14 shrink-0 rounded-full grid place-items-center font-display font-extrabold text-[17px] tnum text-on-light"
+                className="w-14 h-14 shrink-0 rounded-full grid place-items-center font-display font-extrabold text-[18px] tnum text-on-light"
                 style={{ background: `hsl(${tone})` }}
               >
                 {Math.round(grade.score * 100)}
               </div>
               <div className="min-w-0 text-left">
-                <p className="font-display font-bold text-[15px]" style={{ color: `hsl(${tone})` }}>
+                <p className="font-display font-bold text-[17px]" style={{ color: `hsl(${tone})` }}>
                   {headlineForGrade(grade)}
                 </p>
-                <p className="text-[13px] text-text-muted mt-0.5 truncate">
+                <p className="text-[15px] text-text-muted mt-0.5 truncate">
                   Heard: <span className="jp">{grade.heard || "—"}</span>
                 </p>
               </div>
             </div>
           ) : error ? (
-            <p className="text-[13px] text-text-muted leading-relaxed">{error.message}</p>
+            <p className="text-[15px] text-text-muted leading-relaxed">{error.message}</p>
           ) : supported ? (
-            <p className="text-[13px] text-text-subtle font-medium">
+            <p className="text-[15px] text-text-subtle font-medium">
               Tap the mic and say it in Japanese.
             </p>
           ) : (
-            <p className="text-[13px] text-text-muted leading-relaxed">
+            <p className="text-[15px] text-text-muted leading-relaxed">
               This browser can&apos;t listen — Chrome, Edge and Safari can. Say it out
               loud anyway, then grade yourself.
             </p>
@@ -334,7 +334,7 @@ export function SpeakCard({
             )}
             <Mic className="relative w-7 h-7 [@media(min-height:640px)]:w-8 [@media(min-height:640px)]:h-8" strokeWidth={2.5} />
           </button>
-          <p className="hidden [@media(min-height:640px)]:block font-display font-bold text-[13px] text-text-subtle">
+          <p className="hidden [@media(min-height:640px)]:block font-display font-bold text-[15px] text-text-subtle">
             {listening ? "Listening…" : grade || error ? "Tap to try again" : "Tap to speak"}
           </p>
 

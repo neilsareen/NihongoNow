@@ -56,13 +56,13 @@ export default function SignupPage() {
             <MailCheck className="w-7 h-7" strokeWidth={2.5} />
           </span>
           <h1 className="text-2xl">Check your email</h1>
-          <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+          <p className="text-[16px] text-text-muted leading-relaxed font-medium">
             We sent a confirmation link to <span className="text-text font-medium">{email}</span>.
             Open it to activate your account.
           </p>
           <Link
             href="/login"
-            className="inline-block text-[14px] font-semibold text-text-subtle hover:text-text transition-colors pt-1"
+            className="inline-block text-[16px] font-semibold text-text-subtle hover:text-text transition-colors pt-1"
           >
             Back to sign in
           </Link>
@@ -80,7 +80,7 @@ export default function SignupPage() {
           </Link>
           <div className="space-y-1">
             <h1 className="text-[28px]">Create your account</h1>
-            <p className="text-[15px] text-text-muted font-medium">Free, and no prior Japanese needed.</p>
+            <p className="text-[17px] text-text-muted font-medium">Free, and no prior Japanese needed.</p>
           </div>
         </div>
 
@@ -88,7 +88,7 @@ export default function SignupPage() {
           {error && (
             <p
               role="alert"
-              className="text-[14px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
+              className="text-[16px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
             >
               {error}
             </p>
@@ -137,7 +137,7 @@ export default function SignupPage() {
               <div className="w-full border-t border-line" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-3 bg-surface font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle">or</span>
+              <span className="px-3 bg-surface font-display text-[12px] font-bold uppercase tracking-wider text-text-subtle">or</span>
             </div>
           </div>
 
@@ -148,14 +148,14 @@ export default function SignupPage() {
           </button>
         </Card>
 
-        <p className="text-center text-[14px] text-text-subtle font-medium">
+        <p className="text-center text-[16px] text-text-subtle font-medium">
           Already have an account?{" "}
           <Link href="/login" className="text-coral hover:brightness-110 transition-all font-bold">
             Sign in
           </Link>
         </p>
 
-        <p className="text-center text-[13px] text-text-subtle font-medium">
+        <p className="text-center text-[15px] text-text-subtle font-medium">
           <Link href="/privacy" className="hover:text-text transition-colors">
             Privacy Policy
           </Link>

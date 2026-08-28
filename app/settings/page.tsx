@@ -145,7 +145,7 @@ export default function SettingsPage() {
           // A single quiet status slot, rather than a badge that jumps into the
           // heading row and shifts the layout as it appears.
           <span
-            className="font-display text-[11px] font-bold uppercase tracking-wider text-lime"
+            className="font-display text-[12px] font-bold uppercase tracking-wider text-lime"
             aria-live="polite"
           >
             {saving ? "…" : saved ? "Saved" : ""}
@@ -157,7 +157,7 @@ export default function SettingsPage() {
         <section className="space-y-3">
           <div className="space-y-1">
             <SectionLabel>Your mark</SectionLabel>
-            <p className="text-[14px] text-text-muted font-medium">
+            <p className="text-[16px] text-text-muted font-medium">
               Upload a photo, or pick a character. It shows up wherever you do.
             </p>
           </div>
@@ -197,7 +197,7 @@ export default function SettingsPage() {
                   </button>
                 )}
               </div>
-              {uploadError && <p className="text-[13px] text-rose font-medium">{uploadError}</p>}
+              {uploadError && <p className="text-[15px] text-rose font-medium">{uploadError}</p>}
             </div>
           </Card>
 
@@ -236,7 +236,7 @@ export default function SettingsPage() {
         <section className="space-y-3">
           <div className="space-y-1">
             <SectionLabel>Daily goal</SectionLabel>
-            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+            <p className="text-[16px] text-text-muted leading-relaxed font-medium">
               Lessons run about ten minutes, so this sets how many to aim for.
             </p>
           </div>
@@ -249,7 +249,7 @@ export default function SettingsPage() {
                   onClick={() => handleGoalChange(min)}
                   aria-pressed={isOn}
                   className={cn(
-                    "h-14 rounded-tile border font-display font-bold text-[15px] tnum elevated",
+                    "h-14 rounded-tile border font-display font-bold text-[17px] tnum elevated",
                     "transition-colors duration-150",
                     isOn
                       ? "border-lime bg-lime text-on-light"
@@ -266,7 +266,7 @@ export default function SettingsPage() {
         <section className="space-y-3">
           <div className="space-y-1">
             <SectionLabel>Silent mode</SectionLabel>
-            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+            <p className="text-[16px] text-text-muted leading-relaxed font-medium">
               For a quiet carriage or a sleeping flatmate. It also sits in the header
               of every lesson, for when the room goes quiet mid-session.
             </p>
@@ -277,7 +277,7 @@ export default function SettingsPage() {
         <section className="space-y-3">
           <div className="space-y-1">
             <SectionLabel>Appearance</SectionLabel>
-            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+            <p className="text-[16px] text-text-muted leading-relaxed font-medium">
               Dark for evening drills, light for a bright train platform.
             </p>
           </div>
@@ -288,7 +288,7 @@ export default function SettingsPage() {
           <section className="space-y-3">
             <div className="space-y-1">
               <SectionLabel>Beginner simulation</SectionLabel>
-              <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+              <p className="text-[16px] text-text-muted leading-relaxed font-medium">
                 See the app exactly as a brand-new learner would — the welcome
                 and script intros, locked kanji, everything at zero. Your own
                 progress is never touched.
@@ -303,16 +303,16 @@ export default function SettingsPage() {
                   <GraduationCap className="w-5 h-5" strokeWidth={2.5} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-display font-bold text-[15px]">
+                  <p className="font-display font-bold text-[17px]">
                     {simStatus.isSimulating ? "Simulation is on" : "Simulate a beginner"}
                   </p>
                   {simStatus.summary?.exists ? (
-                    <p className="text-[13px] text-text-subtle tnum">
+                    <p className="text-[15px] text-text-subtle tnum">
                       {simStatus.summary.itemsSeen} seen · {simStatus.summary.itemsMastered} mastered ·{" "}
                       {simStatus.summary.lessonsCompleted} lessons done
                     </p>
                   ) : (
-                    <p className="text-[13px] text-text-subtle">Not started yet</p>
+                    <p className="text-[15px] text-text-subtle">Not started yet</p>
                   )}
                 </div>
               </div>

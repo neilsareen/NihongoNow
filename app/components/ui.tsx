@@ -64,9 +64,9 @@ const VARIANT: Record<ButtonVariant, { className: string; style?: CSSProperties 
 };
 
 const SIZE: Record<ButtonSize, string> = {
-  sm: "h-9 px-4 text-[13px] gap-1.5",
-  md: "h-12 px-6 text-[15px] gap-2",
-  lg: "h-14 px-7 text-base gap-2.5",
+  sm: "h-9 px-4 text-[15px] gap-1.5",
+  md: "h-12 px-6 text-[17px] gap-2",
+  lg: "h-14 px-7 text-[18px] gap-2.5",
 };
 
 export function buttonStyles({
@@ -207,7 +207,7 @@ export function SectionLabel({
   className?: string;
 }) {
   return (
-    <h2 className={cn("font-display font-bold text-[17px] tracking-tight", className)}>
+    <h2 className={cn("font-display font-bold text-[18px] tracking-tight", className)}>
       {children}
     </h2>
   );
@@ -228,7 +228,7 @@ export function Chip({
     <span
       className={cn(
         "inline-flex items-center gap-1.5 h-8 px-3 rounded-full",
-        "font-display font-bold text-[13px] border",
+        "font-display font-bold text-[15px] border",
         !hue && "bg-surface-raised border-line text-text",
         className
       )}
@@ -356,7 +356,7 @@ export function TopBar({
           </svg>
         </Link>
         {title && (
-          <span className="flex-1 text-center font-display font-bold text-[17px] tracking-tight">
+          <span className="flex-1 text-center font-display font-bold text-[18px] tracking-tight">
             {title}
           </span>
         )}
@@ -427,7 +427,7 @@ export function Wordmark({
         <span
           className={cn(
             "font-display font-extrabold tracking-tight leading-none",
-            sm ? "text-[16px]" : "text-[21px]"
+            sm ? "text-[17px]" : "text-[21px]"
           )}
         >
           Ikou

@@ -17,14 +17,14 @@ export function Field({
     <div className="space-y-1.5">
       <label
         htmlFor={id}
-        className="block font-display text-[12px] font-bold uppercase tracking-[0.08em] text-text-subtle"
+        className="block font-display text-[13px] font-bold uppercase tracking-[0.08em] text-text-subtle"
       >
         {label}
       </label>
       <input
         id={id}
         className={cn(
-          "w-full h-12 px-4 rounded-tile text-[15px] font-medium",
+          "w-full h-12 px-4 rounded-tile text-[17px] font-medium",
           "bg-ink-deep border border-line text-text placeholder:text-text-subtle",
           "transition-colors duration-150",
           "hover:border-line-strong focus:border-coral focus:outline-none",

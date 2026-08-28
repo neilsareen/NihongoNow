@@ -63,7 +63,7 @@ export function ThemeToggle() {
             className={cn(
               "h-[4.5rem] rounded-tile border elevated",
               "flex flex-col items-center justify-center gap-1.5",
-              "font-display font-bold text-[13px]",
+              "font-display font-bold text-[15px]",
               "transition-colors duration-150",
               isOn
                 ? "text-on-light"

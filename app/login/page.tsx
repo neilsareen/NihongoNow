@@ -54,7 +54,7 @@ function LoginForm() {
           </Link>
           <div className="space-y-1">
             <h1 className="text-[28px]">Welcome back</h1>
-            <p className="text-[15px] text-text-muted font-medium">Pick up where you left off.</p>
+            <p className="text-[17px] text-text-muted font-medium">Pick up where you left off.</p>
           </div>
         </div>
 
@@ -62,7 +62,7 @@ function LoginForm() {
           {error && (
             <p
               role="alert"
-              className="text-[14px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
+              className="text-[16px] text-rose bg-rose/12 border border-rose/35 rounded-tile px-4 py-3 leading-relaxed font-semibold animate-shake"
             >
               {error}
             </p>
@@ -100,7 +100,7 @@ function LoginForm() {
               <div className="w-full border-t border-line" />
             </div>
             <div className="relative flex justify-center">
-              <span className="px-3 bg-surface font-display text-[11px] font-bold uppercase tracking-wider text-text-subtle">or</span>
+              <span className="px-3 bg-surface font-display text-[12px] font-bold uppercase tracking-wider text-text-subtle">or</span>
             </div>
           </div>
 
@@ -111,14 +111,14 @@ function LoginForm() {
           </button>
         </Card>
 
-        <p className="text-center text-[14px] text-text-subtle font-medium">
+        <p className="text-center text-[16px] text-text-subtle font-medium">
           Don&apos;t have an account?{" "}
           <Link href="/signup" className="text-coral hover:brightness-110 transition-all font-bold">
             Sign up
           </Link>
         </p>
 
-        <p className="text-center text-[13px] text-text-subtle font-medium">
+        <p className="text-center text-[15px] text-text-subtle font-medium">
           <Link href="/privacy" className="hover:text-text transition-colors">
             Privacy Policy
           </Link>

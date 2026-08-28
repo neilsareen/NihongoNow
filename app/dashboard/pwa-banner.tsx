@@ -46,11 +46,11 @@ export function PWAInstallBanner() {
     <div className="max-w-lg mx-auto px-4 pt-4">
       <div className="bg-surface border border-line rounded-card elevated p-4 flex items-start gap-3">
         <div className="flex-1 min-w-0">
-          <p className="font-display font-bold text-[14px]">Put Ikou on your home screen</p>
+          <p className="font-display font-bold text-[16px]">Put Ikou on your home screen</p>
           {prompt ? (
-            <p className="text-xs text-text-subtle mt-0.5">Opens full screen and works offline.</p>
+            <p className="text-[13px] text-text-subtle mt-0.5">Opens full screen and works offline.</p>
           ) : (
-            <p className="text-xs text-text-muted mt-1 leading-relaxed inline-flex flex-wrap items-center gap-1">
+            <p className="text-[15px] text-text-muted mt-1 leading-relaxed inline-flex flex-wrap items-center gap-1">
               Tap
               <Share className="w-3.5 h-3.5 inline text-text" strokeWidth={1.75} aria-label="Share" />
               then <span className="text-text font-medium">Add to Home Screen</span>.

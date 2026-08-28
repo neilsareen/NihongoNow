@@ -52,7 +52,7 @@ export function KanjiDepthPicker({ initial }: { initial: KanjiDepth }) {
     <section className="space-y-3">
       <div className="space-y-1">
         <SectionLabel>How much kanji</SectionLabel>
-        <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+        <p className="text-[16px] text-text-muted leading-relaxed font-medium">
           Lessons and drills serve only what you pick here. Nothing is lost by
           narrowing it — widen it again and the characters come straight back.
         </p>
@@ -89,13 +89,13 @@ export function KanjiDepthPicker({ initial }: { initial: KanjiDepth }) {
               <span className="min-w-0">
                 <span
                   className={cn(
-                    "block font-display font-bold text-[15px] tracking-tight",
+                    "block font-display font-bold text-[17px] tracking-tight",
                     isOn ? "text-lime" : "text-text"
                   )}
                 >
                   {label}
                 </span>
-                <span className="block text-[13px] text-text-muted leading-relaxed font-medium mt-0.5">
+                <span className="block text-[15px] text-text-muted leading-relaxed font-medium mt-0.5">
                   {blurb}
                 </span>
               </span>
@@ -105,7 +105,7 @@ export function KanjiDepthPicker({ initial }: { initial: KanjiDepth }) {
       </div>
 
       {error && (
-        <p className="text-[13px] font-medium text-rose px-1" role="alert">
+        <p className="text-[15px] font-medium text-rose px-1" role="alert">
           {error}
         </p>
       )}

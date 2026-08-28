@@ -258,17 +258,17 @@ export default async function DashboardPage() {
         <div className="relative p-5">
           <div className="flex items-center gap-2 mb-3">
             <Zap className="w-4 h-4" strokeWidth={2.5} fill="currentColor" />
-            <span className="font-display font-bold text-[13px] uppercase tracking-[0.1em]">
+            <span className="font-display font-bold text-[14px] uppercase tracking-[0.1em]">
               {showContinue ? "Pick up where you left off" : "Ready when you are"}
             </span>
           </div>
           <p className="font-display font-extrabold text-[26px] leading-tight tracking-tight max-w-[15ch]">
             {lessonTitle}
           </p>
-          <p className="text-[14px] font-medium mt-1.5 opacity-80">{lessonSubtitle}</p>
+          <p className="text-[16px] font-medium mt-1.5 opacity-80">{lessonSubtitle}</p>
 
           <span
-            className="mt-4 inline-flex items-center gap-2 h-11 px-5 rounded-full font-display font-bold text-[15px] bg-on-light text-coral"
+            className="mt-4 inline-flex items-center gap-2 h-11 px-5 rounded-full font-display font-bold text-[17px] bg-on-light text-coral"
           >
             {showContinue ? "Keep going" : "Start"}
             <ChevronRight className="w-4 h-4" strokeWidth={3} />
@@ -281,17 +281,17 @@ export default async function DashboardPage() {
         <Ring value={goalPct} size={78} thickness={10} hue="var(--lime)">
           <span className="text-center leading-none">
             <span className="block font-display font-extrabold text-[22px] tnum">{todayMinutes}</span>
-            <span className="block text-[10px] font-bold text-text-subtle uppercase tracking-wider mt-0.5">min</span>
+            <span className="block text-[11px] font-bold text-text-subtle uppercase tracking-wider mt-0.5">min</span>
           </span>
         </Ring>
         <div className="flex-1 min-w-0">
           <SectionLabel>Today</SectionLabel>
-          <p className="text-[14px] text-text-muted mt-1.5 font-medium">
+          <p className="text-[16px] text-text-muted mt-1.5 font-medium">
             {goalPct >= 100
               ? "Goal smashed. Anything more is a bonus."
               : `${goalMinutes - todayMinutes} min to hit your goal`}
           </p>
-          <p className="text-[13px] text-text-subtle mt-1 font-medium">
+          <p className="text-[15px] text-text-subtle mt-1 font-medium">
             {reviewsDue > 0
               ? `${reviewsDue} review${reviewsDue !== 1 ? "s" : ""} waiting`
               : "All caught up on reviews"}
@@ -305,7 +305,7 @@ export default async function DashboardPage() {
           <SectionLabel>Your tracks</SectionLabel>
           <Link
             href="/analytics"
-            className="font-display font-bold text-[13px] text-text-subtle hover:text-text transition-colors"
+            className="font-display font-bold text-[15px] text-text-subtle hover:text-text transition-colors"
           >
             See all
           </Link>
@@ -353,11 +353,11 @@ export default async function DashboardPage() {
                 <span className="flex-1 min-w-0">
                   <span className="flex items-baseline justify-between gap-3 mb-2">
                     <span
-                      className={`font-display font-bold text-[16px] tracking-tight ${locked ? "text-text-subtle" : ""}`}
+                      className={`font-display font-bold text-[17px] tracking-tight ${locked ? "text-text-subtle" : ""}`}
                     >
                       {track.label}
                     </span>
-                    <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
+                    <span className="text-[13px] font-bold text-text-subtle tnum shrink-0">
                       {locked
                         ? lockedNote ?? "LOCKED"
                         : `${mastered.toLocaleString()} / ${track.total.toLocaleString()}`}
@@ -414,7 +414,7 @@ export default async function DashboardPage() {
               >
                 {travelLevel.name}
               </p>
-              <p className="text-[13px] text-text-muted mt-1.5 leading-relaxed font-medium">
+              <p className="text-[15px] text-text-muted mt-1.5 leading-relaxed font-medium">
                 {travelLevel.description}
               </p>
             </div>

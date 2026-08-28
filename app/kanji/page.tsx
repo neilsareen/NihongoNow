@@ -61,7 +61,7 @@ export default async function KanjiTrackPage() {
             <br />
             kanji you need
           </h1>
-          <p className="text-[15px] text-text-muted leading-relaxed font-medium max-w-[34ch]">
+          <p className="text-[17px] text-text-muted leading-relaxed font-medium max-w-[34ch]">
             Ikou is built around understanding what is said to you and being
             able to answer. Kanji helps you read a sign — it is not the price of
             admission, so you set how far into it you go.
@@ -76,15 +76,15 @@ export default async function KanjiTrackPage() {
             rather than against the whole corpus. */}
         <Card className="p-5 space-y-3">
           <div className="flex items-baseline justify-between gap-3">
-            <span className="font-display font-bold text-[16px] tracking-tight">
+            <span className="font-display font-bold text-[17px] tracking-tight">
               In your set
             </span>
-            <span className="text-[13px] font-bold text-text-subtle tnum">
+            <span className="text-[15px] font-bold text-text-subtle tnum">
               {mastered.toLocaleString()} / {total.toLocaleString()} mastered
             </span>
           </div>
           <ProgressBar value={pct} hue="var(--track-kanji)" className="h-4" />
-          <p className="text-[13px] text-text-subtle font-medium">
+          <p className="text-[15px] text-text-subtle font-medium">
             {corpusSize.toLocaleString()} characters in the corpus overall.
           </p>
         </Card>
@@ -120,19 +120,19 @@ export default async function KanjiTrackPage() {
                   <div className="flex-1 min-w-0 space-y-1.5">
                     <div className="flex items-baseline justify-between gap-3">
                       <span
-                        className={`font-display font-bold text-[15px] tracking-tight ${
+                        className={`font-display font-bold text-[17px] tracking-tight ${
                           t.included ? "" : "text-text-subtle"
                         }`}
                       >
                         {copy.label}
                       </span>
-                      <span className="text-[12px] font-bold text-text-subtle tnum shrink-0">
+                      <span className="text-[13px] font-bold text-text-subtle tnum shrink-0">
                         {t.included
                           ? `${t.mastered} / ${t.total}`
                           : `${t.total} not in your set`}
                       </span>
                     </div>
-                    <p className="text-[13px] text-text-muted leading-relaxed font-medium">
+                    <p className="text-[15px] text-text-muted leading-relaxed font-medium">
                       {copy.blurb}
                     </p>
                     <ProgressBar
@@ -158,7 +158,7 @@ export default async function KanjiTrackPage() {
           </Link>
         ) : (
           <Card className="p-4">
-            <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+            <p className="text-[16px] text-text-muted leading-relaxed font-medium">
               Nothing to drill yet — kanji appear once you have mastered the kana
               their readings are written in.
             </p>

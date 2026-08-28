@@ -67,7 +67,7 @@ export function SilentModePanel({ onChoose }: { onChoose?: () => void }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-[14px] text-text-muted leading-relaxed font-medium">
+      <p className="text-[16px] text-text-muted leading-relaxed font-medium">
         {active
           ? "Nothing will play out loud, and anything that asks you to listen or speak is being asked in writing instead."
           : "Somewhere you can’t talk? Mute the audio and swap listening and speaking cards for ones you can answer in your head."}
@@ -84,7 +84,7 @@ export function SilentModePanel({ onChoose }: { onChoose?: () => void }) {
             }}
             className={cn(
               "h-14 rounded-tile border bg-surface elevated",
-              "font-display font-bold text-[15px] tnum transition-colors duration-150",
+              "font-display font-bold text-[17px] tnum transition-colors duration-150",
               "border-line text-text-muted hover:border-line-strong hover:text-text"
             )}
           >
@@ -98,7 +98,7 @@ export function SilentModePanel({ onChoose }: { onChoose?: () => void }) {
       <div className="min-h-[3.5rem] flex flex-col items-center justify-center gap-2" aria-live="polite">
         {active ? (
           <>
-            <p className="font-display font-bold text-[13px]" style={{ color: "hsl(var(--grape))" }}>
+            <p className="font-display font-bold text-[15px]" style={{ color: "hsl(var(--grape))" }}>
               Silent for {minutesLeft} more {minutesLeft === 1 ? "minute" : "minutes"}
             </p>
             <button
@@ -115,7 +115,7 @@ export function SilentModePanel({ onChoose }: { onChoose?: () => void }) {
             </button>
           </>
         ) : (
-          <p className="text-[13px] text-text-subtle font-medium text-center">
+          <p className="text-[15px] text-text-subtle font-medium text-center">
             Sound comes back on its own when the time is up.
           </p>
         )}
@@ -183,7 +183,7 @@ export function SilentModeButton({ className }: { className?: string }) {
       >
         <VolumeX className="w-[18px] h-[18px]" strokeWidth={2.5} />
         {active && (
-          <span className="font-display font-bold text-[13px] tnum">{minutesLeft}m</span>
+          <span className="font-display font-bold text-[15px] tnum">{minutesLeft}m</span>
         )}
       </button>
 
