@@ -17,6 +17,14 @@ import {
   type NumberQuiz,
   type NumberReading,
 } from "@/lib/numbers";
+import {
+  getTrackIntro,
+  hasSeenTrackIntro,
+  markTrackIntroSeen,
+  type TrackIntro,
+  type TrackIntroScope,
+} from "@/lib/track-intros";
+import { TrackIntroView } from "./track-intro";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1239,7 +1247,7 @@ function SummaryView({
 // Root page — state machine
 // ---------------------------------------------------------------------------
 
-type View = "loading" | "selection" | "practice" | "summary";
+type View = "loading" | "intro" | "selection" | "practice" | "summary";
 
 const AUTO_START_TYPES: TypeKey[] = ["HIRAGANA", "KATAKANA", "KANJI", "VOCABULARY", "PHRASE", "CONVERSATION", "NUMBERS"];
 
@@ -1250,7 +1258,15 @@ function PracticePageInner() {
     ? (requestedType as TypeKey)
     : null;
 
+  // `?intro=1` forces the explainer back up even once it has been dismissed.
+  // These tracks drop straight into a drill with nowhere to hang a "read it
+  // again" control, so this is the way back to one — and how the copy is
+  // checked without resetting a learner.
+  const forceIntro = searchParams.get("intro") === "1";
+
   const [view, setView] = useState<View>(autoType ? "loading" : "selection");
+  const [intro, setIntro] = useState<TrackIntro | null>(null);
+  const [introScope, setIntroScope] = useState<TrackIntroScope>("self");
   const [items, setItems] = useState<PracticeItem[]>([]);
   const [results, setResults] = useState<SessionResults>({
     size: 0,
@@ -1271,7 +1287,18 @@ function PracticePageInner() {
         const data = await res.json();
         if (!cancelled) {
           setItems((data.items as PracticeItem[]).slice(0, DEFAULT_COUNT));
-          setView("practice");
+          // A track opened from the dashboard explains itself the first time,
+          // before a single card: tapping "Kanji" out of curiosity should not
+          // land you in a stack of characters nobody has introduced. The scope
+          // rides along on the response so the beginner simulation gets its own
+          // fresh set of intros without a second round trip.
+          const scope: TrackIntroScope = data.simulating ? "sim" : "self";
+          const trackIntro = getTrackIntro(autoType);
+          setIntroScope(scope);
+          setIntro(trackIntro);
+          const showIntro =
+            !!trackIntro && (forceIntro || !hasSeenTrackIntro(trackIntro.key, scope));
+          setView(showIntro ? "intro" : "practice");
         }
       } catch {
         if (!cancelled) setView("selection");
@@ -1283,6 +1310,11 @@ function PracticePageInner() {
     // Only ever auto-start once, for the type present on initial load.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function handleIntroDone() {
+    if (intro) markTrackIntroSeen(intro.key, introScope);
+    setView("practice");
+  }
 
   function handleStart(fetchedItems: PracticeItem[]) {
     setItems(fetchedItems);
@@ -1301,6 +1333,10 @@ function PracticePageInner() {
 
   if (view === "loading") {
     return <LoadingView />;
+  }
+
+  if (view === "intro" && intro) {
+    return <TrackIntroView intro={intro} onStart={handleIntroDone} />;
   }
 
   if (view === "practice" && items.length > 0) {

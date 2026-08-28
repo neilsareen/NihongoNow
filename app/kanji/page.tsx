@@ -19,6 +19,7 @@ import {
   buttonVars,
 } from "@/app/components/ui";
 import { KanjiDepthPicker } from "./depth-picker";
+import { KanjiTrackIntro } from "./track-intro";
 
 /**
  * The kanji track.
@@ -66,6 +67,10 @@ export default async function KanjiTrackPage() {
             admission, so you set how far into it you go.
           </p>
         </div>
+
+        {/* What kanji actually is, for anyone who arrived here before a
+            lesson ever mentioned it. Open on a first visit, folded away after. */}
+        <KanjiTrackIntro simulating={session.isSimulating} />
 
         {/* Where the learner currently stands, against their own ceiling
             rather than against the whole corpus. */}

@@ -8,6 +8,7 @@ import { Avatar, Card, SectionLabel, TopBar, buttonStyles, buttonVars } from "@/
 import { BottomNav } from "@/app/components/bottom-nav";
 import { ThemeToggle } from "@/app/components/theme";
 import { SilentModeSettings } from "@/app/components/silent-mode";
+import { clearSeenTrackIntros } from "@/lib/track-intros";
 
 const GOAL_OPTIONS = [10, 15, 20, 30, 45, 60];
 
@@ -59,6 +60,10 @@ export default function SettingsPage() {
 
   async function handleSimulationAction(action: "start" | "stop" | "reset") {
     setSimBusy(true);
+    // Day one means day one: the sandbox's dismissed track intros are kept in
+    // this browser rather than on its row, so resetting has to clear them too
+    // or the simulated beginner would silently skip them.
+    if (action === "reset") clearSeenTrackIntros("sim");
     const res = await fetch("/api/simulation", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

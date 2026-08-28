@@ -260,5 +260,11 @@ export async function GET(request: Request) {
       : null;
   const ordered = spreadShuffleByFamily(items);
 
-  return NextResponse.json({ items: limit ? ordered.slice(0, limit) : ordered });
+  // The drill screen keys its one-time track intros off this, so a simulated
+  // beginner is offered them again rather than inheriting the real account's
+  // dismissals.
+  return NextResponse.json({
+    items: limit ? ordered.slice(0, limit) : ordered,
+    simulating: session.isSimulating,
+  });
 }
