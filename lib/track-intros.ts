@@ -22,7 +22,8 @@ export type TrackIntroKey =
   | "KANJI"
   | "VOCABULARY"
   | "PHRASE"
-  | "CONVERSATION";
+  | "CONVERSATION"
+  | "NUMBERS";
 
 export interface TrackIntro {
   key: TrackIntroKey;
@@ -125,6 +126,21 @@ export const TRACK_INTROS: Record<TrackIntroKey, TrackIntro> = {
       { label: "It counts", text: "Drilling here feeds the same review schedule your lessons use, so a phrase you clear now comes back just as it is about to slip." },
     ],
     cta: "Start drilling phrases",
+  },
+  NUMBERS: {
+    key: "NUMBERS",
+    label: "Numbers & money",
+    glyph: "円",
+    tone: "var(--track-numbers)",
+    kicker: "Before you begin",
+    title: "Numbers & Money: The Part You Can't Mime",
+    body: [SCRIPT_INTROS.numbers.body],
+    points: [
+      { label: "Two ways to answer", text: "Some cards hand you four readings to choose between; on the rest you say it yourself, then reveal. Both are asking whether you can produce the number, not just recognise it." },
+      { label: "Each card", text: "The figure as it is actually printed, how it reads, one line to use at the counter, and what comes back at you." },
+      { label: "It counts", text: "Drilling here feeds the same review schedule your lessons use, so the figures you fumble are the ones that come back soonest." },
+    ],
+    cta: "Start drilling numbers",
   },
   CONVERSATION: {
     key: "CONVERSATION",
