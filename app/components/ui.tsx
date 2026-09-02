@@ -395,12 +395,12 @@ export function TopBar({
  *   `pr-*` instead. The aircraft therefore costs the lockup no height: it
  *   flies through the empty space beside the word, not below it.
  *
- * The pill is a bare `--wordmark-plate` fill with no border: the mark
- * separates itself from what's behind it by tone alone rather than by being
- * outlined. That plate is its own token because this mark has to clear two
- * grounds — the page and the warmed `--brand-bar` — with no border to fall
- * back on, and because nudging `--surface` to suit it would drag every card
- * and badge in the app along too.
+ * The mark carries no plate at all — no fill, no border, nothing behind it.
+ * It is coral and text ink on whatever ground it lands on, which is what lets
+ * one lockup sit on the page, on the warmed `--brand-bar` and on the landing
+ * footer without any of them showing a chip edge around it. Both grounds are
+ * far enough from coral and from the text colour that the mark reads on them
+ * unaided, so the plate was doing nothing but drawing its own outline.
  */
 export function Wordmark({
   className,
@@ -413,10 +413,12 @@ export function Wordmark({
   return (
     <span
       className={cn(
-        "inline-flex flex-col items-start rounded-full bg-wordmark-plate",
-        // The right padding reserves the runway the jet flies out into; the
-        // aircraft is positioned out of flow, so it never pushes the pill taller.
-        sm ? "py-1 pl-3 pr-[40px]" : "py-1.5 pl-4 pr-[54px]",
+        "inline-flex flex-col items-start",
+        // The only padding left is the runway the jet flies out into. With no
+        // plate to inset from, a leading pad would just push the mark off the
+        // container edge it is meant to line up with; the aircraft is
+        // positioned out of flow, so this reserve costs the lockup no height.
+        sm ? "pr-[40px]" : "pr-[54px]",
         className
       )}
     >
