@@ -33,6 +33,18 @@ export function getStartOfDayInTimezone(timeZone: string, at: Date = new Date())
   return new Date(guessUTC.getTime() - offsetMs);
 }
 
+// How many local days sit between the two instants: 0 for the same local day,
+// 1 for consecutive days, and so on. Rounding rather than dividing exactly is
+// what makes this survive daylight saving — the two local midnights are 23 or
+// 25 hours apart on a transition day, which an exact `=== 24h` test reads as
+// a missed day and a broken streak.
+function daysBetweenInTimezone(timeZone: string, from: Date, to: Date): number {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  const fromStart = getStartOfDayInTimezone(timeZone, from);
+  const toStart = getStartOfDayInTimezone(timeZone, to);
+  return Math.round((toStart.getTime() - fromStart.getTime()) / oneDayMs);
+}
+
 // Rolls a streak forward when a lesson completes at `completedAt`: unchanged
 // if that's the same local day as the last completion, +1 if it's the very
 // next local day, and reset to 1 if a day (or more) was missed or this is the
@@ -42,21 +54,40 @@ export function nextStreak(
   timeZone: string,
   completedAt: Date
 ): { currentStreak: number; longestStreak: number } {
-  const todayStart = getStartOfDayInTimezone(timeZone, completedAt);
-  const lastStart = profile.lastStudiedAt
-    ? getStartOfDayInTimezone(timeZone, profile.lastStudiedAt)
+  const gap = profile.lastStudiedAt
+    ? daysBetweenInTimezone(timeZone, profile.lastStudiedAt, completedAt)
     : null;
-  const oneDayMs = 24 * 60 * 60 * 1000;
 
-  const currentStreak = !lastStart
-    ? 1
-    : lastStart.getTime() === todayStart.getTime()
-      ? Math.max(profile.currentStreak, 1)
-      : lastStart.getTime() === todayStart.getTime() - oneDayMs
-        ? profile.currentStreak + 1
-        : 1;
+  const currentStreak =
+    gap === null
+      ? 1
+      : gap === 0
+        ? Math.max(profile.currentStreak, 1)
+        : gap === 1
+          ? profile.currentStreak + 1
+          : 1;
 
   return { currentStreak, longestStreak: Math.max(profile.longestStreak, currentStreak) };
+}
+
+// The streak as it stands *right now*, which is not the same thing as the
+// stored `currentStreak`: that column is only ever written when a lesson
+// completes, so it keeps reporting the run a learner was on the last time they
+// studied, however long ago that was. A streak has to be alive to be shown —
+// the last study day must be today or yesterday — otherwise it has lapsed and
+// reads 0. Nothing is written back: the stored value stays the count as of
+// `lastStudiedAt`, which is exactly what `nextStreak` needs to extend or reset
+// it on the next completion.
+export function currentStreakAsOf(
+  profile: { currentStreak: number; lastStudiedAt: Date | null },
+  timeZone: string,
+  now: Date = new Date()
+): number {
+  if (!profile.lastStudiedAt) return 0;
+  const gap = daysBetweenInTimezone(timeZone, profile.lastStudiedAt, now);
+  // A future `lastStudiedAt` (clock skew, or a timezone the learner has since
+  // travelled back out of) is a live streak, not a lapsed one.
+  return gap <= 1 ? Math.max(profile.currentStreak, 0) : 0;
 }
 
 // Kanji whose most natural standalone reading is on'yomi: counting numbers,

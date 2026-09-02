@@ -24,6 +24,8 @@ import { CONVERSATIONS } from "@/lib/conversations";
 import { NUMBER_CARDS } from "@/lib/numbers";
 import { BottomNav } from "@/app/components/bottom-nav";
 import { Card, ColorCard, ProgressBar, Ring, SectionLabel, TopBar } from "@/app/components/ui";
+import { currentStreakAsOf } from "@/lib/utils";
+import { cookies } from "next/headers";
 
 // Culture notes carry line icons rather than emoji: at this size emoji render
 // differently on every platform and pull the page toward looking like a chat.
@@ -180,11 +182,15 @@ export default async function AnalyticsPage() {
     travelScore < 90 ? "You move through Japan with ease. What's left is nuance — native materials, regional accents and unspoken social cues." :
                        "You're operating at a near-native level for travel. Japan feels like a second home.";
 
+  // The stored streak is the run as of the last completed lesson and nothing
+  // decays it, so age it against the learner's local today before showing it.
+  const streak = currentStreakAsOf(profile, (await cookies()).get("tz")?.value || "UTC");
+
   // Each stat gets its own hue so the grid reads as a set of six things rather
   // than one grey block of numbers.
   const summaryStats: { label: string; value: string | number; icon: LucideIcon; tone: string }[] = [
     { label: "Accuracy", value: `${accuracy}%`, icon: Target, tone: "var(--lime)" },
-    { label: "Day streak", value: profile.currentStreak, icon: Flame, tone: "var(--sun)" },
+    { label: "Day streak", value: streak, icon: Flame, tone: "var(--sun)" },
     { label: "Lessons", value: lessonsCompleted, icon: BookOpen, tone: "var(--sky)" },
     { label: "Hours", value: studyHours, icon: Clock, tone: "var(--grape)" },
     { label: "Reviews", value: (stats?.totalReviews ?? 0).toLocaleString(), icon: CheckCircle2, tone: "var(--blossom)" },
