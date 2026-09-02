@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateDailyLesson } from "@/lib/lesson-generator";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/simulation";
+import { describeLessonError } from "@/lib/lesson-errors";
 
 export async function POST(request: Request) {
   const session = await getSessionUser();
@@ -33,7 +34,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("Lesson generation error:", err);
     return NextResponse.json(
-      { error: "Failed to generate lesson" },
+      { error: "Failed to generate lesson", detail: describeLessonError(err) },
       { status: 500 }
     );
   }

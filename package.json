@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && node scripts/sync-db-enums.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",
+    "db:sync-enums": "node scripts/sync-db-enums.mjs",
     "db:seed": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' prisma/seed.ts",
     "db:studio": "prisma studio"
   },
