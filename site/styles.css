@@ -29,8 +29,8 @@
   --text-subtle: 266 14% 56%;
 
   /* --- The cast. Every content track owns one hue, on every screen, in the
-         app and here. Colour is navigation, not decoration. ----------------- */
-  --coral: 16 92% 61%;      /* the brand's action colour */
+         app and here. Color is navigation, not decoration. ----------------- */
+  --coral: 16 92% 61%;      /* the brand's action color */
   --coral-deep: 12 78% 46%;
   --blossom: 330 86% 68%;   /* hiragana */
   --sky: 196 90% 56%;       /* katakana */
@@ -41,7 +41,7 @@
   --teal: 168 72% 47%;      /* conversation */
   --rose: 352 85% 63%;      /* the "Again" answer */
 
-  /* Text that sits ON a saturated fill. Bright flat colour takes ink, never
+  /* Text that sits ON a saturated fill. Bright flat color takes ink, never
      white — white on lime or sun fails contrast and looks washed out. */
   --on-light: 266 60% 10%;
 
@@ -155,7 +155,7 @@ a {
 
 /* --------------------------------------------------------------------------
    Elevation, ported from the app. `--shade` takes a raw HSL triple, never a
-   finished hsl() string: these rules compose the colour themselves, sinking the
+   finished hsl() string: these rules compose the color themselves, sinking the
    element's hue most of the way into --shade-base first so a coral button drops
    a warm shadow rather than ringing itself in a neon halo on this near-black
    violet ground.
@@ -605,7 +605,7 @@ a {
 }
 
 /* --------------------------------------------------------------------------
-   Tracks — seven flat colour blocks, one per thing the app teaches.
+   Tracks — seven flat color blocks, one per thing the app teaches.
    -------------------------------------------------------------------------- */
 
 .tracks {
