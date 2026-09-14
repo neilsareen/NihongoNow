@@ -41,13 +41,14 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v4
 
+      # Reads the repository's Pages settings (the base URL the artifact is
+      # published under). It cannot turn Pages ON: `pages: write` grants a
+      # workflow the right to *deploy* to Pages, not to *create* the Pages
+      # site, and asking it to do so fails with "Resource not accessible by
+      # integration". Enabling Pages is a one-time manual step by someone with
+      # admin on the repository — Settings → Pages → Source: GitHub Actions.
       - name: Configure Pages
         uses: actions/configure-pages@v5
-        with:
-          # Turns Pages on for the repository if it is still off, so the first
-          # run does not have to wait on someone flipping the switch by hand.
-          # Harmless once it is already enabled.
-          enablement: true
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v3
