@@ -20,14 +20,22 @@ npx serve site        # or: python3 -m http.server -d site 8080
 
 ## Deploy it
 
-The site is intentionally independent of the Next.js app, so it can live on its
-own host and its own domain (`ikou.app`, say) while the app keeps its own.
+Live at **<https://neilsareen.github.io/NihongoNow/>**, published by
+`.github/workflows/deploy-site.yml` on every push to `master` that touches
+`site/`. Ordinary app commits do not trigger it, and the Next.js app in the
+repo root is never built by it.
 
-- **Vercel / Netlify / Cloudflare Pages** — new project, point it at this repo,
-  set the *root directory* (Vercel) or *publish directory* (Netlify, Pages) to
-  `site`, and leave the build command empty.
-- **GitHub Pages** — serve from `/site` on the branch of your choice.
-- **Anything else** — upload the three files.
+To republish without a commit: Actions → *Deploy site* → **Run workflow**.
+
+The site is intentionally independent of the app, so it can be moved to its own
+host and its own domain at any time — it is three static files with relative
+links, and nothing in it assumes a particular origin.
+
+- **Vercel / Netlify / Cloudflare Pages** — new project pointed at this repo,
+  framework preset *Other*, *root directory* (Vercel) or *publish directory*
+  (Netlify, Pages) set to `site`, build command empty. Pointing a host at the
+  repo root instead will make it detect Next.js and build the app, not the site.
+- **Anything else** — upload the files.
 
 ## Before launch
 
@@ -38,8 +46,10 @@ yet. All three are marked with comments in the file.
    `https://nihongo-now-lilac.vercel.app`. Search for that string — it appears
    in the hero button, the store plate and the footer — and replace it with the
    app's real domain once there is one.
-2. **The site's own URL.** `og:url`, `og:image` and the canonical link assume
-   `https://ikou.app/`. Set them to wherever this is actually hosted.
+2. **The site's own URL.** `og:url`, `og:image` and the canonical link point
+   at the GitHub Pages address. If the site moves to a domain of its own,
+   change all three together — and add a `CNAME` file next to `index.html`
+   containing the bare domain, which is how Pages learns to serve it.
 3. **A social card image.** `og:image` points at `/og.png`, which does not exist
    yet. 1200×630, and until it exists a shared link simply renders as a title
    and description rather than breaking.

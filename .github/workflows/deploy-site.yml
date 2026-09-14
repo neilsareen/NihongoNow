@@ -1,0 +1,59 @@
+# Publishes site/ to GitHub Pages.
+#
+# Only the marketing site is deployed here — the Next.js app in the repo root
+# is not built and not touched. The `paths` filter below is what keeps the two
+# apart: ordinary app commits do not spend a run, and a change under site/ goes
+# live on its own.
+#
+# The site is plain HTML and CSS, so there is no build step. The job checks the
+# repository out and uploads site/ as-is.
+
+name: Deploy site
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "site/**"
+      - ".github/workflows/deploy-site.yml"
+  # Lets the site be republished by hand from the Actions tab without a commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and never cancel one halfway: a cancelled Pages
+# deployment can leave the live site on the previous version with no indication
+# of why.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          # Turns Pages on for the repository if it is still off, so the first
+          # run does not have to wait on someone flipping the switch by hand.
+          # Harmless once it is already enabled.
+          enablement: true
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
