@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Ikou — Japanese for travellers</title>
+    <meta
+      name="description"
+      content="Ikou teaches the Japanese that changes a trip: reading signs, ordering without pointing, asking for help and understanding the answer. Ten minutes a day, no prior knowledge assumed."
+    />
+    <link rel="canonical" href="https://ikou.app/" />
+    <meta name="theme-color" content="#130C1F" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="favicon.svg" />
+
+    <!-- Social cards. `og:image` points at a file that has to be produced
+         before launch — see README.md. A card with no image still renders as a
+         title and description, so nothing here breaks in the meantime. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Ikou" />
+    <meta property="og:title" content="Ikou — Japanese for travellers" />
+    <meta
+      property="og:description"
+      content="Learn the Japanese you'll actually use in Japan. Ten minutes a day, built around real situations."
+    />
+    <meta property="og:url" content="https://ikou.app/" />
+    <meta property="og:image" content="https://ikou.app/og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;700&display=swap"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body>
+    <!-- =====================================================================
+         Header
+         ================================================================== -->
+    <header class="site-header">
+      <div class="shell site-header__inner">
+        <a class="wordmark wordmark--sm" href="#top" aria-label="Ikou — home">
+          <span class="wordmark__lockup">
+            <span class="wordmark__kanji jp" aria-hidden="true">行</span>
+            <span class="wordmark__name">Ikou</span>
+          </span>
+          <span class="wordmark__trail" aria-hidden="true">
+            <svg class="wordmark__jet" viewBox="0 0 38 17.91" fill="none">
+              <path d="M0 16.86 L22.57 6.88" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" />
+              <g fill="currentColor" transform="translate(29.51 3.9) rotate(-24) scale(0.66)">
+                <path d="M12 0.2 C10.4 -1.3 7 -1.9 2.6 -1.95 L-3.4 -1.95 L-8.2 -7.0 L-10.4 -7.0 L-9.6 -2.0 L-12.4 -1.5 L-12.4 1.0 L-6 1.95 L3.4 1.9 C7.6 1.75 10.6 1.2 12 0.2 Z" />
+                <path d="M4.2 1.4 L-3.2 6.6 L-7.4 6.6 L-2.2 1.4 Z" />
+                <path d="M-9.2 0.3 L-13.2 3.0 L-14.8 3.0 L-11.4 0.3 Z" />
+                <path d="M2.0 1.6 C4.0 1.6 4.2 3.9 2.0 3.9 L-1.6 3.9 C-3.4 3.9 -3.2 1.6 -1.6 1.6 Z" />
+              </g>
+            </svg>
+          </span>
+        </a>
+
+        <nav class="site-nav" aria-label="Sections">
+          <a href="#teaches">What it teaches</a>
+          <a href="#why">How it works</a>
+          <a href="#get">Get the app</a>
+        </nav>
+
+        <a class="btn--ghost" href="#get">Get the app</a>
+      </div>
+    </header>
+
+    <main id="top">
+      <!-- ===================================================================
+           Hero
+           ================================================================ -->
+      <section class="hero">
+        <span class="hero__watermark jp" aria-hidden="true">京</span>
+
+        <div class="shell hero__grid">
+          <div>
+            <span class="pill">Japanese for travellers</span>
+
+            <h1>
+              The Japanese that
+              <span class="mark"><span>changes a trip.</span></span>
+            </h1>
+
+            <p class="lede">
+              Reading the signs. Ordering without pointing. Asking for help — and
+              understanding the answer that comes back. Ten minutes a day, and no
+              prior knowledge assumed.
+            </p>
+
+            <div class="hero__actions">
+              <!-- APP_URL — the one place the live web app is linked from.
+                   Change it here and in the footer if the app moves domain. -->
+              <a class="btn btn--primary pressable" href="https://nihongo-now-lilac.vercel.app">
+                Start learning free
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </a>
+              <a class="btn btn--secondary pressable" href="#teaches">See what it teaches</a>
+            </div>
+
+            <p class="hero__note">
+              Free to start · Runs in the browser · Installs to your home screen
+            </p>
+          </div>
+
+          <!-- The drill screen, rebuilt rather than screenshotted, so it stays
+               in step with the app instead of ageing into a stale PNG. -->
+          <div class="phone elevated" role="img"
+               aria-label="The Ikou drill screen: a hiragana card showing あ with the answer revealed as &quot;a&quot;, and Again and Got it buttons beneath it.">
+            <div class="phone__screen">
+              <div class="phone__bar">
+                <span>Hiragana</span>
+                <span class="phone__progress"><span></span></span>
+                <span>8/13</span>
+              </div>
+
+              <div class="phone__card elevated">
+                <span class="phone__glyph jp" aria-hidden="true">あ</span>
+                <span class="phone__romaji">a</span>
+                <span class="phone__hint">First sound of あさ — morning</span>
+              </div>
+
+              <div class="phone__answers">
+                <span class="again">Again</span>
+                <span class="got">Got it</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           What it teaches — seven tracks, each owning one hue, exactly as they
+           do inside the app. Colour is how you navigate it.
+           ================================================================ -->
+      <section class="section" id="teaches">
+        <div class="shell">
+          <div class="section__head">
+            <span class="eyebrow">Seven tracks</span>
+            <h2>Everything you need, and nothing you don't.</h2>
+            <p class="lede">
+              Every item earns its place by being something you will really meet:
+              a station sign, a konbini counter, a pharmacy, a price tag. Each
+              track keeps its own colour, here and on every screen of the app.
+            </p>
+          </div>
+
+          <div class="tracks">
+            <div class="track elevated" style="--tone: var(--blossom)">
+              <span class="track__glyph jp" aria-hidden="true">あ</span>
+              <span>
+                <span class="track__name">Hiragana</span>
+                <span class="track__sub">Unlocks everything else</span>
+              </span>
+            </div>
+            <div class="track elevated" style="--tone: var(--sky)">
+              <span class="track__glyph jp" aria-hidden="true">ア</span>
+              <span>
+                <span class="track__name">Katakana</span>
+                <span class="track__sub">Menus, brands, borrowed words</span>
+              </span>
+            </div>
+            <div class="track elevated" style="--tone: var(--sun)">
+              <span class="track__glyph jp" aria-hidden="true">漢</span>
+              <span>
+                <span class="track__name">Kanji</span>
+                <span class="track__sub">Signs, days, transport</span>
+              </span>
+            </div>
+            <div class="track elevated" style="--tone: var(--grape)">
+              <span class="track__glyph jp" aria-hidden="true">語</span>
+              <span>
+                <span class="track__name">Words</span>
+                <span class="track__sub">Station, konbini, pharmacy</span>
+              </span>
+            </div>
+            <div class="track elevated" style="--tone: var(--lime)">
+              <span class="track__glyph jp" aria-hidden="true">話</span>
+              <span>
+                <span class="track__name">Phrases</span>
+                <span class="track__sub">Said the way people say them</span>
+              </span>
+            </div>
+            <div class="track elevated" style="--tone: var(--indigo)">
+              <span class="track__glyph jp" aria-hidden="true">数</span>
+              <span>
+                <span class="track__name">Numbers</span>
+                <span class="track__sub">The part you can't mime</span>
+              </span>
+            </div>
+            <div class="track elevated" style="--tone: var(--teal)">
+              <span class="track__glyph jp" aria-hidden="true">会</span>
+              <span>
+                <span class="track__name">Conversation</span>
+                <span class="track__sub">Getting through the day</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           The promise made literal. These are the characters a traveller meets
+           in the first hour, so they are the fastest way to show what fluency
+           in the small things actually buys.
+           ================================================================ -->
+      <section class="section" style="padding-top: 0">
+        <div class="shell">
+          <div class="section__head">
+            <span class="eyebrow">By the end of week one</span>
+            <h2>These stop being shapes.</h2>
+          </div>
+
+          <div class="signs">
+            <span class="sign elevated"><b class="jp">出口</b><i>Exit</i></span>
+            <span class="sign elevated"><b class="jp">入口</b><i>Entrance</i></span>
+            <span class="sign elevated"><b class="jp">改札</b><i>Ticket gate</i></span>
+            <span class="sign elevated"><b class="jp">特急</b><i>Limited express</i></span>
+            <span class="sign elevated"><b class="jp">精算</b><i>Fare adjustment</i></span>
+            <span class="sign elevated"><b class="jp">大人</b><i>Adult</i></span>
+            <span class="sign elevated"><b class="jp">無料</b><i>Free</i></span>
+            <span class="sign elevated"><b class="jp">お会計</b><i>The bill</i></span>
+            <span class="sign elevated"><b class="jp">五百円</b><i>500 yen</i></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           Why it works
+           ================================================================ -->
+      <section class="section" id="why">
+        <div class="shell">
+          <div class="section__head">
+            <span class="eyebrow">Why it sticks</span>
+            <h2>Built for the ten minutes you'll actually give it.</h2>
+          </div>
+
+          <div class="features">
+            <div class="feature elevated" style="--tone: var(--sky)">
+              <span class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="5" y="3" width="14" height="13" rx="4" />
+                  <path d="M5 10h14" />
+                  <path d="M9 20l-2 2M15 20l2 2" />
+                  <circle cx="9" cy="13.5" r="0.6" fill="currentColor" />
+                  <circle cx="15" cy="13.5" r="0.6" fill="currentColor" />
+                </svg>
+              </span>
+              <h3>Stuff you'll actually use</h3>
+              <p>
+                Train stations, konbini, restaurants, pharmacies. Nothing is here
+                because a textbook chapter needed filling.
+              </p>
+            </div>
+
+            <div class="feature elevated" style="--tone: var(--grape)">
+              <span class="feature__icon">
+                <!-- A forgetting curve: the thing the scheduler is drawn against. -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 4c5 0 5 15 18 16" />
+                  <path d="M3 20h18" opacity="0.45" />
+                  <circle cx="14.5" cy="17.5" r="2" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
+              <h3>It knows what you're forgetting</h3>
+              <p>
+                Each session is assembled from whatever is closest to slipping
+                away, so ten minutes land where they count instead of on the
+                things you already know.
+              </p>
+            </div>
+
+            <div class="feature elevated" style="--tone: var(--lime)">
+              <span class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3.5 18a9 9 0 1 1 17 0" />
+                  <path d="M12 18l4.5-5.5" />
+                  <circle cx="12" cy="18" r="1.6" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
+              <h3>A readiness score, not a streak</h3>
+              <p>
+                One honest number for how close you are to handling a trip
+                unaided, weighted by what travel actually demands. Miss a day and
+                it tells you the truth rather than punishing you.
+              </p>
+            </div>
+
+            <div class="feature elevated" style="--tone: var(--teal)">
+              <span class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="9" y="2" width="6" height="11" rx="3" />
+                  <path d="M5 11a7 7 0 0 0 14 0" />
+                  <path d="M12 18v4" />
+                </svg>
+              </span>
+              <h3>Say it out loud</h3>
+              <p>
+                Speaking drills listen to you through the phone's own microphone
+                and tell you whether what you said was what you meant. There is a
+                silent mode for the train.
+              </p>
+            </div>
+
+            <div class="feature elevated" style="--tone: var(--coral)">
+              <span class="feature__icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-5 4v-4H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
+                  <path d="M10 8.5l4.5 2.5-4.5 2.5z" fill="currentColor" stroke="none" />
+                </svg>
+              </span>
+              <h3>Watch it played out</h3>
+              <p>
+                Whole exchanges — the ticket window, the counter, the
+                convenience store — run start to finish, in kana, once the
+                alphabet is solid enough to read them.
+              </p>
+            </div>
+
+            <div class="feature elevated" style="--tone: var(--sun)">
+              <span class="feature__icon">
+                <!-- A torii. The cultural notes are the app's own voice. -->
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M2.5 5.5c4 1 15 1 19 0" />
+                  <path d="M4.5 9.5h15" />
+                  <path d="M7 6.2V20M17 6.2V20" />
+                </svg>
+              </span>
+              <h3>What nobody tells you</h3>
+              <p>
+                Notes on the things that are not vocabulary: which queue to join,
+                why nobody answers a phone on the train, what a shopkeeper's
+                silence means.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           How a session goes. A genuine sequence, so it is numbered as one.
+           ================================================================ -->
+      <section class="section" style="padding-top: 0">
+        <div class="shell">
+          <div class="section__head">
+            <span class="eyebrow">A session, end to end</span>
+            <h2>Ten minutes, three moves.</h2>
+          </div>
+
+          <div class="session">
+            <div class="step">
+              <span class="step__n">STEP 1</span>
+              <h3>Open it</h3>
+              <p>
+                The lesson is built the moment you start it — from where you are
+                today, not from a plan drawn up last week.
+              </p>
+            </div>
+            <div class="step">
+              <span class="step__n">STEP 2</span>
+              <h3>Clear what's fading</h3>
+              <p>
+                Whatever is closest to slipping goes first. When there is room
+                left, one new thing is introduced, and not before.
+              </p>
+            </div>
+            <div class="step">
+              <span class="step__n">STEP 3</span>
+              <h3>Reveal, then be honest</h3>
+              <p>
+                <em>Again</em> or <em>Got it</em>. That one answer decides when
+                the card comes back — days away if it landed, minutes if it
+                didn't.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           Get the app
+           ================================================================ -->
+      <section class="section" id="get" style="padding-top: 0">
+        <div class="shell">
+          <div class="get elevated">
+            <span class="get__watermark jp" aria-hidden="true">行</span>
+
+            <div class="get__inner">
+              <div class="get__copy">
+                <h2>Your trip is closer than you think.</h2>
+                <p>
+                  Ikou runs in any browser and installs to your home screen like
+                  an ordinary app — no store account, no download. The Android
+                  build is on its way to Google Play.
+                </p>
+              </div>
+
+              <div class="stores">
+                <a class="store store--live pressable" href="https://nihongo-now-lilac.vercel.app">
+                  <svg class="store__play" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="3" />
+                    <path d="M2 9h20" />
+                    <circle cx="5.5" cy="6.5" r="0.7" fill="currentColor" stroke="none" />
+                    <circle cx="8" cy="6.5" r="0.7" fill="currentColor" stroke="none" />
+                  </svg>
+                  <span class="store__text">
+                    <small>Start now</small>
+                    <strong>In your browser</strong>
+                  </span>
+                </a>
+
+                <!-- Deliberately not a link: the listing does not exist yet, and
+                     a button that 404s costs more trust than an honest label.
+                     When the app is published, replace this whole <span> with:
+
+                     <a class="store store--live pressable"
+                        href="https://play.google.com/store/apps/details?id=com.neilsareen.ikou">
+                       … same inner markup, "Get it on" / "Google Play" …
+                     </a>
+
+                     and swap the grey Play mark below for Google's official
+                     badge artwork, which their brand guidelines require on a
+                     live listing. See README.md. -->
+                <span class="store store--soon">
+                  <svg class="store__play" viewBox="0 0 512 512" aria-hidden="true">
+                    <path fill="currentColor" d="M47 19a24 24 0 0 0-12 21v432a24 24 0 0 0 12 21l242-237L47 19z" />
+                    <path fill="currentColor" d="M385 202 84 12l-1-1 236 231 66-40z" opacity="0.85" />
+                    <path fill="currentColor" d="M385 310 319 270 83 501l1-1 301-190z" opacity="0.85" />
+                    <path fill="currentColor" d="m385 202-66 40 66 40 76-46a23 23 0 0 0 0-40l-76-46z" opacity="0.7" />
+                  </svg>
+                  <span class="store__text">
+                    <small>Coming soon to</small>
+                    <strong>Google Play</strong>
+                  </span>
+                </span>
+              </div>
+
+              <p style="font-size: 0.9375rem">
+                On iPhone: open Ikou in Safari, then Share → Add to Home Screen.
+                On Android: Chrome's menu → Install app.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- =====================================================================
+         Footer
+         ================================================================== -->
+    <footer class="site-footer">
+      <div class="shell">
+        <div class="site-footer__inner">
+          <a class="wordmark" href="#top" aria-label="Ikou — back to top">
+            <span class="wordmark__lockup">
+              <span class="wordmark__kanji jp" aria-hidden="true">行</span>
+              <span class="wordmark__name">Ikou</span>
+            </span>
+            <span class="wordmark__trail" aria-hidden="true">
+              <svg class="wordmark__jet" viewBox="0 0 38 17.91" fill="none">
+                <path d="M0 16.86 L22.57 6.88" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" />
+                <g fill="currentColor" transform="translate(29.51 3.9) rotate(-24) scale(0.66)">
+                  <path d="M12 0.2 C10.4 -1.3 7 -1.9 2.6 -1.95 L-3.4 -1.95 L-8.2 -7.0 L-10.4 -7.0 L-9.6 -2.0 L-12.4 -1.5 L-12.4 1.0 L-6 1.95 L3.4 1.9 C7.6 1.75 10.6 1.2 12 0.2 Z" />
+                  <path d="M4.2 1.4 L-3.2 6.6 L-7.4 6.6 L-2.2 1.4 Z" />
+                  <path d="M-9.2 0.3 L-13.2 3.0 L-14.8 3.0 L-11.4 0.3 Z" />
+                  <path d="M2.0 1.6 C4.0 1.6 4.2 3.9 2.0 3.9 L-1.6 3.9 C-3.4 3.9 -3.2 1.6 -1.6 1.6 Z" />
+                </g>
+              </svg>
+            </span>
+          </a>
+
+          <nav aria-label="Footer">
+            <a href="https://nihongo-now-lilac.vercel.app">Open the app</a>
+            <a href="https://nihongo-now-lilac.vercel.app/privacy">Privacy policy</a>
+            <a href="mailto:ikou.info@gmail.com">ikou.info@gmail.com</a>
+          </nav>
+        </div>
+
+        <small>
+          © 2026 Ikou · Hiragana · Katakana · Kanji · Words · Phrases · Numbers ·
+          Conversation
+        </small>
+      </div>
+    </footer>
+  </body>
+</html>
